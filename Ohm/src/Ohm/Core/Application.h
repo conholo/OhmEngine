@@ -3,6 +3,7 @@
 #include "Ohm/Core/Window.h"
 #include "Ohm/Event/Event.h"
 #include "Ohm/Event/WindowEvent.h"
+#include "Ohm/Core/LayerStack.h"
 
 namespace Ohm
 {
@@ -19,6 +20,9 @@ namespace Ohm
 		Window& GetWindow() const { return *m_Window; }
 		const std::string& GetName() const { return m_Name; }
 
+		void PushLayer(Layer* layer);
+		void PushOverlay(Layer* overlay);
+
 	private:
 		bool OnWindowClose(WindowClosedEvent& windowCloseEvent);
 		bool OnWindowResize(WindowResizedEvent& windowResizeEvent);
@@ -30,6 +34,7 @@ namespace Ohm
 		std::string m_Name;
 		bool m_IsRunning = true;
 		Scope<Window> m_Window;
+		LayerStack m_LayerStack;
 	};
 
 	Application* CreateApplication();

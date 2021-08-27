@@ -25,6 +25,14 @@ namespace Ohm
 		{
 			RenderCommand::Clear();
 			RenderCommand::ClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+
+			for (auto* layer : m_LayerStack)
+				layer->OnUpdate();
+
+			for (auto* layer : m_LayerStack)
+				layer->OnUIRender();
+
+
 			m_Window->Update();
 		}
 	}
@@ -33,10 +41,20 @@ namespace Ohm
 	{
 		EventDispatcher dispatcher(event);
 
-		OHM_INFO(event.ToString());
-
 		dispatcher.Dispatch<WindowClosedEvent>(OHM_BIND_FN(Application::OnWindowClose));
 		dispatcher.Dispatch<WindowResizedEvent>(OHM_BIND_FN(Application::OnWindowResize));
+	}
+
+	void Application::PushLayer(Layer* layer)
+	{
+		m_LayerStack.PushLayer(layer);
+		layer->OnAttach();
+	}
+
+	void Application::PushOverlay(Layer* overlay)
+	{
+		m_LayerStack.PushOverlay(overlay);
+		overlay->OnAttach();
 	}
 
 	bool Application::OnWindowClose(WindowClosedEvent& windowCloseEvent)

@@ -4,6 +4,8 @@
 #include "ohmpch.h"
 #include "Ohm/Core/Application.h"
 #include "Ohm/Core/Input.h"
+#include "Ohm/Core/Layer.h"
+#include "Ohm/Core/Log.h"
 //--------------------- CORE ---------------------//
 
 

@@ -12,7 +12,7 @@ namespace Ohm
 	class Log
 	{
 	public:
-		static void Init(const std::string& applicationName);
+		static void Init();
 
 		static Ref<spdlog::logger>& GetEngineLogger() { return s_EngineLogger; }
 		static Ref<spdlog::logger>& GetClientLogger() { return s_ClientLogger; }

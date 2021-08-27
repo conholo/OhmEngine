@@ -1,6 +1,8 @@
 #include "Ohm.h"
 #include "Ohm/Core/EntryPoint.h"
 
+#include "EditorLayer.h"
+
 namespace Ohm
 {
 	class OhmEditor : public Application
@@ -9,6 +11,7 @@ namespace Ohm
 		OhmEditor()
 			:Application("Ohm Editor")
 		{
+			PushLayer(new EditorLayer());
 		}
 
 		~OhmEditor()

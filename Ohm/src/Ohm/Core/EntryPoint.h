@@ -4,8 +4,8 @@ extern Ohm::Application* Ohm::CreateApplication();
 
 int main()
 {
+	Ohm::Log::Init();
 	auto* app = Ohm::CreateApplication();
-	Ohm::Log::Init(app->GetName());
 	app->Run();
 	delete app;
 }

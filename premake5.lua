@@ -95,7 +95,6 @@ project "OhmEditor"
 		"Ohm/src",
 		"Ohm/vendor",
 		"Ohm/vendor/spdlog/include",
-		"%{IncludeDirectories.GLFW}",
 		"%{IncludeDirectories.glm}",
 	}
 
