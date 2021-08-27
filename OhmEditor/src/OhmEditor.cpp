@@ -6,11 +6,9 @@ namespace Ohm
 	class OhmEditor : public Application
 	{
 	public:
-
 		OhmEditor()
-			:Application("Test")
+			:Application("Ohm Editor")
 		{
-
 		}
 
 		~OhmEditor()

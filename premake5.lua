@@ -11,6 +11,16 @@ workspace "Ohm"
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
+IncludeDirectories = {}
+IncludeDirectories["GLFW"] = "Ohm/vendor/GLFW/include"
+IncludeDirectories["glad"] = "Ohm/vendor/glad/include"
+
+
+group "Dependencies"
+	include "Ohm/vendor/GLFW"
+	include "Ohm/vendor/glad"
+group ""
+
 project "Ohm"
 	kind "StaticLib"
 	language "C++"
@@ -28,7 +38,15 @@ project "Ohm"
 
 	includedirs 
 	{
-		"%{prj.name}/src"
+		"%{prj.name}/src",
+		"%{IncludeDirectories.GLFW}",
+		"%{IncludeDirectories.glad}"
+	}
+
+	links
+	{
+		"GLFW",
+		"glad"
 	}
 
 	pchheader "ohmpch.h"
@@ -69,7 +87,9 @@ project "OhmEditor"
 
 	includedirs 
 	{
-		"Ohm/src"
+		"Ohm/src",
+		"Ohm/vendor",
+		"%{IncludeDirectories.GLFW}"
 	}
 
 	links 

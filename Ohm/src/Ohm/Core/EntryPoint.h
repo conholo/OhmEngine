@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Ohm/Core/Application.h"
-
 extern Ohm::Application* Ohm::CreateApplication();
 
 int main()
