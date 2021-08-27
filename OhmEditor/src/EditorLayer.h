@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Ohm.h"
+#include "Ohm/Rendering/EditorCamera.h"
 
 namespace Ohm
 {
@@ -18,6 +19,6 @@ namespace Ohm
 		void OnEvent(Event& event) override;
 
 	private:
-
+		EditorCamera m_Camera;
 	};
 }

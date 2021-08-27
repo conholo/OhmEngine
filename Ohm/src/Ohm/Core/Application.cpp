@@ -1,6 +1,7 @@
 #include "ohmpch.h"
 #include "Ohm/Core/Application.h"
 #include "Ohm/Rendering/RenderCommand.h"
+#include "Ohm/Rendering/Renderer.h"
 
 namespace Ohm
 {
@@ -13,6 +14,7 @@ namespace Ohm
 		m_Window = CreateScope<Window>(name);
 		m_Window->SetEventCallbackFunction(OHM_BIND_FN(Application::OnEvent));
 		RenderCommand::Initialize();
+		Renderer::Initialize();
 	}
 
 	Application::~Application()
@@ -23,9 +25,6 @@ namespace Ohm
 	{
 		while (m_IsRunning)
 		{
-			RenderCommand::Clear();
-			RenderCommand::ClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-
 			for (auto* layer : m_LayerStack)
 				layer->OnUpdate();
 

@@ -13,4 +13,5 @@
 #include "Ohm/Rendering/VertexArray.h"
 #include "Ohm/Rendering/Shader.h"
 #include "Ohm/Rendering/RenderCommand.h"
+#include "Ohm/Rendering/Renderer.h"
 //--------------------- RENDERING ---------------------//

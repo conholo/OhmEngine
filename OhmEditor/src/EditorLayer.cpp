@@ -1,10 +1,10 @@
 #include "EditorLayer.h"
 
+
 namespace Ohm
 {
-
 	EditorLayer::EditorLayer()
-		:Layer("Editor Layer")
+		:Layer("Editor Layer"), m_Camera(45.0f, 1.0f, 0.1f, 1000.0f)
 	{
 
 	}
@@ -16,7 +16,7 @@ namespace Ohm
 
 	void EditorLayer::OnAttach()
 	{
-		OHM_INFO("On Attach");
+
 	}
 
 	void EditorLayer::OnUpdate()
@@ -25,6 +25,11 @@ namespace Ohm
 		{
 			OHM_INFO("On Update");
 		}
+
+		RenderCommand::Clear();
+		RenderCommand::ClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		Renderer::BeginScene(m_Camera, Primitive::Quad);
+		Renderer::EndScene();
 	}
 
 	void EditorLayer::OnDetach()
@@ -41,5 +46,4 @@ namespace Ohm
 	{
 		
 	}
-
 }
