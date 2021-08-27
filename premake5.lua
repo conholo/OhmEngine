@@ -42,6 +42,7 @@ project "Ohm"
 	includedirs 
 	{
 		"%{prj.name}/src",
+		"%{prj.name}/vendor/spdlog/include",
 		"%{IncludeDirectories.GLFW}",
 		"%{IncludeDirectories.glad}",
 		"%{IncludeDirectories.glm}",
@@ -93,6 +94,7 @@ project "OhmEditor"
 	{
 		"Ohm/src",
 		"Ohm/vendor",
+		"Ohm/vendor/spdlog/include",
 		"%{IncludeDirectories.GLFW}",
 		"%{IncludeDirectories.glm}",
 	}

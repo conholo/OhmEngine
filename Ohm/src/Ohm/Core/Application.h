@@ -17,6 +17,7 @@ namespace Ohm
 
 		static Application& GetApplication() { return *s_Instance; }
 		Window& GetWindow() const { return *m_Window; }
+		const std::string& GetName() const { return m_Name; }
 
 	private:
 		bool OnWindowClose(WindowClosedEvent& windowCloseEvent);
@@ -26,6 +27,7 @@ namespace Ohm
 		static Application* s_Instance;
 
 	private:
+		std::string m_Name;
 		bool m_IsRunning = true;
 		Scope<Window> m_Window;
 	};

@@ -7,6 +7,7 @@ namespace Ohm
 	Application* Application::s_Instance = nullptr;
 
 	Application::Application(const std::string& name)
+		:m_Name(name)
 	{
 		s_Instance = this;
 		m_Window = CreateScope<Window>(name);
@@ -31,6 +32,8 @@ namespace Ohm
 	void Application::OnEvent(Event& event)
 	{
 		EventDispatcher dispatcher(event);
+
+		OHM_INFO(event.ToString());
 
 		dispatcher.Dispatch<WindowClosedEvent>(OHM_BIND_FN(Application::OnWindowClose));
 		dispatcher.Dispatch<WindowResizedEvent>(OHM_BIND_FN(Application::OnWindowResize));

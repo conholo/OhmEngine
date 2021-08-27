@@ -2,6 +2,8 @@
 **/bin/
 bin-int/
 
+# Ohm files
+*.log
 
 # Visual Studio files and folder
 .vs/
