@@ -32,8 +32,6 @@ namespace Ohm
 	{
 		EventDispatcher dispatcher(event);
 
-		std::cout << event << std::endl;
-
 		dispatcher.Dispatch<WindowClosedEvent>(OHM_BIND_FN(Application::OnWindowClose));
 		dispatcher.Dispatch<WindowResizedEvent>(OHM_BIND_FN(Application::OnWindowResize));
 	}
@@ -50,7 +48,5 @@ namespace Ohm
 
 		return true;
 	}
-
-
 }
 

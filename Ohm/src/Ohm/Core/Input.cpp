@@ -22,14 +22,24 @@ namespace Ohm
 		return action == GLFW_PRESS || action == GLFW_REPEAT;
 	}
 
+	glm::vec2 Input::GetMousePosition()
+	{
+		GLFWwindow* window = Application::GetApplication().GetWindow().GetWindowHandle();
+
+		double xPos, yPos;
+		glfwGetCursorPos(window, &xPos, &yPos);
+
+		return { (float)xPos, (float)yPos };
+	}
+
 	float Input::GetMouseX()
 	{
-		return 0;
+		return GetMousePosition().x;
 	}
 
 	float Input::GetMouseY()
 	{
-		return 0;
+		return GetMousePosition().y;
 	}
 
 }

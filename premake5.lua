@@ -14,6 +14,7 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 IncludeDirectories = {}
 IncludeDirectories["GLFW"] = "Ohm/vendor/GLFW/include"
 IncludeDirectories["glad"] = "Ohm/vendor/glad/include"
+IncludeDirectories["glm"] = "Ohm/vendor/glm"
 
 
 group "Dependencies"
@@ -34,13 +35,16 @@ project "Ohm"
 	{
 		"%{prj.name}/src/**.h",
 		"%{prj.name}/src/**.cpp",
+		"%{prj.name}/vendor/glm/glm/**.hpp",
+		"%{prj.name}/vendor/glm/glm/**.inl",
 	}
 
 	includedirs 
 	{
 		"%{prj.name}/src",
 		"%{IncludeDirectories.GLFW}",
-		"%{IncludeDirectories.glad}"
+		"%{IncludeDirectories.glad}",
+		"%{IncludeDirectories.glm}",
 	}
 
 	links
@@ -89,7 +93,8 @@ project "OhmEditor"
 	{
 		"Ohm/src",
 		"Ohm/vendor",
-		"%{IncludeDirectories.GLFW}"
+		"%{IncludeDirectories.GLFW}",
+		"%{IncludeDirectories.glm}",
 	}
 
 	links 
