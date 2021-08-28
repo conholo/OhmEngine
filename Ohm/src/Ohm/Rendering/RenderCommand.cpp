@@ -15,7 +15,7 @@ namespace Ohm
 		const void* userParam
 	)
 	{
-		std::cout << message << std::endl;
+		OHM_TRACE(message);
 	}
 
 	void RenderCommand::Initialize()

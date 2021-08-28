@@ -2,6 +2,9 @@
 #include "Ohm/Core/Application.h"
 #include "Ohm/Rendering/RenderCommand.h"
 #include "Ohm/Rendering/Renderer.h"
+#include "Ohm/Core/Time.h"
+
+#include <GLFW/glfw3.h>
 
 namespace Ohm
 {
@@ -25,8 +28,13 @@ namespace Ohm
 	{
 		while (m_IsRunning)
 		{
+			float time = (float)glfwGetTime();
+
+			Time deltaTime = time - m_LastFrameTime;
+			m_LastFrameTime = time;
+
 			for (auto* layer : m_LayerStack)
-				layer->OnUpdate();
+				layer->OnUpdate(deltaTime);
 
 			for (auto* layer : m_LayerStack)
 				layer->OnUIRender();
@@ -42,6 +50,9 @@ namespace Ohm
 
 		dispatcher.Dispatch<WindowClosedEvent>(OHM_BIND_FN(Application::OnWindowClose));
 		dispatcher.Dispatch<WindowResizedEvent>(OHM_BIND_FN(Application::OnWindowResize));
+
+		for (Layer* layer : m_LayerStack)
+			layer->OnEvent(event);
 	}
 
 	void Application::PushLayer(Layer* layer)

@@ -65,7 +65,7 @@ namespace Ohm
 	void Renderer::BeginScene(const EditorCamera& camera, Primitive primitve)
 	{
 		s_RenderData->Shader->Bind();
-		s_RenderData->Shader->UploadUniformMat4("u_PV", camera.GetProjectionView());
+		s_RenderData->Shader->UploadUniformMat4("u_ProjectionView", camera.GetProjectionView());
 	}
 
 	void Renderer::UploadModelData(const glm::vec3& position, const glm::vec3& size)

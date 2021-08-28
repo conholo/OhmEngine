@@ -1,5 +1,7 @@
 #include "EditorLayer.h"
 
+#include <glm/glm.hpp>
+
 
 namespace Ohm
 {
@@ -19,17 +21,25 @@ namespace Ohm
 
 	}
 
-	void EditorLayer::OnUpdate()
+	void EditorLayer::OnUpdate(Time dt)
 	{
 		if (Input::IsKeyPressed(Key::Space))
 		{
 			OHM_INFO("On Update");
 		}
 
+		m_Camera.Update(dt);
+
 		RenderCommand::Clear();
 		RenderCommand::ClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		Renderer::BeginScene(m_Camera, Primitive::Quad);
+		Renderer::UploadModelData(m_QuadPosition, m_QuadSize);
 		Renderer::EndScene();
+
+		Renderer::BeginScene(m_Camera, Primitive::Quad);
+		Renderer::UploadModelData(m_PlanePosition, m_PlaneSize);
+		Renderer::EndScene();
+
 	}
 
 	void EditorLayer::OnDetach()
@@ -44,6 +54,5 @@ namespace Ohm
 
 	void EditorLayer::OnEvent(Event& event)
 	{
-		
 	}
 }

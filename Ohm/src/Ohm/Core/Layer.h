@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Ohm/Event/Event.h"
+#include "Ohm/Core/Time.h"
 
 namespace Ohm
 {
@@ -14,7 +15,7 @@ namespace Ohm
 
 		virtual void OnAttach() = 0;
 		virtual void OnDetach() = 0;
-		virtual void OnUpdate() = 0;
+		virtual void OnUpdate(Time dt) = 0;
 		virtual void OnEvent(Event& event) = 0;
 		virtual void OnUIRender() { }
 
