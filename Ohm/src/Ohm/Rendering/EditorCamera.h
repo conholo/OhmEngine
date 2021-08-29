@@ -2,6 +2,7 @@
 
 #include "Ohm/Event/Event.h"
 #include "Ohm/Core/Time.h"
+#include "Ohm/Event/MouseEvent.h"
 
 #include <glm/glm.hpp>
 
@@ -35,9 +36,12 @@ namespace Ohm
 		void RecalculateView();
 		void RecalculateProjection();
 
+		bool OnScroll(MouseScrolledEvent& event);
+
 	private:
 
-		float m_Speed = 5.0f;
+		float m_PanSpeed = 5.0f;
+		float m_RotationSpeed = 60.0f;
 
 		float m_FOV = 45.0f;
 		float m_AspectRatio;

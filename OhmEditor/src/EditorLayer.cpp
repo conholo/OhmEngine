@@ -54,5 +54,6 @@ namespace Ohm
 
 	void EditorLayer::OnEvent(Event& event)
 	{
+		m_Camera.OnEvent(event);
 	}
 }

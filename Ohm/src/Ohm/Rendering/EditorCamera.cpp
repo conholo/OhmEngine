@@ -28,7 +28,6 @@ namespace Ohm
 		return m_FocalPoint - Forward() * m_DistanceFromFocalPoint + m_PositionDelta;
 	}
 
-
 	glm::quat EditorCamera::CalculateOrientation() const
 	{
 		return glm::quat(glm::vec3(-m_Pitch, -m_Yaw, 0.0f));
@@ -62,19 +61,40 @@ namespace Ohm
 
 		if (Input::IsMouseButtonPressed(2))
 		{
-			const float yawSign = Up().y < 0.0f ? -1.0f : 1.0f;
-			m_YawDelta += yawSign * mouseDelta.x * m_Speed * dt.Seconds();
-			m_PitchDelta += mouseDelta.y * m_Speed * dt.Seconds();
+			if (Input::IsKeyPressed(Key::LeftAlt))
+			{
+				// Reset Rotation
+				m_Yaw = 0.0f;
+				m_Pitch = 0.0f;
+			}
+			else
+			{
+				// Fly forward/back
+				if (Input::IsKeyPressed(Key::W))
+					m_PositionDelta += Forward() * m_PanSpeed * dt.Seconds();
+				if (Input::IsKeyPressed(Key::S))
+					m_PositionDelta -= Forward() * m_PanSpeed * dt.Seconds();
+
+				// Pitch/Yaw adjustment from mouse pan
+				const float yawSign = Up().y < 0.0f ? -1.0f : 1.0f;
+				m_YawDelta += yawSign * mouseDelta.x * m_RotationSpeed * dt.Seconds();
+				m_PitchDelta += mouseDelta.y * m_RotationSpeed * dt.Seconds();
+			}
+		}
+		else
+		{
+			// Fly up/down
+			if (Input::IsKeyPressed(Key::W))
+				m_PositionDelta += Up() * m_PanSpeed * dt.Seconds();
+			if (Input::IsKeyPressed(Key::S))
+				m_PositionDelta -= Up() * m_PanSpeed * dt.Seconds();
 		}
 
+		// Fly left/right
 		if (Input::IsKeyPressed(Key::A))
-			m_PositionDelta -= Right() * m_Speed * dt.Seconds();
+			m_PositionDelta -= Right() * m_PanSpeed * dt.Seconds();
 		if(Input::IsKeyPressed(Key::D))
-			m_PositionDelta += Right() * m_Speed * dt.Seconds();
-		if (Input::IsKeyPressed(Key::W))
-			m_PositionDelta += Up() * m_Speed * dt.Seconds();
-		if (Input::IsKeyPressed(Key::S))
-			m_PositionDelta -= Up() * m_Speed * dt.Seconds();
+			m_PositionDelta += Right() * m_PanSpeed * dt.Seconds();
 
 
 		m_Position += m_PositionDelta;
@@ -82,12 +102,31 @@ namespace Ohm
 		m_Pitch += m_PitchDelta;
 
 		m_CurrentMousePosition = mousePosition;
-		CalculatePosition();
 		RecalculateView();
 	}
 
 	void EditorCamera::OnEvent(Event& event)
 	{
+		EventDispatcher dispatcher(event);
+
+		dispatcher.Dispatch<MouseScrolledEvent>(OHM_BIND_FN(EditorCamera::OnScroll));
+	}
+
+	bool EditorCamera::OnScroll(MouseScrolledEvent& event)
+	{
+		m_DistanceFromFocalPoint -= event.GetYOffset();
+		m_Position = m_FocalPoint - Forward() * m_DistanceFromFocalPoint;
+
+		if (m_DistanceFromFocalPoint > 1.0f)
+		{
+			m_FocalPoint += Forward();
+			m_DistanceFromFocalPoint = 1.0f;
+		}
+
+		m_PositionDelta += event.GetYOffset() * Forward();
+
+		RecalculateView();
+		return true;
 	}
 
 	void EditorCamera::SetViewportSize(uint32_t width, uint32_t height)
