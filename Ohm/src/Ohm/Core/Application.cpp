@@ -33,6 +33,9 @@ namespace Ohm
 			Time deltaTime = time - m_LastFrameTime;
 			m_LastFrameTime = time;
 
+			RenderCommand::Clear();
+			RenderCommand::ClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+
 			for (auto* layer : m_LayerStack)
 				layer->OnUpdate(deltaTime);
 

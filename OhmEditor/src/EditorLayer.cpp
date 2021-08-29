@@ -1,5 +1,6 @@
 #include "EditorLayer.h"
 
+#include "Ohm/Editor/EditorScene.h"
 #include <glm/glm.hpp>
 
 
@@ -18,28 +19,27 @@ namespace Ohm
 
 	void EditorLayer::OnAttach()
 	{
+		m_Scene = CreateRef<Scene>("Test Scene");
 
+		
+		Entity blueSquare = m_Scene->Create("Blue Square");
+		Entity blueRectangle = m_Scene->Create("Blue Rectangle");
+
+		auto& squareTranslation = blueSquare.GetComponent<TransformComponent>().Translation;
+		squareTranslation = m_QuadPosition;
+
+		auto& rectangleTranslation = blueRectangle.GetComponent<TransformComponent>().Translation;
+		rectangleTranslation = m_PlanePosition;
+		auto& rectangleSize = blueRectangle.GetComponent<TransformComponent>().Scale;
+		rectangleSize = m_PlaneSize;
+
+		EditorScene::LoadScene(m_Scene);
 	}
 
 	void EditorLayer::OnUpdate(Time dt)
 	{
-		if (Input::IsKeyPressed(Key::Space))
-		{
-			OHM_INFO("On Update");
-		}
-
 		m_Camera.Update(dt);
-
-		RenderCommand::Clear();
-		RenderCommand::ClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		Renderer::BeginScene(m_Camera, Primitive::Quad);
-		Renderer::UploadModelData(m_QuadPosition, m_QuadSize);
-		Renderer::EndScene();
-
-		Renderer::BeginScene(m_Camera, Primitive::Quad);
-		Renderer::UploadModelData(m_PlanePosition, m_PlaneSize);
-		Renderer::EndScene();
-
+		EditorScene::RenderScene(m_Camera);
 	}
 
 	void EditorLayer::OnDetach()

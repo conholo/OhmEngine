@@ -27,5 +27,6 @@ namespace Ohm
 		glm::vec3 m_PlaneSize{ 5.0f, 1.0f, 5.0f };
 
 		EditorCamera m_Camera;
+		Ref<Scene> m_Scene;
 	};
 }

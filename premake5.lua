@@ -15,6 +15,7 @@ IncludeDirectories = {}
 IncludeDirectories["GLFW"] = "Ohm/vendor/GLFW/include"
 IncludeDirectories["glad"] = "Ohm/vendor/glad/include"
 IncludeDirectories["glm"] = "Ohm/vendor/glm"
+IncludeDirectories["entt"] = "Ohm/vendor/entt/include"
 
 
 group "Dependencies"
@@ -37,6 +38,7 @@ project "Ohm"
 		"%{prj.name}/src/**.cpp",
 		"%{prj.name}/vendor/glm/glm/**.hpp",
 		"%{prj.name}/vendor/glm/glm/**.inl",
+		"%{prj.name}/vendor/entt/include/entt.hpp",
 	}
 
 	includedirs 
@@ -46,6 +48,7 @@ project "Ohm"
 		"%{IncludeDirectories.GLFW}",
 		"%{IncludeDirectories.glad}",
 		"%{IncludeDirectories.glm}",
+		"%{IncludeDirectories.entt}",
 	}
 
 	links
@@ -75,6 +78,7 @@ project "Ohm"
 		runtime "Release"
 		optimize "on"
 
+
 project "OhmEditor"
 	kind "ConsoleApp"
 	language "C++"
@@ -96,6 +100,7 @@ project "OhmEditor"
 		"Ohm/vendor",
 		"Ohm/vendor/spdlog/include",
 		"%{IncludeDirectories.glm}",
+		"%{IncludeDirectories.entt}",
 	}
 
 	links 

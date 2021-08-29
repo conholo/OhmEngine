@@ -10,6 +10,13 @@
 //--------------------- CORE ---------------------//
 
 
+//--------------------- Scene ---------------------//
+#include "Ohm/Scene/Component.h"
+#include "Ohm/Scene/Scene.h"
+#include "Ohm/Scene/Entity.h"
+//--------------------- Scene ---------------------//
+
+
 //--------------------- RENDERING ---------------------//
 #include "Ohm/Rendering/VertexArray.h"
 #include "Ohm/Rendering/Shader.h"
