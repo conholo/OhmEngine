@@ -1,6 +1,9 @@
 #pragma once
 
 #include "Ohm/Rendering/Vertex.h"
+#include "Ohm/Rendering/BufferLayout.h"
+#include "Ohm/Rendering/IndexBuffer.h"
+#include "Ohm/Rendering/VertexBuffer.h"
 
 namespace Ohm
 {
@@ -16,30 +19,21 @@ namespace Ohm
 
 		Mesh() = default;
 		Mesh(const Mesh&) = default;
-		Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
-			:m_Vertices(vertices), m_Indices(indices){ }
-		Mesh(const std::initializer_list<Vertex>& vertices, const std::initializer_list<uint32_t>& indices)
-			:m_Vertices(vertices), m_Indices(indices) { }
-
-		std::vector<Vertex>::iterator begin() { return m_Vertices.begin(); }
-		std::vector<Vertex>::iterator end() { return m_Vertices.end(); }
-
-		std::vector<Vertex>::const_iterator begin() const { return m_Vertices.begin(); }
-		std::vector<Vertex>::const_iterator end() const { return m_Vertices.end(); }
-
-		std::vector<Vertex>& GetVertices() { return m_Vertices; }
-		std::vector<uint32_t>& GetIndices() { return  m_Indices; }
-
+		Mesh(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
 
 		static Ref<Mesh> CreatePrimitive(Primitive primitive);
 
+		const Ref<IndexBuffer>& GetIndexBuffer() const { return m_IndexBuffer; }
+		const Ref<VertexBuffer>& GetVertexBuffer() const { return m_VertexBuffer; }
+
 	private:
+		void CreateRenderPrimitives(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
 		static Ref<Mesh> Quad();
 		static Ref<Mesh> Cube();
 
 	private:
-		std::vector<Vertex> m_Vertices;
-		std::vector<uint32_t> m_Indices;
+		Ref<VertexBuffer> m_VertexBuffer;
+		Ref<IndexBuffer> m_IndexBuffer;
 	};
 
 

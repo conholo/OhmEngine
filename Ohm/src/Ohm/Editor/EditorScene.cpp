@@ -24,11 +24,7 @@ namespace Ohm
 		{
 			auto [transform, meshRenderer] = group.get<TransformComponent, MeshRendererComponent>(entity);
 
-			Renderer::BeginScene(camera, meshRenderer);
-
-			Renderer::UploadModelData(transform.Transform());
-
-			Renderer::EndScene();
+			Renderer::DrawMesh(camera, meshRenderer, transform);
 		}
 	}
 }

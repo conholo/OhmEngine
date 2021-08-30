@@ -21,19 +21,19 @@ namespace Ohm
 	{
 		m_Scene = CreateRef<Scene>("Test Scene");
 
-		
 		Entity blueSquare = m_Scene->Create("Blue Square");
 		Entity blueRectangle = m_Scene->Create("Blue Rectangle");
 
-		Ref<Shader> flatColorShader = CreateRef<Shader>("assets/shaders/flatcolor.shader");
-		Ref<Mesh> quadMesh = Mesh::CreatePrimitive(Primitive::Cube);
+		Ref<Shader> flatColorShader = CreateRef<Shader>("assets/shaders/Blinn-Phong.shader");
+		Ref<Mesh> cubeMesh = Mesh::CreatePrimitive(Primitive::Cube);
 
-		blueSquare.AddComponent<MeshRendererComponent>(flatColorShader, glm::vec4(1.0f, 1.0f, 0.0f, 1.0f), quadMesh);
-		blueRectangle.AddComponent<MeshRendererComponent>(flatColorShader, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f), quadMesh);
-
+		blueSquare.AddComponent<MeshRendererComponent>(flatColorShader, glm::vec4(1.0f, 1.0f, 0.0f, 1.0f), cubeMesh);
+		blueRectangle.AddComponent<MeshRendererComponent>(flatColorShader, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f), cubeMesh);
 
 		auto& squareTranslation = blueSquare.GetComponent<TransformComponent>().Translation;
 		squareTranslation = m_QuadPosition;
+		auto& squareRotation = blueSquare.GetComponent<TransformComponent>().Rotation;
+		squareRotation = glm::vec3(0.0f, 0.0f, 0.0f);
 
 		auto& rectangleTranslation = blueRectangle.GetComponent<TransformComponent>().Translation;
 		rectangleTranslation = m_PlanePosition;

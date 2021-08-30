@@ -29,6 +29,8 @@ namespace Ohm
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_DEPTH_TEST);
+
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	}
 
 	void RenderCommand::Clear()
@@ -46,8 +48,8 @@ namespace Ohm
 		glClearColor(r, g, b, a);
 	}
 
-	void RenderCommand::DrawIndexed(const Ref<VertexArray>& vertexArray)
+	void RenderCommand::DrawIndexed(const Ref<VertexArray>& vertexArray, uint32_t indexCount)
 	{
-		glDrawElements(GL_TRIANGLES, vertexArray->GetIndexBuffer()->GetCount(), GL_UNSIGNED_INT, nullptr);
+		glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr);
 	}
 }

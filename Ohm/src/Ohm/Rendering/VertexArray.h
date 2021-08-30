@@ -14,18 +14,9 @@ namespace Ohm
 		void Bind() const;
 		void Unbind() const;
 
-		void AddVertexBuffer(const Ref<VertexBuffer>& vertexBuffer);
-		void SetIndexBuffer(const Ref<IndexBuffer>& indexBuffer);
-
-		const std::vector<Ref<VertexBuffer>>& GetVertexBuffers() const { return m_VertexBuffers; }
-		const Ref<IndexBuffer>& GetIndexBuffer() const { return m_IndexBuffer; }
-
-		void Flush();
+		void EnableVertexAttributes(const Ref<VertexBuffer>& vertexBuffer);
 
 	private:
 		uint32_t m_ID;
-
-		std::vector<Ref<VertexBuffer>> m_VertexBuffers;
-		Ref<IndexBuffer> m_IndexBuffer;
 	};
 }

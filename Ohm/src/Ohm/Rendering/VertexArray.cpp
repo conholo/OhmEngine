@@ -40,7 +40,7 @@ namespace Ohm
 		glBindVertexArray(0);
 	}
 
-	void VertexArray::AddVertexBuffer(const Ref<VertexBuffer>& vertexBuffer)
+	void VertexArray::EnableVertexAttributes(const Ref<VertexBuffer>& vertexBuffer)
 	{
 		glBindVertexArray(m_ID);
 		vertexBuffer->Bind();
@@ -61,21 +61,5 @@ namespace Ohm
 			);
 			index++;
 		}
-
-		m_VertexBuffers.push_back(vertexBuffer);
-	}
-
-	void VertexArray::SetIndexBuffer(const Ref<IndexBuffer>& indexBuffer)
-	{
-		glBindVertexArray(m_ID);
-		indexBuffer->Bind();
-
-		m_IndexBuffer = indexBuffer;
-	}
-
-	void VertexArray::Flush()
-	{
-		m_VertexBuffers.clear();
-		m_IndexBuffer = nullptr;
 	}
 }

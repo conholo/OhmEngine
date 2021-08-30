@@ -12,6 +12,6 @@ namespace Ohm
 		static void Clear();
 		static void SetViewport(uint32_t width, uint32_t height);
 		static void ClearColor(float r, float g, float b, float a);
-		static void DrawIndexed(const Ref<VertexArray>& vertexArray);
+		static void DrawIndexed(const Ref<VertexArray>& vertexArray, uint32_t indexCount);
 	};
 }
