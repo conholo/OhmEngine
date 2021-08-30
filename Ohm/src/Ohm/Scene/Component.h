@@ -10,6 +10,7 @@
 
 #include "Ohm/Core/Memory.h"
 #include "Ohm/Rendering/Shader.h"
+#include "Ohm/Rendering/Mesh.h"
 
 namespace Ohm
 {
@@ -56,18 +57,12 @@ namespace Ohm
 		glm::vec4 Color{ 1.0f };
 		Ref<Shader> MaterialShader;
 
-
-		// TODO:: Make Vertex/Geometry Data Class/Struct
-		float* Vertices;
-		uint32_t VertexCount;
-
-		uint32_t* Indices;
-		uint32_t IndexCount;
+		Ref<Mesh> MeshData;
 
 		MeshRendererComponent() = default;
 		MeshRendererComponent(const MeshRendererComponent&) = default;
-		MeshRendererComponent(const Ref<Shader>& shader, const glm::vec4& color, float* vertices, uint32_t vertexCount, uint32_t* indices, uint32_t indexCount)
-			:MaterialShader(shader), Color(color), Vertices(vertices), VertexCount(vertexCount), Indices(indices), IndexCount(indexCount){ }
+		MeshRendererComponent(const Ref<Shader>& shader, const glm::vec4& color, const Ref<Mesh>& mesh)
+			:MaterialShader(shader), Color(color), MeshData(mesh) { }
 	};
 
 	struct CameraComponent

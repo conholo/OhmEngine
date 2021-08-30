@@ -25,6 +25,13 @@ namespace Ohm
 		Entity blueSquare = m_Scene->Create("Blue Square");
 		Entity blueRectangle = m_Scene->Create("Blue Rectangle");
 
+		Ref<Shader> flatColorShader = CreateRef<Shader>("assets/shaders/flatcolor.shader");
+		Ref<Mesh> quadMesh = Mesh::CreatePrimitive(Primitive::Cube);
+
+		blueSquare.AddComponent<MeshRendererComponent>(flatColorShader, glm::vec4(1.0f, 1.0f, 0.0f, 1.0f), quadMesh);
+		blueRectangle.AddComponent<MeshRendererComponent>(flatColorShader, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f), quadMesh);
+
+
 		auto& squareTranslation = blueSquare.GetComponent<TransformComponent>().Translation;
 		squareTranslation = m_QuadPosition;
 

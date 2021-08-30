@@ -20,6 +20,8 @@ namespace Ohm
 		const std::vector<Ref<VertexBuffer>>& GetVertexBuffers() const { return m_VertexBuffers; }
 		const Ref<IndexBuffer>& GetIndexBuffer() const { return m_IndexBuffer; }
 
+		void Flush();
+
 	private:
 		uint32_t m_ID;
 

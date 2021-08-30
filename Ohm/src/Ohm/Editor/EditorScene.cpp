@@ -18,13 +18,13 @@ namespace Ohm
 
 	void EditorScene::RenderScene(const EditorCamera& camera)
 	{
-		auto view = s_ActiveScene->m_Registry.view<TransformComponent>();
+		auto group = s_ActiveScene->m_Registry.group<TransformComponent, MeshRendererComponent>();
 
-		for (auto entity : view)
+		for (auto entity : group)
 		{
-			Renderer::BeginScene(camera, Primitive::Quad);
+			auto [transform, meshRenderer] = group.get<TransformComponent, MeshRendererComponent>(entity);
 
-			auto transform = view.get<TransformComponent>(entity);
+			Renderer::BeginScene(camera, meshRenderer);
 
 			Renderer::UploadModelData(transform.Transform());
 

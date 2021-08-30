@@ -72,4 +72,10 @@ namespace Ohm
 
 		m_IndexBuffer = indexBuffer;
 	}
+
+	void VertexArray::Flush()
+	{
+		m_VertexBuffers.clear();
+		m_IndexBuffer = nullptr;
+	}
 }

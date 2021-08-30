@@ -24,26 +24,19 @@ namespace Ohm
 	{
 		s_RenderData = new RenderData();
 
-		std::unordered_map<Primitive, GeometryData> primitives;
-
-		GeometryData quadData(
-			{
-				Vertex{ {-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f} },
-				Vertex{ { 0.5f, -0.5f, 0.0f}, {1.0f, 0.0f} },
-				Vertex{ { 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f} },
-				Vertex{ {-0.5f,  0.5f, 0.0f}, {0.0f, 1.0f} },
-			},
-			{ 0, 1, 2, 2, 3, 0 }
-		);
-
-		primitives[Primitive::Quad] = quadData;
-
-
 		s_RenderData->VAO = CreateRef<VertexArray>();
-		s_RenderData->Shader = CreateRef<Shader>("assets/shaders/flatcolor.shader");
+	}
 
-		float* basePtr = &(*quadData.Vertices.data()).VertexPosition.x;
-		Ref<VertexBuffer> vertexBuffer = CreateRef<VertexBuffer>(basePtr, sizeof(Vertex) * quadData.Vertices.size());
+	void Renderer::BeginScene(const EditorCamera& camera, const MeshRendererComponent& meshRenderer)
+	{
+		s_RenderData->VAO->Bind();
+		s_RenderData->Shader = meshRenderer.MaterialShader;
+
+		std::vector<Vertex> vertices = meshRenderer.MeshData->GetVertices();
+		float* basePtr = &vertices.data()->VertexPosition.x;
+
+
+		Ref<VertexBuffer> vertexBuffer = CreateRef<VertexBuffer>(basePtr, sizeof(Vertex) * meshRenderer.MeshData->GetVertices().size());
 
 		BufferLayout layout(
 			{
@@ -54,17 +47,14 @@ namespace Ohm
 
 		vertexBuffer->SetLayout(layout);
 
-		uint32_t* indexPtr = quadData.Indices.data();
-		Ref<IndexBuffer> indexBuffer = CreateRef<IndexBuffer>(indexPtr, quadData.Indices.size());
+		uint32_t* indexPtr = meshRenderer.MeshData->GetIndices().data();
+		Ref<IndexBuffer> indexBuffer = CreateRef<IndexBuffer>(indexPtr, meshRenderer.MeshData->GetIndices().size());
 
 		s_RenderData->VAO->AddVertexBuffer(vertexBuffer);
 		s_RenderData->VAO->SetIndexBuffer(indexBuffer);
 
-	}
-
-	void Renderer::BeginScene(const EditorCamera& camera, Primitive primitve)
-	{
 		s_RenderData->Shader->Bind();
+		s_RenderData->Shader->UploadUniformFloat4("u_Color", meshRenderer.Color);
 		s_RenderData->Shader->UploadUniformMat4("u_ProjectionView", camera.GetProjectionView());
 	}
 
@@ -86,6 +76,7 @@ namespace Ohm
 	void Renderer::EndScene()
 	{
 		RenderCommand::DrawIndexed(s_RenderData->VAO);
+		s_RenderData->VAO->Flush();
 	}
 
 	void Renderer::Shutdown()
