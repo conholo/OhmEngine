@@ -14,6 +14,10 @@
 
 namespace Ohm
 {
+	enum class LightType { Directional, Point, Spot };
+
+
+
 	struct TagComponent
 	{
 		std::string Tag;
@@ -74,5 +78,15 @@ namespace Ohm
 		CameraComponent(const CameraComponent&) = default;
 		CameraComponent(const glm::mat4& view, const glm::mat4& projection)
 			:View(view), Projection(projection) { }
+	};
+
+	struct LightComponent
+	{
+		LightType Type;
+
+		LightComponent() = default;
+		LightComponent(const LightComponent&) = default;
+		LightComponent(LightType type)
+			:Type(type) { }
 	};
 }

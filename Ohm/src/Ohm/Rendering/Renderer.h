@@ -9,7 +9,7 @@ namespace Ohm
 	{
 	public:
 		static void Initialize();
-		static void DrawMesh(const EditorCamera& camera, const MeshRendererComponent& meshRenderer, const TransformComponent& transform);
+		static void DrawMesh(const EditorCamera& camera, const MeshRendererComponent& meshRenderer, const TransformComponent& transform, const TransformComponent& lightTransform);
 		static void Shutdown();
 	};
 }

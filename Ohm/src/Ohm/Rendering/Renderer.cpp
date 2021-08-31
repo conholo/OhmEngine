@@ -15,6 +15,7 @@ namespace Ohm
 	{
 		Ref<VertexArray> VAO;
 		Ref<Shader> Shader;
+		glm::vec3 LightPosition = glm::vec3(3.0f, 10.0f, 0.0f);
 	};
 
 	static RenderData* s_RenderData = nullptr;
@@ -27,7 +28,7 @@ namespace Ohm
 		s_RenderData->VAO = CreateRef<VertexArray>();
 	}
 
-	void Renderer::DrawMesh(const EditorCamera& camera, const MeshRendererComponent& meshRenderer, const TransformComponent& transform)
+	void Renderer::DrawMesh(const EditorCamera& camera, const MeshRendererComponent& meshRenderer, const TransformComponent& transform, const TransformComponent& lightTransform)
 	{
 		s_RenderData->VAO->Bind();
 		s_RenderData->Shader = meshRenderer.MaterialShader;
@@ -38,26 +39,17 @@ namespace Ohm
 		s_RenderData->Shader->Bind();
 		s_RenderData->Shader->UploadUniformFloat3("u_CameraPosition", camera.Position());
 
-		// Light position needs to be in view space.
-		glm::vec3 lightPosition = glm::vec3(2.0f, 5.0f, 0.0f);
-		glm::vec3 lightRotation = glm::vec3(0.0f, 0.0f, 0.0f);
-		glm::vec3 lightScale = glm::vec3(1.0f);
+		glm::vec3 toViewSpaceLightPosition = glm::vec3(camera.GetView() * lightTransform.Transform() * glm::vec4(0.0, 0.0, 0.0, 1.0f));
 
-		glm::mat4 lightTransform =
-			glm::translate(glm::mat4(1.0f), lightPosition) *
-			glm::toMat4(glm::quat(lightRotation)) *
-			glm::scale(glm::mat4(1.0f), lightScale);
-
-		glm::vec3 toViewSpaceLightPosition = glm::vec3(camera.GetView() * lightTransform * glm::vec4(0.0, 0.0, 0.0, 1.0f));
-
-		glm::mat4 modelView = transform.Transform() * camera.GetView();
+		glm::mat4 modelView = camera.GetView() * transform.Transform();
 		// Need to work with normals in view space to handle non-uniform scaling.
 		glm::mat4 normalMatrix = glm::transpose(glm::inverse(modelView));
 
 		s_RenderData->Shader->UploadUniformFloat3("u_LightPosition", toViewSpaceLightPosition);
 		s_RenderData->Shader->UploadUniformFloat4("u_Color", meshRenderer.Color);
 		s_RenderData->Shader->UploadUniformMat4("u_NormalMatrix", normalMatrix);
-		s_RenderData->Shader->UploadUniformMat4("u_PVM", camera.GetProjectionView() * transform.Transform());
+		s_RenderData->Shader->UploadUniformMat4("u_ModelView", modelView);
+		s_RenderData->Shader->UploadUniformMat4("u_ProjectionMatrix", camera.GetProjection());
 
 		RenderCommand::DrawIndexed(s_RenderData->VAO, meshRenderer.MeshData->GetIndexBuffer()->GetCount());
 	}

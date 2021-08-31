@@ -28,5 +28,7 @@ namespace Ohm
 
 		EditorCamera m_Camera;
 		Ref<Scene> m_Scene;
+		Entity m_DirectionalLight;
+		float m_ElapsedTime = 0.0f;
 	};
 }
