@@ -59,7 +59,7 @@ namespace Ohm
 		const glm::vec2 mouseDelta = (mousePosition - m_CurrentMousePosition) * 0.002f;
 
 
-		if (Input::IsMouseButtonPressed(2))
+		if (Input::IsMouseButtonPressed(2) || Input::IsMouseButtonPressed(1))
 		{
 			if (Input::IsKeyPressed(Key::LeftAlt))
 			{
