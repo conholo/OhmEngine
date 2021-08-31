@@ -19,12 +19,15 @@ namespace Ohm
 		void OnEvent(Event& event) override;
 
 	private:
+		bool OnWindowResized(WindowResizedEvent& windowResizedEvent);
+
+	private:
 
 		glm::vec3 m_QuadPosition{ 0.0f, 0.0f, 0.0f };
 		glm::vec3 m_QuadSize{ 1.0f, 1.0f, 1.0f };
 
 		glm::vec3 m_PlanePosition{ 0.0f, -2.0f, 0.0f };
-		glm::vec3 m_PlaneSize{ 5.0f, 1.0f, 5.0f };
+		glm::vec3 m_PlaneSize{ 20.0f, 0.01f, 20.0f };
 
 		EditorCamera m_Camera;
 		Ref<Scene> m_Scene;

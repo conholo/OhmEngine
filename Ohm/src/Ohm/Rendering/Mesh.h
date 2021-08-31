@@ -9,7 +9,7 @@ namespace Ohm
 {
 	enum class Primitive
 	{
-		Quad, Cube
+		Quad, Cube, Sphere
 	};
 
 
@@ -26,10 +26,14 @@ namespace Ohm
 		const Ref<IndexBuffer>& GetIndexBuffer() const { return m_IndexBuffer; }
 		const Ref<VertexBuffer>& GetVertexBuffer() const { return m_VertexBuffer; }
 
+		void Unbind() const;
+		void Bind() const;
+
 	private:
 		void CreateRenderPrimitives(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
 		static Ref<Mesh> Quad();
 		static Ref<Mesh> Cube();
+		static Ref<Mesh> Sphere(float radius, uint32_t sectorCount, uint32_t stackCount);
 
 	private:
 		Ref<VertexBuffer> m_VertexBuffer;

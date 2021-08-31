@@ -21,11 +21,13 @@ namespace Ohm
 	{
 		auto group = s_ActiveScene->m_Registry.group<TransformComponent, MeshRendererComponent>();
 
-		auto lightTransform = s_ActiveScene->m_Registry.get<TransformComponent>(directionalLight);
+		auto [lightTransform, light] = s_ActiveScene->m_Registry.get<TransformComponent, LightComponent>(directionalLight);
 
 		for (auto entity : group)
 		{
 			auto [transform, meshRenderer] = group.get<TransformComponent, MeshRendererComponent>(entity);
+
+			if (entity == directionalLight && !light.DebugLight) continue;
 
 			Renderer::DrawMesh(camera, meshRenderer, transform, lightTransform);
 		}

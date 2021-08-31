@@ -18,7 +18,7 @@ namespace Ohm
 		void Update(Time dt);
 		void OnEvent(Event& event);
 
-		void SetViewportSize(uint32_t width, uint32_t height);
+		void SetViewportSize(float width, float height);
 
 		float GetZDistance() const { return m_DistanceFromFocalPoint; }
 		void SetZDistance(float zDistance) { m_DistanceFromFocalPoint = zDistance; }
@@ -30,7 +30,7 @@ namespace Ohm
 		glm::vec3 Forward() const;
 		glm::vec3 Up() const;
 		glm::vec3 Right() const;
-		glm::vec3 Position() const { return m_Position; }
+		glm::vec3 GetPosition() const { return m_Position; }
 
 	private:
 		glm::quat CalculateOrientation() const;

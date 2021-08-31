@@ -129,9 +129,10 @@ namespace Ohm
 		return true;
 	}
 
-	void EditorCamera::SetViewportSize(uint32_t width, uint32_t height)
+	void EditorCamera::SetViewportSize(float width, float height)
 	{
 		m_AspectRatio = width / height;
+		OHM_INFO(m_AspectRatio);
 		RecalculateProjection();
 	}
 

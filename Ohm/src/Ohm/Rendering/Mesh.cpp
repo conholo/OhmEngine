@@ -4,9 +4,23 @@
 
 namespace Ohm
 {
+#define PI 3.14159265359
+
 	Mesh::Mesh(std::vector<Vertex> vertices, std::vector<uint32_t> indices)
 	{
 		CreateRenderPrimitives(vertices, indices);
+	}
+
+	void Mesh::Bind() const
+	{
+		m_VertexBuffer->Bind();
+		m_IndexBuffer->Bind();
+	}
+
+	void Mesh::Unbind() const
+	{
+		m_VertexBuffer->Unbind();
+		m_IndexBuffer->Unbind();
 	}
 
 	void Mesh::CreateRenderPrimitives(std::vector<Vertex> vertices, std::vector<uint32_t> indices)
@@ -34,12 +48,14 @@ namespace Ohm
 		{
 			case Ohm::Primitive::Quad: return Quad();
 			case Ohm::Primitive::Cube: return Cube();
+			case Ohm::Primitive::Sphere: return Sphere(1.0f, 36, 18);
 			default: break;
 		}
 	}
 
 	Ref<Mesh> Mesh::Quad()
 	{
+		// FIX THIS 
 		std::vector<Vertex> vertices =
 		{
 			Vertex{ {-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} },
@@ -122,43 +138,79 @@ namespace Ohm
 			22, 23, 20
 		};
 
-	
-
-		//std::vector<Vertex> vertices =
-		//{
-		//	Vertex{ {-0.5f, -0.5f,  0.5f}, {0.0f, 0.0f} },
-		//	Vertex{ { 0.5f, -0.5f,  0.5f}, {0.0f, 0.0f} },
-		//	Vertex{ { 0.5f,  0.5f,  0.5f}, {0.0f, 0.0f} },
-		//	Vertex{ {-0.5f,  0.5f,  0.5f}, {0.0f, 0.0f} },
-		//
-		//	Vertex{ {-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f} },
-		//	Vertex{ { 0.5f, -0.5f, -0.5f}, {0.0f, 0.0f} },
-		//	Vertex{ { 0.5f,  0.5f, -0.5f}, {0.0f, 0.0f} },
-		//	Vertex{ {-0.5f,  0.5f, -0.5f}, {0.0f, 0.0f} }
-		//};
-		//
-		//std::vector<uint32_t> indices =
-		//{
-		//	// front
-		//	0, 1, 2,
-		//	2, 3, 0,
-		//	// right
-		//	1, 5, 6,
-		//	6, 2, 1,
-		//	// back
-		//	7, 6, 5,
-		//	5, 4, 7,
-		//	// left
-		//	4, 0, 3,
-		//	3, 7, 4,
-		//	// bottom
-		//	4, 5, 1,
-		//	1, 0, 4,
-		//	// top
-		//	3, 2, 6,
-		//	6, 7, 3
-		//};
-
 		return CreateRef<Mesh>(verticesSix, indicesSix);
 	}
+
+	Ref<Mesh> Mesh::Sphere(float radius, uint32_t sectorCount, uint32_t stackCount)
+	{
+		if (radius <= 0)
+			radius = 0.1f;
+
+		std::vector<Vertex> vertices;
+
+		glm::vec3 vertexPosition(0.0f);
+		glm::vec3 normal(0.0f);
+		glm::vec2 texCoords(0.0f);
+
+		float xy;
+		float lengthInverse = 1 / radius;
+
+		float sectorStep = 2 * PI / sectorCount;
+		float stackStep = PI / stackCount;
+		float sectorAngle, stackAngle;
+
+		for (uint32_t i = 0; i <= stackCount; i++)
+		{
+			stackAngle = PI / 2 - i * stackStep;
+			xy = radius * glm::cos(stackAngle);
+			vertexPosition.z = radius * glm::sin(stackAngle);
+
+			for (uint32_t j = 0; j <= sectorCount; j++)
+			{
+				sectorAngle = j * sectorStep;
+
+				vertexPosition.x = xy * glm::cos(sectorAngle);
+				vertexPosition.y = xy * glm::sin(sectorAngle);
+
+				normal.x = vertexPosition.x * lengthInverse;
+				normal.y = vertexPosition.y * lengthInverse;
+				normal.z = vertexPosition.z * lengthInverse;
+
+				texCoords.x = (float)j / sectorCount;
+				texCoords.y = (float)i / stackCount;
+
+				vertices.push_back({ vertexPosition, texCoords, normal });
+			}
+		}
+
+		std::vector<uint32_t> indices;
+
+		int k1, k2;
+
+		for (uint32_t i = 0; i < stackCount; i++)
+		{
+			k1 = i * (sectorCount + 1);
+			k2 = k1 + sectorCount + 1;
+
+			for (uint32_t j = 0; j < sectorCount; j++, k1++, k2++)
+			{
+				if (i != 0)
+				{
+					indices.push_back(k1);
+					indices.push_back(k2);
+					indices.push_back(k1 + 1);
+				}
+
+				if (i != stackCount - 1)
+				{
+					indices.push_back(k1 + 1);
+					indices.push_back(k2);
+					indices.push_back(k2 + 1);
+				}
+			}
+		}
+
+		return CreateRef<Mesh>(vertices, indices);
+	}
+
 }

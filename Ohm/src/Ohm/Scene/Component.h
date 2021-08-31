@@ -83,10 +83,11 @@ namespace Ohm
 	struct LightComponent
 	{
 		LightType Type;
+		bool DebugLight = true;
 
 		LightComponent() = default;
 		LightComponent(const LightComponent&) = default;
-		LightComponent(LightType type)
-			:Type(type) { }
+		LightComponent(LightType type, bool debug = false)
+			:Type(type), DebugLight(debug) { }
 	};
 }
