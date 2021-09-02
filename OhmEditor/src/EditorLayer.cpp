@@ -38,9 +38,12 @@ namespace Ohm
 		m_DirectionalLight.AddComponent<LightComponent>(LightType::Directional, true);
 		m_DirectionalLight.AddComponent<MeshRendererComponent>(flatColorShader, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), cubeMesh);
 		auto& lightTranslation = m_DirectionalLight.GetComponent<TransformComponent>().Translation;
-		lightTranslation = glm::vec3(0.0f, 5.0f, 0.0f);
+		lightTranslation = m_LightPosition;
 		auto& lightScale = m_DirectionalLight.GetComponent<TransformComponent>().Scale;
-		lightScale = glm::vec3(0.5f, 0.5f, 0.5f);
+		lightScale = m_LightSize;
+		auto& lightRotation = m_DirectionalLight.GetComponent<TransformComponent>().Rotation;
+		lightRotation = glm::vec3(glm::radians(m_LightRotationDegrees.x), glm::radians(m_LightRotationDegrees.y), glm::radians(m_LightRotationDegrees.z));
+
 
 		m_Sphere.AddComponent<MeshRendererComponent>(blinnPhongShader, glm::vec4(0.0f, 0.3f, 0.8f, 1.0f), sphereMesh);
 		m_Cube.AddComponent<MeshRendererComponent>(blinnPhongShader, glm::vec4(0.8f, 0.3f, 0.1f, 1.0f), cubeMesh);
@@ -74,6 +77,8 @@ namespace Ohm
 		auto& sphereScale = sphereTransformComponent.Scale;
 		sphereTranslation = m_SpherePosition;
 		sphereScale = m_SphereSize;
+		auto& sphereMeshComponent = m_Sphere.GetComponent<MeshRendererComponent>();
+		sphereMeshComponent.Color = m_SphereColor;
 
 		auto& cubeTransformComponent = m_Cube.GetComponent<TransformComponent>();
 		auto& cubeTranslation = cubeTransformComponent.Translation;
@@ -82,17 +87,32 @@ namespace Ohm
 		cubeTranslation = m_CubePosition;
 		cubeRotation = m_CubeRotation;
 		cubeScale = m_CubeSize;
+		auto& cubeMeshComponent = m_Cube.GetComponent<MeshRendererComponent>();
+		cubeMeshComponent.Color = m_CubeColor;
 
 
-		auto& lightTranslation = m_DirectionalLight.GetComponent<TransformComponent>().Translation;
+		auto& lightTransformComponent = m_DirectionalLight.GetComponent<TransformComponent>();
+		auto& lightTranslation = lightTransformComponent.Translation;
 
+		if (m_LightSpin)
+		{
+			float newX = sin(m_ElapsedTime);
+			float newY = cos(m_ElapsedTime);
+			float newZ = sin(m_ElapsedTime / 2.0f);
+			lightTranslation.x = newX * 15.0f;
+			lightTranslation.y = newY * 15.0f;
+			lightTranslation.z = newZ * 15.0f;
+		}
+		else
+		{
+			auto& lightRotation = lightTransformComponent.Rotation;
+			auto& lightScale = lightTransformComponent.Scale;
 
-		float newX = sin(m_ElapsedTime);
-		float newY = cos(m_ElapsedTime);
-		float newZ = sin(m_ElapsedTime / 2.0f);
-		lightTranslation.x = newX * 15.0f;
-		lightTranslation.y = newY * 15.0f;
-		lightTranslation.z = newZ * 15.0f;
+			lightTranslation = m_LightPosition;
+			lightRotation = m_LightRotation;
+			lightScale = m_LightSize;
+		}
+
 
 		m_Camera.Update(dt);
 		EditorScene::RenderScene(m_Camera, m_DirectionalLight);
@@ -184,9 +204,17 @@ namespace Ohm
 
 		ImGui::Text("Here are some neat settings!");
 
+		ImGui::Text("Directional Light");
+		ImGui::DragFloat3("Light Position", &m_LightPosition[0], 0.1f, -100.0f, 100.f);
+		ImGui::DragFloat3("Light Rotation", &m_LightRotationDegrees[0], 0.1f);
+		m_LightRotation = glm::vec3(glm::radians(m_LightRotationDegrees.x), glm::radians(m_LightRotationDegrees.y), glm::radians(m_LightRotationDegrees.z));
+		ImGui::DragFloat3("Light Scale", &m_LightSize[0], 0.1f, -100.0f, 100.f);
+		ImGui::Checkbox("Light Animation", &m_LightSpin);
+
 		ImGui::Text("Sphere");
 		ImGui::DragFloat3("Sphere Position", &m_SpherePosition[0], 0.1f, -100.0f, 100.f);
 		ImGui::DragFloat3("Sphere Scale", &m_SphereSize[0], 0.1f, -100.0f, 100.f);
+		ImGui::ColorPicker4("Sphere Color", &m_SphereColor[0]);
 
 		ImGui::Text("Cube");
 		ImGui::DragFloat3("Cube Position", &m_CubePosition[0], 0.1f, -100.0f, 100.f);
@@ -194,6 +222,7 @@ namespace Ohm
 		ImGui::DragFloat3("Cube Rotation", &m_CubeRotationDegrees[0], 0.1f);
 		m_CubeRotation = glm::vec3(glm::radians(m_CubeRotationDegrees.x), glm::radians(m_CubeRotationDegrees.y), glm::radians(m_CubeRotationDegrees.z));
 		ImGui::DragFloat3("Cube Scale", &m_CubeSize[0], 0.1f, -100.0f, 100.f);
+		ImGui::ColorPicker4("Cube Color", &m_CubeColor[0]);
 
 
 		ImGui::End();

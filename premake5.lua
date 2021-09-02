@@ -17,6 +17,7 @@ IncludeDirectories["glad"] = "Ohm/vendor/glad/include"
 IncludeDirectories["glm"] = "Ohm/vendor/glm"
 IncludeDirectories["entt"] = "Ohm/vendor/entt/include"
 IncludeDirectories["ImGui"] = "Ohm/vendor/ImGui"
+IncludeDirectories["stb_image"] = "Ohm/vendor/stb_image"
 
 
 group "Dependencies"
@@ -44,6 +45,8 @@ project "Ohm"
 	{
 		"%{prj.name}/src/**.h",
 		"%{prj.name}/src/**.cpp",
+		"%{prj.name}/vendor/stb_image/stb_image.h",
+		"%{prj.name}/vendor/stb_image/stb_image.cpp",
 		"%{prj.name}/vendor/glm/glm/**.hpp",
 		"%{prj.name}/vendor/glm/glm/**.inl",
 		"%{prj.name}/vendor/entt/include/entt.hpp",
@@ -58,6 +61,7 @@ project "Ohm"
 		"%{IncludeDirectories.glm}",
 		"%{IncludeDirectories.entt}",
 		"%{IncludeDirectories.ImGui}",
+		"%{IncludeDirectories.stb_image}",
 	}
 
 	links
