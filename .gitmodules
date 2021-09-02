@@ -10,3 +10,6 @@
 	path = Ohm/vendor/spdlog
 	url = https://github.com/gabime/spdlog
 	ignore = untracked
+[submodule "Ohm/vendor/imgui"]
+	path = Ohm/vendor/imgui
+	url = https://github.com/TheCherno/imgui

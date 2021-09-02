@@ -1,5 +1,7 @@
 #include "EditorLayer.h"
 
+#include <imgui/imgui.h>
+
 #include "Ohm/Editor/EditorScene.h"
 #include <glm/glm.hpp>
 
@@ -22,9 +24,9 @@ namespace Ohm
 	{
 		m_Scene = CreateRef<Scene>("Test Scene");
 
-		Entity blueSquare = m_Scene->Create("Blue Square");
+		m_Cube = m_Scene->Create("Cube");
 		Entity blueRectangle = m_Scene->Create("Blue Rectangle");
-		Entity sphere = m_Scene->Create("Sphere");
+		m_Sphere = m_Scene->Create("Sphere");
 		m_DirectionalLight = m_Scene->Create("Directional Light");
 
 		Ref<Shader> blinnPhongShader = CreateRef<Shader>("assets/shaders/Blinn-Phong.shader");
@@ -40,19 +42,20 @@ namespace Ohm
 		auto& lightScale = m_DirectionalLight.GetComponent<TransformComponent>().Scale;
 		lightScale = glm::vec3(0.5f, 0.5f, 0.5f);
 
-		sphere.AddComponent<MeshRendererComponent>(blinnPhongShader, glm::vec4(0.0f, 0.3f, 0.8f, 1.0f), sphereMesh);
-		blueSquare.AddComponent<MeshRendererComponent>(blinnPhongShader, glm::vec4(0.8f, 0.3f, 0.1f, 1.0f), cubeMesh);
+		m_Sphere.AddComponent<MeshRendererComponent>(blinnPhongShader, glm::vec4(0.0f, 0.3f, 0.8f, 1.0f), sphereMesh);
+		m_Cube.AddComponent<MeshRendererComponent>(blinnPhongShader, glm::vec4(0.8f, 0.3f, 0.1f, 1.0f), cubeMesh);
 		blueRectangle.AddComponent<MeshRendererComponent>(blinnPhongShader, glm::vec4(0.1f, .8f, 0.0f, 1.0f), cubeMesh);
 
-		auto& sphereTranslation = sphere.GetComponent<TransformComponent>().Translation;
-		sphereTranslation = glm::vec3(0.0f, 2.5f, 0.0f);
+		auto& sphereTranslation = m_Sphere.GetComponent<TransformComponent>().Translation;
+		sphereTranslation = m_SpherePosition;
 
-		auto& squareTranslation = blueSquare.GetComponent<TransformComponent>().Translation;
-		squareTranslation = m_QuadPosition;
-		auto& squareRotation = blueSquare.GetComponent<TransformComponent>().Rotation;
-		squareRotation = glm::vec3(glm::radians(45.0f), glm::radians(45.0f), 0.0f);
-		auto& squareScale = blueSquare.GetComponent<TransformComponent>().Scale;
-		squareScale = glm::vec3(2.0f, 2.0f, 2.0f);
+		auto& cubeTranslation = m_Cube.GetComponent<TransformComponent>().Translation;
+		cubeTranslation = m_CubePosition;
+		auto& cubeRotation = m_Cube.GetComponent<TransformComponent>().Rotation;
+		m_CubeRotation = glm::vec3(glm::radians(m_CubeRotationDegrees.x), glm::radians(m_CubeRotationDegrees.y), glm::radians(m_CubeRotationDegrees.z));
+		cubeRotation = m_CubeRotation;
+		auto& cubeScale = m_Cube.GetComponent<TransformComponent>().Scale;
+		cubeScale = m_CubeSize;
 
 		auto& rectangleTranslation = blueRectangle.GetComponent<TransformComponent>().Translation;
 		rectangleTranslation = m_PlanePosition;
@@ -65,7 +68,24 @@ namespace Ohm
 	void EditorLayer::OnUpdate(Time dt)
 	{
 		m_ElapsedTime += dt;
+
+		auto& sphereTransformComponent = m_Sphere.GetComponent<TransformComponent>();
+		auto& sphereTranslation = sphereTransformComponent.Translation;
+		auto& sphereScale = sphereTransformComponent.Scale;
+		sphereTranslation = m_SpherePosition;
+		sphereScale = m_SphereSize;
+
+		auto& cubeTransformComponent = m_Cube.GetComponent<TransformComponent>();
+		auto& cubeTranslation = cubeTransformComponent.Translation;
+		auto& cubeRotation = cubeTransformComponent.Rotation;
+		auto& cubeScale = cubeTransformComponent.Scale;
+		cubeTranslation = m_CubePosition;
+		cubeRotation = m_CubeRotation;
+		cubeScale = m_CubeSize;
+
+
 		auto& lightTranslation = m_DirectionalLight.GetComponent<TransformComponent>().Translation;
+
 
 		float newX = sin(m_ElapsedTime);
 		float newY = cos(m_ElapsedTime);
@@ -85,7 +105,100 @@ namespace Ohm
 
 	void EditorLayer::OnUIRender()
 	{
+		static bool dockspaceOpen = true;
+		static bool opt_fullscreen = false;
+		static bool opt_padding = false;
+		static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
 
+		// We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
+		// because it would be confusing to have two docking targets within each others.
+		ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+		if (opt_fullscreen)
+		{
+			const ImGuiViewport* viewport = ImGui::GetMainViewport();
+			ImGui::SetNextWindowPos(viewport->WorkPos);
+			ImGui::SetNextWindowSize(viewport->WorkSize);
+			ImGui::SetNextWindowViewport(viewport->ID);
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+			window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+			window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+		}
+		else
+		{
+			dockspace_flags &= ~ImGuiDockNodeFlags_PassthruCentralNode;
+		}
+
+		// When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will render our background
+		// and handle the pass-thru hole, so we ask Begin() to not render a background.
+		if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
+			window_flags |= ImGuiWindowFlags_NoBackground;
+
+		// Important: note that we proceed even if Begin() returns false (aka window is collapsed).
+		// This is because we want to keep our DockSpace() active. If a DockSpace() is inactive,
+		// all active windows docked into it will lose their parent and become undocked.
+		// We cannot preserve the docking relationship between an active window and an inactive docking, otherwise
+		// any change of dockspace/settings would lead to windows being stuck in limbo and never being visible.
+		if (!opt_padding)
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		ImGui::Begin("DockSpace Demo", &dockspaceOpen, window_flags);
+
+		if (!opt_padding)
+			ImGui::PopStyleVar();
+
+		if (opt_fullscreen)
+			ImGui::PopStyleVar(2);
+
+		// Submit the DockSpace
+		ImGuiIO& io = ImGui::GetIO();
+		if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
+		{
+			ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+			ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+		}
+
+		if (ImGui::BeginMenuBar())
+		{
+			if (ImGui::BeginMenu("File"))
+			{
+				// Disabling fullscreen would allow the window to be moved to the front of other windows,
+				// which we can't undo at the moment without finer window depth/z control.
+				ImGui::MenuItem("Fullscreen", NULL, &opt_fullscreen);
+				ImGui::MenuItem("Padding", NULL, &opt_padding);
+				ImGui::Separator();
+
+				if (ImGui::MenuItem("Quit"))
+				{
+					Application::Close();
+				}
+
+				ImGui::Separator();
+
+				ImGui::EndMenu();
+			}
+
+			ImGui::EndMenuBar();
+		}
+
+		ImGui::Begin("Settings");
+
+		ImGui::Text("Here are some neat settings!");
+
+		ImGui::Text("Sphere");
+		ImGui::DragFloat3("Sphere Position", &m_SpherePosition[0], 0.1f, -100.0f, 100.f);
+		ImGui::DragFloat3("Sphere Scale", &m_SphereSize[0], 0.1f, -100.0f, 100.f);
+
+		ImGui::Text("Cube");
+		ImGui::DragFloat3("Cube Position", &m_CubePosition[0], 0.1f, -100.0f, 100.f);
+
+		ImGui::DragFloat3("Cube Rotation", &m_CubeRotationDegrees[0], 0.1f);
+		m_CubeRotation = glm::vec3(glm::radians(m_CubeRotationDegrees.x), glm::radians(m_CubeRotationDegrees.y), glm::radians(m_CubeRotationDegrees.z));
+		ImGui::DragFloat3("Cube Scale", &m_CubeSize[0], 0.1f, -100.0f, 100.f);
+
+
+		ImGui::End();
+
+		ImGui::End();
 	}
 
 	void EditorLayer::OnEvent(Event& event)
@@ -99,7 +212,6 @@ namespace Ohm
 	bool EditorLayer::OnWindowResized(WindowResizedEvent& windowResizedEvent)
 	{
 		m_Camera.SetViewportSize((float)windowResizedEvent.GetWidth(), (float)windowResizedEvent.GetHeight());
-
 		return true;
 	}
 }

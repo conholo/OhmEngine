@@ -16,11 +16,13 @@ IncludeDirectories["GLFW"] = "Ohm/vendor/GLFW/include"
 IncludeDirectories["glad"] = "Ohm/vendor/glad/include"
 IncludeDirectories["glm"] = "Ohm/vendor/glm"
 IncludeDirectories["entt"] = "Ohm/vendor/entt/include"
+IncludeDirectories["ImGui"] = "Ohm/vendor/ImGui"
 
 
 group "Dependencies"
 	include "Ohm/vendor/GLFW"
 	include "Ohm/vendor/glad"
+	include "Ohm/vendor/ImGui"
 group ""
 
 project "Ohm"
@@ -31,6 +33,12 @@ project "Ohm"
 
 	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+
+	defines
+	{
+		"_CRT_SECURE_NO_WARNINGS",
+		"GLFW_INCLUDE_NONE"
+	}
 
 	files
 	{
@@ -49,12 +57,14 @@ project "Ohm"
 		"%{IncludeDirectories.glad}",
 		"%{IncludeDirectories.glm}",
 		"%{IncludeDirectories.entt}",
+		"%{IncludeDirectories.ImGui}",
 	}
 
 	links
 	{
 		"GLFW",
-		"glad"
+		"glad",
+		"ImGui"
 	}
 
 	pchheader "ohmpch.h"

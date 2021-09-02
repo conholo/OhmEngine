@@ -15,8 +15,8 @@ namespace Ohm
 
 		virtual void OnAttach() = 0;
 		virtual void OnDetach() = 0;
-		virtual void OnUpdate(Time dt) = 0;
-		virtual void OnEvent(Event& event) = 0;
+		virtual void OnUpdate(Time dt) { }
+		virtual void OnEvent(Event& event) { }
 		virtual void OnUIRender() { }
 
 		const std::string& GetName() const { return m_Name; }

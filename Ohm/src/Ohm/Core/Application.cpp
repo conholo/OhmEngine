@@ -18,6 +18,9 @@ namespace Ohm
 		m_Window->SetEventCallbackFunction(OHM_BIND_FN(Application::OnEvent));
 		RenderCommand::Initialize();
 		Renderer::Initialize();
+
+		m_ImGuiLayer = new ImGuiLayer();
+		PushOverlay(m_ImGuiLayer);
 	}
 
 	Application::~Application()
@@ -39,12 +42,18 @@ namespace Ohm
 			for (auto* layer : m_LayerStack)
 				layer->OnUpdate(deltaTime);
 
+			m_ImGuiLayer->Begin();
 			for (auto* layer : m_LayerStack)
 				layer->OnUIRender();
-
+			m_ImGuiLayer->End();
 
 			m_Window->Update();
 		}
+	}
+
+	void Application::Close()
+	{
+		s_Instance->m_IsRunning = false;
 	}
 
 	void Application::OnEvent(Event& event)

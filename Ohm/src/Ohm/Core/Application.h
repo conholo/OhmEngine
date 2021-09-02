@@ -4,6 +4,7 @@
 #include "Ohm/Event/Event.h"
 #include "Ohm/Event/WindowEvent.h"
 #include "Ohm/Core/LayerStack.h"
+#include "Ohm/ImGui/ImGuiLayer.h"
 
 namespace Ohm
 {
@@ -14,6 +15,7 @@ namespace Ohm
 		virtual ~Application();
 
 		void Run();
+		static void Close();
 		void OnEvent(Event& event);
 
 		static Application& GetApplication() { return *s_Instance; }
@@ -36,6 +38,7 @@ namespace Ohm
 		bool m_IsRunning = true;
 		Scope<Window> m_Window;
 		LayerStack m_LayerStack;
+		ImGuiLayer* m_ImGuiLayer;
 	};
 
 	Application* CreateApplication();

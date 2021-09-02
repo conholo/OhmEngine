@@ -23,8 +23,16 @@ namespace Ohm
 
 	private:
 
-		glm::vec3 m_QuadPosition{ 0.0f, 0.0f, 0.0f };
-		glm::vec3 m_QuadSize{ 1.0f, 1.0f, 1.0f };
+		Entity m_Sphere;
+		Entity m_Cube;
+
+		glm::vec3 m_SpherePosition{ 0.0f, 2.5f, 0.0f };
+		glm::vec3 m_SphereSize{ 1.0f };
+
+		glm::vec3 m_CubePosition{ 0.0f, 0.0f, 0.0f };
+		glm::vec3 m_CubeRotationDegrees{ 45.0f };
+		glm::vec3 m_CubeRotation{ 0.0f };
+		glm::vec3 m_CubeSize{ 2.0f };
 
 		glm::vec3 m_PlanePosition{ 0.0f, -2.0f, 0.0f };
 		glm::vec3 m_PlaneSize{ 20.0f, 0.01f, 20.0f };

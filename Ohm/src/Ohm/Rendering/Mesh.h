@@ -29,11 +29,11 @@ namespace Ohm
 		void Unbind() const;
 		void Bind() const;
 
+		static Ref<Mesh> Sphere(float radius, uint32_t sectorCount, uint32_t stackCount);
 	private:
 		void CreateRenderPrimitives(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
 		static Ref<Mesh> Quad();
 		static Ref<Mesh> Cube();
-		static Ref<Mesh> Sphere(float radius, uint32_t sectorCount, uint32_t stackCount);
 
 	private:
 		Ref<VertexBuffer> m_VertexBuffer;
