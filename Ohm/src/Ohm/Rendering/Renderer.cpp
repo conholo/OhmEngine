@@ -7,6 +7,7 @@
 #include "Ohm/Rendering/Vertex.h"
 #include "Ohm/Rendering/RenderCommand.h"
 #include "Ohm/Rendering/Texture2D.h"
+#include "Ohm/Rendering/UniformBuffer.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -18,6 +19,15 @@ namespace Ohm
 		Ref<Shader> Shader;
 		Ref<Texture2D> Texture;
 		Ref<Texture2D> WhiteTexture;
+
+		struct CameraData
+		{
+			glm::mat4 ModelViewMatrix;
+			glm::mat4 ProjectionMatrix;
+			glm::mat4 NormalMatrix;
+		};
+
+		Ref<UniformBuffer> CameraBuffer;
 	};
 
 	static RenderData* s_RenderData = nullptr;
@@ -33,8 +43,10 @@ namespace Ohm
 		uint32_t whiteTextureData = 0xffffffff;
 		s_RenderData->WhiteTexture->SetData(&whiteTextureData, sizeof(uint32_t));
 
-		s_RenderData->Texture = CreateRef<Texture2D>("assets/textures/tex.jpg");
-		s_RenderData->WhiteTexture->Bind(0);
+		s_RenderData->Texture = CreateRef<Texture2D>("assets/textures/lava.jpg");
+		//s_RenderData->WhiteTexture->Bind(0);
+		s_RenderData->Texture->Bind(0);
+		s_RenderData->CameraBuffer = CreateRef<UniformBuffer>(sizeof(RenderData::CameraData), 0);
 	}
 
 	void Renderer::DrawMesh(const EditorCamera& camera, const MeshRendererComponent& meshRenderer, const TransformComponent& transform, const TransformComponent& lightTransform)
@@ -61,9 +73,14 @@ namespace Ohm
 
 		s_RenderData->Shader->UploadUniformFloat4("u_Color", meshRenderer.Color);
 		s_RenderData->Shader->UploadUniformFloat4("u_LightColor", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
 		s_RenderData->Shader->UploadUniformMat4("u_NormalMatrix", normalMatrix);
 		s_RenderData->Shader->UploadUniformMat4("u_ModelView", modelView);
 		s_RenderData->Shader->UploadUniformMat4("u_ProjectionMatrix", camera.GetProjection());
+
+		RenderData::CameraData cameraData{ modelView, camera.GetProjection(), normalMatrix };
+
+		s_RenderData->CameraBuffer->SetData(&cameraData, sizeof(s_RenderData->CameraBuffer));
 
 		RenderCommand::DrawIndexed(s_RenderData->VAO, meshRenderer.MeshData->GetIndexBuffer()->GetCount());
 

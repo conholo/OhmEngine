@@ -135,6 +135,13 @@ namespace Ohm
 		RecalculateProjection();
 	}
 
+	void EditorCamera::SetRotation(const glm::vec2& rotation)
+	{
+		m_Pitch = glm::radians(rotation.x);
+		m_Yaw = glm::radians(rotation.y);
+		RecalculateView();
+	}
+
 	glm::vec3 EditorCamera::Forward() const
 	{
 		return glm::rotate(CalculateOrientation(), glm::vec3(0.0f, 0.0f, -1.0f));

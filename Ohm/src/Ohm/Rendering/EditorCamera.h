@@ -23,6 +23,9 @@ namespace Ohm
 		float GetZDistance() const { return m_DistanceFromFocalPoint; }
 		void SetZDistance(float zDistance) { m_DistanceFromFocalPoint = zDistance; }
 
+		void SetPosition(const glm::vec3& position) { m_Position = position; RecalculateView(); }
+		void SetRotation(const glm::vec2& rotation);
+
 		glm::mat4 GetProjectionView() const { return m_ProjectionMatrix * m_ViewMatrix; }
 		glm::mat4 GetView() const { return m_ViewMatrix; }
 		glm::mat4 GetProjection() const { return m_ProjectionMatrix; }

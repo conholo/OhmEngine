@@ -38,7 +38,7 @@ namespace Ohm
 		glm::vec4 m_CubeColor{ 1.0f };
 
 		bool m_LightSpin = false;
-		glm::vec3 m_LightPosition{ 0.0f, 5.0f, 0.0f };
+		glm::vec3 m_LightPosition{ 0.0f, 10.0f, 0.0f };
 		glm::vec3 m_LightSize{ 0.5f };
 		glm::vec3 m_LightRotationDegrees{ 0.0f };
 		glm::vec3 m_LightRotation{ 0.0f };
@@ -48,6 +48,7 @@ namespace Ohm
 		glm::vec4 m_PlaneColor{ 1.0f };
 
 		EditorCamera m_Camera;
+
 		Ref<Scene> m_Scene;
 		float m_ElapsedTime = 0.0f;
 	};

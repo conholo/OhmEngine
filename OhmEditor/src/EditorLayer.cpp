@@ -22,6 +22,8 @@ namespace Ohm
 
 	void EditorLayer::OnAttach()
 	{
+		m_Camera.SetPosition(glm::vec3(0.0f, 5.5f, 25.0f));
+		m_Camera.SetRotation(glm::vec2(15.0f, 0.0f));
 		m_Scene = CreateRef<Scene>("Test Scene");
 
 		m_Cube = m_Scene->Create("Cube");
