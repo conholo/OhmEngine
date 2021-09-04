@@ -13,3 +13,4 @@
 [submodule "Ohm/vendor/imgui"]
 	path = Ohm/vendor/imgui
 	url = https://github.com/TheCherno/imgui
+	ignore = untracked
