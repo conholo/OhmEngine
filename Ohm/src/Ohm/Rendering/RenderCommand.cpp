@@ -15,7 +15,13 @@ namespace Ohm
 		const void* userParam
 	)
 	{
-		OHM_TRACE(message);
+		switch (severity)
+		{
+			case GL_DEBUG_SEVERITY_HIGH:         OHM_CORE_CRITICAL(message); return;
+			case GL_DEBUG_SEVERITY_MEDIUM:       OHM_CORE_ERROR(message); return;
+			case GL_DEBUG_SEVERITY_LOW:          OHM_CORE_WARN(message); return;
+			case GL_DEBUG_SEVERITY_NOTIFICATION: OHM_CORE_TRACE(message); return;
+		}
 	}
 
 	void RenderCommand::Initialize()

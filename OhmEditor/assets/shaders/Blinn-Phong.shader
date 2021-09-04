@@ -6,9 +6,13 @@ layout(location = 0) in vec3 a_Position;
 layout(location = 1) in vec2 a_TexCoord;
 layout(location = 2) in vec3 a_Normal;
 
-uniform mat4 u_NormalMatrix;
-uniform mat4 u_ModelView;
-uniform mat4 u_ProjectionMatrix;
+
+layout(std140, binding = 0) uniform Camera
+{
+	mat4 u_ModelView;
+	mat4 u_ProjectionMatrix;
+	mat4 u_NormalMatrix;
+};
 
 out vec3 v_Normal;
 out vec3 v_ViewPosition;
@@ -31,10 +35,15 @@ void main()
 layout(location = 0) out vec4 o_Color;
 
 uniform vec4 u_Color;
-uniform vec4 u_LightColor;
-uniform vec3 u_LightPosition;
 uniform float u_SpecularStrength;
 uniform float u_AmbientStrength;
+
+layout(std140, binding = 1) uniform Light
+{
+	vec3 u_LightPosition;
+	vec4 u_LightColor;
+};
+
 
 uniform sampler2D u_Texture;
 

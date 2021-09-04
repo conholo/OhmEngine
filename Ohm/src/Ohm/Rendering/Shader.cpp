@@ -155,51 +155,59 @@ namespace Ohm
 	}
 
 
-	void Shader::UploadUniformFloat(const std::string& name, float value)
+	GLint Shader::UploadUniformFloat(const std::string& name, float value)
 	{
 		GLint location = glGetUniformLocation(m_ID, name.c_str());
 		glUniform1f(location, value);
+		return location;
 	}
 
-	void Shader::UploadUniformFloat2(const std::string& name, const glm::vec2& value)
+	GLint Shader::UploadUniformFloat2(const std::string& name, const glm::vec2& value)
 	{
 		GLint location = glGetUniformLocation(m_ID, name.c_str());
 		glUniform2f(location, value.x, value.y);
+		return location;
 	}
 
-	void Shader::UploadUniformFloat3(const std::string& name, const glm::vec3& value)
+	GLint Shader::UploadUniformFloat3(const std::string& name, const glm::vec3& value)
 	{
 		GLint location = glGetUniformLocation(m_ID, name.c_str());
 		glUniform3f(location, value.x, value.y, value.z);
+		return location;
 	}
 
-	void Shader::UploadUniformFloat4(const std::string& name, const glm::vec4& value)
+	GLint Shader::UploadUniformFloat4(const std::string& name, const glm::vec4& value)
 	{
 		GLint location = glGetUniformLocation(m_ID, name.c_str());
 		glUniform4f(location, value.x, value.y, value.z, value.w);
+		return location;
 	}
 
-	void Shader::UploadUniformInt(const std::string& name, int value)
+	GLint Shader::UploadUniformInt(const std::string& name, int value)
 	{
 		GLint location = glGetUniformLocation(m_ID, name.c_str());
 		glUniform1i(location, value);
+		return location;
 	}
 
-	void Shader::UploadUniformIntArray(const std::string& name, uint32_t count, int* basePtr)
+	GLint Shader::UploadUniformIntArray(const std::string& name, uint32_t count, int* basePtr)
 	{
 		GLint location = glGetUniformLocation(m_ID, name.c_str());
 		glUniform1iv(location, count, basePtr);
+		return location;
 	}
 
-	void Shader::UploadUniformMat3(const std::string& name, const glm::mat3& matrix)
+	GLint Shader::UploadUniformMat3(const std::string& name, const glm::mat3& matrix)
 	{
 		GLint location = glGetUniformLocation(m_ID, name.c_str());
 		glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
+		return location;
 	}
 
-	void Shader::UploadUniformMat4(const std::string& name, const glm::mat4& matrix)
+	GLint Shader::UploadUniformMat4(const std::string& name, const glm::mat4& matrix)
 	{
 		GLint location = glGetUniformLocation(m_ID, name.c_str());
 		glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
+		return location;
 	}
 }

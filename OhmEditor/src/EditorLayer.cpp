@@ -10,7 +10,7 @@
 namespace Ohm
 {
 	EditorLayer::EditorLayer()
-		:Layer("Editor Layer"), m_Camera(45.0f, 1.0f, 0.1f, 1000.0f)
+		:Layer("Editor Layer"), m_Camera(45.0f, 1.77778f, 0.1f, 1000.0f)
 	{
 
 	}
@@ -36,9 +36,12 @@ namespace Ohm
 		Ref<Mesh> cubeMesh = Mesh::CreatePrimitive(Primitive::Cube);
 		Ref<Mesh> sphereMesh = Mesh::CreatePrimitive(Primitive::Sphere);
 
+		Ref<Material> blinnMaterial = CreateRef<Material>(blinnPhongShader);
+		Ref<Material> flatColorMaterial = CreateRef<Material>(flatColorShader);
+
 		// Light
-		m_DirectionalLight.AddComponent<LightComponent>(LightType::Directional, true);
-		m_DirectionalLight.AddComponent<MeshRendererComponent>(flatColorShader, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), cubeMesh);
+		m_DirectionalLight.AddComponent<LightComponent>(LightType::Directional, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), true);
+		m_DirectionalLight.AddComponent<MeshRendererComponent>(flatColorMaterial, cubeMesh);
 		auto& lightTranslation = m_DirectionalLight.GetComponent<TransformComponent>().Translation;
 		lightTranslation = m_LightPosition;
 		auto& lightScale = m_DirectionalLight.GetComponent<TransformComponent>().Scale;
@@ -47,9 +50,9 @@ namespace Ohm
 		lightRotation = glm::vec3(glm::radians(m_LightRotationDegrees.x), glm::radians(m_LightRotationDegrees.y), glm::radians(m_LightRotationDegrees.z));
 
 
-		m_Sphere.AddComponent<MeshRendererComponent>(blinnPhongShader, glm::vec4(0.0f, 0.3f, 0.8f, 1.0f), sphereMesh);
-		m_Cube.AddComponent<MeshRendererComponent>(blinnPhongShader, glm::vec4(0.8f, 0.3f, 0.1f, 1.0f), cubeMesh);
-		blueRectangle.AddComponent<MeshRendererComponent>(blinnPhongShader, glm::vec4(0.1f, .8f, 0.0f, 1.0f), cubeMesh);
+		m_Sphere.AddComponent<MeshRendererComponent>(blinnMaterial, sphereMesh);
+		m_Cube.AddComponent<MeshRendererComponent>(blinnMaterial, cubeMesh);
+		blueRectangle.AddComponent<MeshRendererComponent>(blinnMaterial, cubeMesh);
 
 		auto& sphereTranslation = m_Sphere.GetComponent<TransformComponent>().Translation;
 		sphereTranslation = m_SpherePosition;
@@ -80,7 +83,6 @@ namespace Ohm
 		sphereTranslation = m_SpherePosition;
 		sphereScale = m_SphereSize;
 		auto& sphereMeshComponent = m_Sphere.GetComponent<MeshRendererComponent>();
-		sphereMeshComponent.Color = m_SphereColor;
 
 		auto& cubeTransformComponent = m_Cube.GetComponent<TransformComponent>();
 		auto& cubeTranslation = cubeTransformComponent.Translation;
@@ -90,7 +92,6 @@ namespace Ohm
 		cubeRotation = m_CubeRotation;
 		cubeScale = m_CubeSize;
 		auto& cubeMeshComponent = m_Cube.GetComponent<MeshRendererComponent>();
-		cubeMeshComponent.Color = m_CubeColor;
 
 
 		auto& lightTransformComponent = m_DirectionalLight.GetComponent<TransformComponent>();
@@ -117,7 +118,7 @@ namespace Ohm
 
 
 		m_Camera.Update(dt);
-		EditorScene::RenderScene(m_Camera, m_DirectionalLight);
+		EditorScene::RenderScene(m_Camera);
 	}
 
 	void EditorLayer::OnDetach()

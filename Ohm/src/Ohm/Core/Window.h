@@ -13,7 +13,7 @@ namespace Ohm
 
 		using EventCallbackFunction = std::function<void(Event&)>;
 
-		Window(const std::string& name = "Ohm Engine", uint32_t width = 800, uint32_t height = 800);
+		Window(const std::string& name = "Ohm Engine", uint32_t width = 1280, uint32_t height = 720);
 		~Window();
 
 		void Update();
@@ -45,7 +45,7 @@ namespace Ohm
 			EventCallbackFunction Callback;
 			bool VSync;
 
-			WindowData(const std::string& name = "Ohm Engine", uint32_t width = 800, uint32_t height = 800, bool vSync = true)
+			WindowData(const std::string& name = "Ohm Engine", uint32_t width = 1280, uint32_t height = 720, bool vSync = true)
 				:Name(name), Width(width), Height(height), VSync(vSync){ }
 		};
 

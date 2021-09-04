@@ -32,13 +32,14 @@ namespace Ohm
 
 		GLFWmonitor* primary = glfwGetPrimaryMonitor();
 
+		// TODO:: Fix DPI scaling issues.
 		float x, y;
 		glfwGetMonitorContentScale(primary, &x, &y);
 
 		m_WindowData.ScaledWidth = m_WindowData.Width * x;
 		m_WindowData.ScaledHeight = m_WindowData.Height * y;
 
-		m_WindowHandle = glfwCreateWindow(m_WindowData.ScaledWidth, m_WindowData.ScaledWidth, m_WindowData.Name.c_str(), nullptr, nullptr);
+		m_WindowHandle = glfwCreateWindow(m_WindowData.Width, m_WindowData.Height, m_WindowData.Name.c_str(), nullptr, nullptr);
 
 		glfwMakeContextCurrent(m_WindowHandle);
 

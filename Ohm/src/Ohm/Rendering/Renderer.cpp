@@ -49,43 +49,25 @@ namespace Ohm
 		s_RenderData->CameraBuffer = CreateRef<UniformBuffer>(sizeof(RenderData::CameraData), 0);
 	}
 
-	void Renderer::DrawMesh(const EditorCamera& camera, const MeshRendererComponent& meshRenderer, const TransformComponent& transform, const TransformComponent& lightTransform)
+	void Renderer::DrawMesh(const EditorCamera& camera, const MeshRendererComponent& meshRenderer, const TransformComponent& transform)
 	{
 		s_RenderData->VAO->Bind();
-		s_RenderData->Shader = meshRenderer.MaterialShader;
-
-		s_RenderData->VAO->EnableVertexAttributes(meshRenderer.MeshData->GetVertexBuffer());
+		meshRenderer.MaterialInstance->GetShader()->Bind();
+		meshRenderer.MaterialInstance->SetFloat4("u_Color", glm::vec4(1.0f));
 
 		meshRenderer.MeshData->Bind();
-		s_RenderData->Shader->Bind();
-
-		// Light Position needs to be in view space (modelView * local light position)
-		glm::vec3 toViewSpaceLightPosition = glm::vec3(camera.GetView() * lightTransform.Transform() * glm::vec4(0.0, 0.0, 0.0, 1.0f));
+		s_RenderData->VAO->EnableVertexAttributes(meshRenderer.MeshData->GetVertexBuffer());
 
 		glm::mat4 modelView = camera.GetView() * transform.Transform();
-		// Need to work with normals in view space to handle non-uniform scaling.
 		glm::mat4 normalMatrix = glm::transpose(glm::inverse(modelView));
 
-		s_RenderData->Shader->UploadUniformFloat("u_SpecularStrength", 0.8f);
-		s_RenderData->Shader->UploadUniformFloat("u_AmbientStrength", 0.1f);
-
-		s_RenderData->Shader->UploadUniformFloat3("u_LightPosition", toViewSpaceLightPosition);
-
-		s_RenderData->Shader->UploadUniformFloat4("u_Color", meshRenderer.Color);
-		s_RenderData->Shader->UploadUniformFloat4("u_LightColor", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-
-		s_RenderData->Shader->UploadUniformMat4("u_NormalMatrix", normalMatrix);
-		s_RenderData->Shader->UploadUniformMat4("u_ModelView", modelView);
-		s_RenderData->Shader->UploadUniformMat4("u_ProjectionMatrix", camera.GetProjection());
-
 		RenderData::CameraData cameraData{ modelView, camera.GetProjection(), normalMatrix };
-
-		s_RenderData->CameraBuffer->SetData(&cameraData, sizeof(s_RenderData->CameraBuffer));
+		s_RenderData->CameraBuffer->SetData(&cameraData, sizeof(RenderData::CameraData));
 
 		RenderCommand::DrawIndexed(s_RenderData->VAO, meshRenderer.MeshData->GetIndexBuffer()->GetCount());
 
 		s_RenderData->VAO->Unbind();
-		s_RenderData->Shader->Unbind();
+		meshRenderer.MaterialInstance->GetShader()->Unbind();
 		meshRenderer.MeshData->Unbind();
 	}
 

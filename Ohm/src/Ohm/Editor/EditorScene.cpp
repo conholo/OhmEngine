@@ -17,19 +17,21 @@ namespace Ohm
 		s_ActiveScene = nullptr;
 	}
 
-	void EditorScene::RenderScene(const EditorCamera& camera, Entity directionalLight)
+	void EditorScene::RenderScene(const EditorCamera& camera)
 	{
 		auto group = s_ActiveScene->m_Registry.group<TransformComponent, MeshRendererComponent>();
-
-		auto [lightTransform, light] = s_ActiveScene->m_Registry.get<TransformComponent, LightComponent>(directionalLight);
 
 		for (auto entity : group)
 		{
 			auto [transform, meshRenderer] = group.get<TransformComponent, MeshRendererComponent>(entity);
 
-			if (entity == directionalLight && !light.DebugLight) continue;
+			auto* light = &s_ActiveScene->GetEntityFromSceneMap(entity);
 
-			Renderer::DrawMesh(camera, meshRenderer, transform, lightTransform);
+			if (light != nullptr && light->HasComponent<LightComponent>())
+				s_ActiveScene->SetSceneLightingData(light->GetComponent<TransformComponent>(), light->GetComponent<LightComponent>(), camera);
+
+
+			Renderer::DrawMesh(camera, meshRenderer, transform);
 		}
 	}
 }

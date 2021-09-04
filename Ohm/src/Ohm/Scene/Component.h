@@ -9,7 +9,7 @@
 #include <glm/gtx/quaternion.hpp>
 
 #include "Ohm/Core/Memory.h"
-#include "Ohm/Rendering/Shader.h"
+#include "Ohm/Rendering/Material.h"
 #include "Ohm/Rendering/Mesh.h"
 
 namespace Ohm
@@ -55,18 +55,13 @@ namespace Ohm
 
 	struct MeshRendererComponent
 	{
-		// TODO:: Make Mesh Class
-
-		// TODO:: Make Material Class
-		glm::vec4 Color{ 1.0f };
-		Ref<Shader> MaterialShader;
-
+		Ref<Material> MaterialInstance;
 		Ref<Mesh> MeshData;
 
 		MeshRendererComponent() = default;
 		MeshRendererComponent(const MeshRendererComponent&) = default;
-		MeshRendererComponent(const Ref<Shader>& shader, const glm::vec4& color, const Ref<Mesh>& mesh)
-			:MaterialShader(shader), Color(color), MeshData(mesh) { }
+		MeshRendererComponent(const Ref<Material>& material, const Ref<Mesh>& mesh)
+			:MaterialInstance(material), MeshData(mesh) { }
 	};
 
 	struct CameraComponent
@@ -83,11 +78,12 @@ namespace Ohm
 	struct LightComponent
 	{
 		LightType Type;
+		glm::vec4 Color;
 		bool DebugLight = true;
 
 		LightComponent() = default;
 		LightComponent(const LightComponent&) = default;
-		LightComponent(LightType type, bool debug = false)
-			:Type(type), DebugLight(debug) { }
+		LightComponent(LightType type, const glm::vec4& color = glm::vec4(1.0f), bool debug = false)
+			:Type(type), Color(color), DebugLight(debug) { }
 	};
 }

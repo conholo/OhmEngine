@@ -28,8 +28,8 @@ namespace Ohm
 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
 
 
-		io.Fonts->AddFontFromFileTTF("assets/fonts/Cascadia.ttf", 30.0f);
-		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/Cascadia.ttf", 30.0f);
+		io.Fonts->AddFontFromFileTTF("assets/fonts/Cascadia.ttf", 13.0f);
+		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/Cascadia.ttf", 13.0f);
 
 		ImGui::StyleColorsDark();
 
@@ -73,7 +73,6 @@ namespace Ohm
 	{
 		ImGuiIO& io = ImGui::GetIO();
 		Application& app = Application::GetApplication();
-		ImGuiViewport* viewPort = ImGui::GetMainViewport();
 		io.DisplaySize = ImVec2((float)app.GetWindow().GetWidth(), (float)app.GetWindow().GetHeight());
 
 		ImGui::Render();
