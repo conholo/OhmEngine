@@ -2,10 +2,21 @@
 
 #include <glm/glm.hpp>
 
+// TEMPORARY: ShaderDataType needs to move here.
+#include <Ohm/Rendering/BufferLayout.h>
+
 namespace Ohm
 {
 	typedef unsigned int GLenum;
 	typedef int GLint;
+
+	struct ShaderUniform
+	{
+		std::string Name;
+		ShaderDataType Type;
+		GLint UniformBlockIndex;
+		GLint Size;
+	};
 
 	class Shader
 	{
@@ -17,6 +28,7 @@ namespace Ohm
 		void Unbind() const;
 
 		uint32_t GetID() const { return m_ID; }
+		std::string GetName() const { return m_Name; }
 
 		GLint UploadUniformFloat(const std::string& name, float value);
 		GLint UploadUniformFloat2(const std::string& name, const glm::vec2& value);
@@ -31,8 +43,12 @@ namespace Ohm
 		std::string ReadFile(const std::string& filePath);
 		std::unordered_map<GLenum, std::string> PreProcess(const std::string& source);
 		void Compile(const std::unordered_map<GLenum, std::string>& shaderSources);
+		void Reflect();
 
 	private:
+		std::unordered_map<std::string, ShaderUniform> m_Uniforms;
+		uint32_t m_ActiveUniformCount = 0;
+		std::string m_Name;
 		uint32_t m_ID;
 	};
 }

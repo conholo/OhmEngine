@@ -8,7 +8,19 @@ namespace Ohm
 {
 	enum class ShaderDataType
 	{
-		Float, Float2, Float3, Int, Mat3, Mat4
+		None = 0, Float, Float2, Float3, Float4, Int, Mat3, Mat4, Sampler2D
+	};
+
+	static std::unordered_map<ShaderDataType, const char*> ShaderDataTypeToString =
+	{
+		{ShaderDataType::Float,		"float"},
+		{ShaderDataType::Float2,	"vec2"},
+		{ShaderDataType::Float3,	"vec3"},
+		{ShaderDataType::Float4,	"vec4"},
+		{ShaderDataType::Int,		"int"},
+		{ShaderDataType::Mat3,		"mat3"},
+		{ShaderDataType::Mat4,		"mat4"},
+		{ShaderDataType::Sampler2D,	"sampler2D"},
 	};
 
 	static uint32_t ShaderDataTypeSize(ShaderDataType type)
@@ -18,6 +30,7 @@ namespace Ohm
 			case ShaderDataType::Float:		return 1 * 4;
 			case ShaderDataType::Float2:	return 2 * 4;
 			case ShaderDataType::Float3:	return 3 * 4;
+			case ShaderDataType::Float4:	return 4 * 4;
 			case ShaderDataType::Int:		return 1 * 4;
 			case ShaderDataType::Mat3:		return 3 * 3 * 4;
 			case ShaderDataType::Mat4:		return 4 * 4 * 4;
@@ -45,6 +58,7 @@ namespace Ohm
 				case ShaderDataType::Float:		return 1;
 				case ShaderDataType::Float2:	return 2;
 				case ShaderDataType::Float3:	return 3;
+				case ShaderDataType::Float4:	return 4;
 				case ShaderDataType::Int:		return 1;
 				case ShaderDataType::Mat3:		return 3 * 3;
 				case ShaderDataType::Mat4:		return 4 * 4;

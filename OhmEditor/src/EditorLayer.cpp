@@ -22,6 +22,11 @@ namespace Ohm
 
 	void EditorLayer::OnAttach()
 	{
+		// Create Blinn-Phong Material
+		// Set available uniforms (this should be done by something like spir-v
+		// Material instances are created from this base material
+		// The material instances can access and set these uniforms
+
 		m_Camera.SetPosition(glm::vec3(0.0f, 5.5f, 25.0f));
 		m_Camera.SetRotation(glm::vec2(15.0f, 0.0f));
 		m_Scene = CreateRef<Scene>("Test Scene");
@@ -36,12 +41,16 @@ namespace Ohm
 		Ref<Mesh> cubeMesh = Mesh::CreatePrimitive(Primitive::Cube);
 		Ref<Mesh> sphereMesh = Mesh::CreatePrimitive(Primitive::Sphere);
 
+		Ref<Material> baseBlinnPhongMaterial = CreateRef<Material>(blinnPhongShader);
+
+		Ref<Material> sharedBlueSuperSpecularMaterial = baseBlinnPhongMaterial->Copy();
+
 		Ref<Material> blinnMaterial = CreateRef<Material>(blinnPhongShader);
 		Ref<Material> flatColorMaterial = CreateRef<Material>(flatColorShader);
 
 		// Light
-		m_DirectionalLight.AddComponent<LightComponent>(LightType::Directional, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), true);
-		m_DirectionalLight.AddComponent<MeshRendererComponent>(flatColorMaterial, cubeMesh);
+		m_DirectionalLight.AddComponent<LightComponent>(LightType::Directional, m_LightColor, true);
+		m_DirectionalLight.AddComponent<MeshRendererComponent>(flatColorMaterial, cubeMesh, glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
 		auto& lightTranslation = m_DirectionalLight.GetComponent<TransformComponent>().Translation;
 		lightTranslation = m_LightPosition;
 		auto& lightScale = m_DirectionalLight.GetComponent<TransformComponent>().Scale;
@@ -50,9 +59,9 @@ namespace Ohm
 		lightRotation = glm::vec3(glm::radians(m_LightRotationDegrees.x), glm::radians(m_LightRotationDegrees.y), glm::radians(m_LightRotationDegrees.z));
 
 
-		m_Sphere.AddComponent<MeshRendererComponent>(blinnMaterial, sphereMesh);
-		m_Cube.AddComponent<MeshRendererComponent>(blinnMaterial, cubeMesh);
-		blueRectangle.AddComponent<MeshRendererComponent>(blinnMaterial, cubeMesh);
+		m_Sphere.AddComponent<MeshRendererComponent>(sharedBlueSuperSpecularMaterial, sphereMesh, m_SphereColor);
+		m_Cube.AddComponent<MeshRendererComponent>(sharedBlueSuperSpecularMaterial, cubeMesh, m_CubeColor);
+		blueRectangle.AddComponent<MeshRendererComponent>(blinnMaterial, cubeMesh, m_PlaneColor);
 
 		auto& sphereTranslation = m_Sphere.GetComponent<TransformComponent>().Translation;
 		sphereTranslation = m_SpherePosition;
@@ -83,6 +92,7 @@ namespace Ohm
 		sphereTranslation = m_SpherePosition;
 		sphereScale = m_SphereSize;
 		auto& sphereMeshComponent = m_Sphere.GetComponent<MeshRendererComponent>();
+		sphereMeshComponent.Color = m_SphereColor;
 
 		auto& cubeTransformComponent = m_Cube.GetComponent<TransformComponent>();
 		auto& cubeTranslation = cubeTransformComponent.Translation;
@@ -92,7 +102,7 @@ namespace Ohm
 		cubeRotation = m_CubeRotation;
 		cubeScale = m_CubeSize;
 		auto& cubeMeshComponent = m_Cube.GetComponent<MeshRendererComponent>();
-
+		cubeMeshComponent.Color = m_CubeColor;
 
 		auto& lightTransformComponent = m_DirectionalLight.GetComponent<TransformComponent>();
 		auto& lightTranslation = lightTransformComponent.Translation;
@@ -115,6 +125,7 @@ namespace Ohm
 			lightRotation = m_LightRotation;
 			lightScale = m_LightSize;
 		}
+
 
 
 		m_Camera.Update(dt);
@@ -212,6 +223,9 @@ namespace Ohm
 		ImGui::DragFloat3("Light Rotation", &m_LightRotationDegrees[0], 0.1f);
 		m_LightRotation = glm::vec3(glm::radians(m_LightRotationDegrees.x), glm::radians(m_LightRotationDegrees.y), glm::radians(m_LightRotationDegrees.z));
 		ImGui::DragFloat3("Light Scale", &m_LightSize[0], 0.1f, -100.0f, 100.f);
+		ImGui::ColorPicker4("Light Color", &m_LightColor[0]);
+		m_DirectionalLight.GetComponent<LightComponent>().Color = m_LightColor;
+
 		ImGui::Checkbox("Light Animation", &m_LightSpin);
 
 		ImGui::Text("Sphere");

@@ -38,10 +38,16 @@ uniform vec4 u_Color;
 uniform float u_SpecularStrength;
 uniform float u_AmbientStrength;
 
+struct LightingData
+{
+	vec4 LightColor;
+	vec3 LightPosition;
+};
+
+
 layout(std140, binding = 1) uniform Light
 {
-	vec3 u_LightPosition;
-	vec4 u_LightColor;
+	LightingData u_LightingData;
 };
 
 
@@ -53,23 +59,26 @@ in vec3 v_ViewPosition;
 
 void main()
 {
+	vec4 lightColor = u_LightingData.LightColor;
+	vec3 lightPosition = u_LightingData.LightPosition;
+
 	vec3 normal = normalize(v_Normal);
-	vec3 lightDirection = normalize(u_LightPosition - v_ViewPosition);
+	vec3 lightDirection = normalize(lightPosition - v_ViewPosition);
 
 	// Ambient
-	vec4 ambient = u_AmbientStrength * u_LightColor;
+	vec4 ambient = u_AmbientStrength * lightColor;
 
 	// Diffuse
 	float NdotL = max(dot(normal, lightDirection), 0.0);
 
-	vec4 diffuse = NdotL * u_LightColor;
+	vec4 diffuse = NdotL * lightColor;
 
 	// Specular
 	vec3 viewDirection = normalize(-v_ViewPosition);
 	vec3 reflectDirection = reflect(-lightDirection, normal);
 
 	float specular = pow(max(dot(viewDirection, reflectDirection), 0.0), 256);
-	vec4 spec = u_SpecularStrength * specular * u_LightColor;
+	vec4 spec = u_SpecularStrength * specular * lightColor;
 
 	vec4 texColor = texture(u_Texture, v_TexCoord);
 

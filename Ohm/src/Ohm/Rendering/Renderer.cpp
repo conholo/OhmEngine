@@ -44,8 +44,8 @@ namespace Ohm
 		s_RenderData->WhiteTexture->SetData(&whiteTextureData, sizeof(uint32_t));
 
 		s_RenderData->Texture = CreateRef<Texture2D>("assets/textures/lava.jpg");
-		//s_RenderData->WhiteTexture->Bind(0);
-		s_RenderData->Texture->Bind(0);
+		s_RenderData->WhiteTexture->Bind(0);
+		//s_RenderData->Texture->Bind(0);
 		s_RenderData->CameraBuffer = CreateRef<UniformBuffer>(sizeof(RenderData::CameraData), 0);
 	}
 
@@ -53,7 +53,9 @@ namespace Ohm
 	{
 		s_RenderData->VAO->Bind();
 		meshRenderer.MaterialInstance->GetShader()->Bind();
-		meshRenderer.MaterialInstance->SetFloat4("u_Color", glm::vec4(1.0f));
+		meshRenderer.MaterialInstance->GetShader()->UploadUniformFloat4("u_Color", meshRenderer.Color);
+		meshRenderer.MaterialInstance->GetShader()->UploadUniformFloat("u_SpecularStrength", 0.8f);
+		meshRenderer.MaterialInstance->GetShader()->UploadUniformFloat("u_AmbientStrength", 0.1f);
 
 		meshRenderer.MeshData->Bind();
 		s_RenderData->VAO->EnableVertexAttributes(meshRenderer.MeshData->GetVertexBuffer());
@@ -63,6 +65,7 @@ namespace Ohm
 
 		RenderData::CameraData cameraData{ modelView, camera.GetProjection(), normalMatrix };
 		s_RenderData->CameraBuffer->SetData(&cameraData, sizeof(RenderData::CameraData));
+
 
 		RenderCommand::DrawIndexed(s_RenderData->VAO, meshRenderer.MeshData->GetIndexBuffer()->GetCount());
 

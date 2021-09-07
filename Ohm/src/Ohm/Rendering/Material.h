@@ -5,10 +5,14 @@
 
 namespace Ohm
 {
+
 	class Material
 	{
 	public:
 		Material(const Ref<Shader>& shader);
+		Material(const Ref<Material>& other);
+
+		Ref<Material> Copy();
 
 		Ref<Shader> GetShader() const { return m_Shader; }
 

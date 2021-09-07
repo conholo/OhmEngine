@@ -6,11 +6,39 @@
 
 namespace Ohm
 {
+	static ShaderDataType ShaderDataTypeFromGLenum(GLenum value)
+	{
+		switch (value)
+		{
+			case 0x1406: return ShaderDataType::Float;
+			case 0x8B50: return ShaderDataType::Float2;
+			case 0x8B51: return ShaderDataType::Float3;
+			case 0x8B52: return ShaderDataType::Float4;
+			case 0x1404: return ShaderDataType::Int;
+			case 0x8B5B: return ShaderDataType::Mat3;
+			case 0x8B5C: return ShaderDataType::Mat4;
+			case 0x8B5E: return ShaderDataType::Sampler2D;
+			default: 
+			{
+				OHM_CORE_ERROR("Invalid GLenum.  No matching ShaderDataType found for {}.", value);
+				return ShaderDataType::None;
+			}
+		}
+	}
+
+
 	Shader::Shader(const std::string& filePath)
 	{
+		size_t shaderLocationOffset = filePath.rfind("\/") + 1;
+		size_t extensionOffset = filePath.find_first_of(".", shaderLocationOffset);
+
+		m_Name = filePath.substr(shaderLocationOffset, extensionOffset - shaderLocationOffset);
+
 		std::string source = ReadFile(filePath);
 		auto shaderSources = PreProcess(source);
 		Compile(shaderSources);
+
+		Reflect();
 	}
 
 	Shader::~Shader()
@@ -154,6 +182,88 @@ namespace Ohm
 		}
 	}
 
+
+	void Shader::Reflect()
+	{
+		GLsizei activeCount = 0;
+		glGetProgramiv(m_ID, GL_ACTIVE_UNIFORMS, &activeCount);
+
+
+		if (activeCount == 0)
+		{
+			OHM_CORE_WARN("No active uniforms were found when reflecting {}.", m_Name);
+			return;
+		}
+
+		m_ActiveUniformCount = activeCount;
+
+		OHM_CORE_INFO("Active uniform count for: {} - {}", m_Name, m_ActiveUniformCount);
+
+		GLsizei maxUniformLength;
+		glGetProgramiv(m_ID, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxUniformLength);
+
+		std::vector<std::string> activeUniformNames(activeCount);
+
+		for (GLuint i = 0; i < m_ActiveUniformCount; ++i)
+		{
+			GLsizei length;
+			std::vector<GLchar> nameBuffer(maxUniformLength);
+
+			glGetActiveUniformName(m_ID, i, maxUniformLength, &length, nameBuffer.data());
+
+			// Write to member vector to store names.
+			std::string name(nameBuffer.data(), length);
+
+			// Store name
+			activeUniformNames[i] = name;
+		}
+
+
+		// Vector of buffers for each uniform name.
+		std::vector<const char*> nameBuffer(activeCount);
+
+		// Convert from string to const char* for glGetUniformIndices -- it needs a const char**.
+		for (uint32_t i = 0; i < activeCount; i++)
+			nameBuffer[i] = (activeUniformNames[i]).c_str();
+
+		// Declare and allocate memory for a vector containing the uniform indices.
+		std::vector<GLuint> indices(activeCount);
+		// Get the uniform indices.
+		glGetUniformIndices(m_ID, activeCount, nameBuffer.data(), indices.data());
+
+		// Get some data about the uniform.
+		std::vector<GLint> types(activeCount);
+		std::vector<GLint> sizes(activeCount);
+		std::vector<GLint> blockIndices(activeCount);
+		glGetActiveUniformsiv(m_ID, activeCount, indices.data(), GL_UNIFORM_TYPE, types.data());
+		glGetActiveUniformsiv(m_ID, activeCount, indices.data(), GL_UNIFORM_SIZE, sizes.data());
+		glGetActiveUniformsiv(m_ID, activeCount, indices.data(), GL_UNIFORM_BLOCK_INDEX, blockIndices.data());
+
+		OHM_CORE_INFO("Active uniform data for: {}\n", m_Name);
+
+		// Create ShaderUniforms
+		for (uint32_t i = 0; i < activeCount; i++)
+		{
+			const std::string name = activeUniformNames[i];
+			GLenum type = types[i];
+			ShaderDataType shaderDataType = ShaderDataTypeFromGLenum(type);
+			const char* shaderTypeToString = ShaderDataTypeToString[shaderDataType];
+
+			GLint size = sizes[i];
+
+			GLint blockIndex = blockIndices[i];
+
+			m_Uniforms[name] = { name, shaderDataType, blockIndex, size };
+		}
+
+		for (auto [name, uniform] : m_Uniforms)
+		{
+			bool isBlockUniform = uniform.UniformBlockIndex != -1;
+			std::string blockDump = isBlockUniform ? std::to_string((int)uniform.UniformBlockIndex) : "N/A";
+
+			OHM_CORE_INFO("Name: {}, Type: {}, Size: {}, Block Index: {}", uniform.Name, ShaderDataTypeToString[uniform.Type], uniform.Size, blockDump);
+		}
+	}
 
 	GLint Shader::UploadUniformFloat(const std::string& name, float value)
 	{

@@ -55,13 +55,14 @@ namespace Ohm
 
 	struct MeshRendererComponent
 	{
+		glm::vec4 Color;
 		Ref<Material> MaterialInstance;
 		Ref<Mesh> MeshData;
 
 		MeshRendererComponent() = default;
 		MeshRendererComponent(const MeshRendererComponent&) = default;
-		MeshRendererComponent(const Ref<Material>& material, const Ref<Mesh>& mesh)
-			:MaterialInstance(material), MeshData(mesh) { }
+		MeshRendererComponent(const Ref<Material>& material, const Ref<Mesh>& mesh, const glm::vec4& color)
+			:MaterialInstance(material), MeshData(mesh), Color(color) { }
 	};
 
 	struct CameraComponent

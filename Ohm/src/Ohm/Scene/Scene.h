@@ -39,8 +39,8 @@ namespace Ohm
 
 		struct LightingData
 		{	
-			glm::vec3 LightPosition;
 			glm::vec4 LightColor;
+			glm::vec3 LightPosition;
 		};
 
 		LightingData m_LightingData;

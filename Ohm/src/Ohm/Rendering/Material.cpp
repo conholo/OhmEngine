@@ -6,11 +6,23 @@
 
 namespace Ohm
 {
-
 	Material::Material(const Ref<Shader>& shader)
 		:m_Shader(shader)
 	{
 
+	}
+
+	Material::Material(const Ref<Material>& other)
+		:m_Shader(other->m_Shader)
+	{
+
+	}
+
+	Ref<Material> Material::Copy()
+	{
+		Ref<Material> copy = CreateRef<Material>(m_Shader);
+
+		return copy;
 	}
 
 	float Material::GetFloat(const std::string& name)
@@ -19,7 +31,7 @@ namespace Ohm
 
 		float value;
 		glGetUniformfv(m_Shader->GetID(), location, &value);
-		
+
 		return value;
 	}
 
@@ -101,49 +113,81 @@ namespace Ohm
 	void Material::SetFloat(const std::string& name, float value)
 	{
 		GLint location = m_Shader->UploadUniformFloat(name, value);
-		m_Uniforms.emplace(name, location);
+
+		if (m_Uniforms.find(name) != m_Uniforms.end())
+			m_Uniforms[name] = location;
+		else
+			m_Uniforms.emplace(name, location);
 	}
 
 	void Material::SetFloat2(const std::string& name, const glm::vec2& value)
 	{
 		GLint location = m_Shader->UploadUniformFloat2(name, value);
-		m_Uniforms.emplace(name, location);
+
+		if (m_Uniforms.find(name) != m_Uniforms.end())
+			m_Uniforms[name] = location;
+		else
+			m_Uniforms.emplace(name, location);
 	}
 
 	void Material::SetFloat3(const std::string& name, const glm::vec3& value)
 	{
 		GLint location = m_Shader->UploadUniformFloat3(name, value);
-		m_Uniforms.emplace(name, location);
+
+		if (m_Uniforms.find(name) != m_Uniforms.end())
+			m_Uniforms[name] = location;
+		else
+			m_Uniforms.emplace(name, location);
 	}
 
 	void Material::SetFloat4(const std::string& name, const glm::vec4& value)
 	{
 		GLint location = m_Shader->UploadUniformFloat4(name, value);
-		m_Uniforms.emplace(name, location);
+
+		if (m_Uniforms.find(name) != m_Uniforms.end())
+			m_Uniforms[name] = location;
+		else
+			m_Uniforms.emplace(name, location);
 	}
 
 	void Material::SetInt(const std::string& name, int value)
 	{
 		GLint location = m_Shader->UploadUniformInt(name, value);
-		m_Uniforms.emplace(name, location);
+
+		if (m_Uniforms.find(name) != m_Uniforms.end())
+			m_Uniforms[name] = location;
+		else
+			m_Uniforms.emplace(name, location);
 	}
 
 	void Material::SetIntArray(const std::string& name, uint32_t count, int* basePtr)
 	{
 		GLint location = m_Shader->UploadUniformIntArray(name, count, basePtr);
-		m_Uniforms.emplace(name, location);
+
+		if (m_Uniforms.find(name) != m_Uniforms.end())
+			m_Uniforms[name] = location;
+		else
+			m_Uniforms.emplace(name, location);
 	}
 
 	void Material::SetMat3(const std::string& name, const glm::mat3& matrix)
 	{
 		GLint location = m_Shader->UploadUniformMat3(name, matrix);
-		m_Uniforms.emplace(name, location);
+
+		if (m_Uniforms.find(name) != m_Uniforms.end())
+			m_Uniforms[name] = location;
+		else
+			m_Uniforms.emplace(name, location);
 	}
 
 	void Material::SetMat4(const std::string& name, const glm::mat4& matrix)
 	{
 		GLint location = m_Shader->UploadUniformMat4(name, matrix);
-		m_Uniforms.emplace(name, location);
+
+		if (m_Uniforms.find(name) != m_Uniforms.end())
+			m_Uniforms[name] = location;
+		else
+			m_Uniforms.emplace(name, location);
 	}
 
 }

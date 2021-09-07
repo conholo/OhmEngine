@@ -13,7 +13,8 @@ namespace Ohm
 			case ShaderDataType::Mat4:
 			case ShaderDataType::Float:		
 			case ShaderDataType::Float2:
-			case ShaderDataType::Float3:	return GL_FLOAT;
+			case ShaderDataType::Float3:	
+			case ShaderDataType::Float4:	return GL_FLOAT;
 			case ShaderDataType::Int:		return GL_INT;
 			default:						return GL_FLOAT;
 		}
