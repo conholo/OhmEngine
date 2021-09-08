@@ -23,8 +23,11 @@ namespace Ohm
 		struct CameraData
 		{
 			glm::mat4 ModelViewMatrix;
+			glm::mat4 ModelMatrix;
+			glm::mat4 ViewMatrix;
 			glm::mat4 ProjectionMatrix;
 			glm::mat4 NormalMatrix;
+			glm::vec3 CameraPosition;
 		};
 
 		Ref<UniformBuffer> CameraBuffer;
@@ -45,17 +48,14 @@ namespace Ohm
 
 		s_RenderData->Texture = CreateRef<Texture2D>("assets/textures/lava.jpg");
 		s_RenderData->WhiteTexture->Bind(0);
-		//s_RenderData->Texture->Bind(0);
+		s_RenderData->Texture->Bind(1);
 		s_RenderData->CameraBuffer = CreateRef<UniformBuffer>(sizeof(RenderData::CameraData), 0);
 	}
 
 	void Renderer::DrawMesh(const EditorCamera& camera, const MeshRendererComponent& meshRenderer, const TransformComponent& transform)
 	{
 		s_RenderData->VAO->Bind();
-		meshRenderer.MaterialInstance->GetShader()->Bind();
-		meshRenderer.MaterialInstance->GetShader()->UploadUniformFloat4("u_Color", meshRenderer.Color);
-		meshRenderer.MaterialInstance->GetShader()->UploadUniformFloat("u_SpecularStrength", 0.8f);
-		meshRenderer.MaterialInstance->GetShader()->UploadUniformFloat("u_AmbientStrength", 0.1f);
+		meshRenderer.MaterialInstance->UploadStagedUniforms();
 
 		meshRenderer.MeshData->Bind();
 		s_RenderData->VAO->EnableVertexAttributes(meshRenderer.MeshData->GetVertexBuffer());
@@ -63,7 +63,7 @@ namespace Ohm
 		glm::mat4 modelView = camera.GetView() * transform.Transform();
 		glm::mat4 normalMatrix = glm::transpose(glm::inverse(modelView));
 
-		RenderData::CameraData cameraData{ modelView, camera.GetProjection(), normalMatrix };
+		RenderData::CameraData cameraData{ modelView, transform.Transform(), camera.GetView(), camera.GetProjection(), normalMatrix, camera.GetPosition() };
 		s_RenderData->CameraBuffer->SetData(&cameraData, sizeof(RenderData::CameraData));
 
 

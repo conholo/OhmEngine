@@ -34,6 +34,7 @@ namespace Ohm
 			case ShaderDataType::Int:		return 1 * 4;
 			case ShaderDataType::Mat3:		return 3 * 3 * 4;
 			case ShaderDataType::Mat4:		return 4 * 4 * 4;
+			case ShaderDataType::Sampler2D:	return 4;
 			default:						return 0;
 		}
 	}

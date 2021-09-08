@@ -1,41 +1,77 @@
 #pragma once
 
 #include "Ohm/Rendering/Shader.h"
-
+#include "Ohm/Core/Buffer.h"
 
 namespace Ohm
 {
+	struct StagedUniform
+	{
+		StagedUniform() = default;
+		StagedUniform(const StagedUniform& other) = default;
+		StagedUniform(const ShaderUniform* uniform, uint32_t stagedBufferOffset)
+			:Uniform(uniform), StagedBufferOffset(stagedBufferOffset) { }
+
+		const ShaderUniform* Uniform;
+		uint32_t StagedBufferOffset;
+	};
 
 	class Material
 	{
 	public:
-		Material(const Ref<Shader>& shader);
-		Material(const Ref<Material>& other);
-
-		Ref<Material> Copy();
+		Material(const std::string& name, const Ref<Shader>& shader);
+		Ref<Material> Clone(const std::string& cloneName);
 
 		Ref<Shader> GetShader() const { return m_Shader; }
+		const std::string& GetName() const { return m_Name; }
 
-		void SetFloat(const std::string& name, float value);
-		void SetFloat2(const std::string& name, const glm::vec2& value);
-		void SetFloat3(const std::string& name, const glm::vec3& value);
-		void SetFloat4(const std::string& name, const glm::vec4& value);
-		void SetInt(const std::string& name, int value);
-		void SetIntArray(const std::string& name, uint32_t count, int* basePtr);
-		void SetMat3(const std::string& name, const glm::mat3& matrix);
-		void SetMat4(const std::string& name, const glm::mat4& matrix);
+		void UploadStagedUniforms();
+
+		template<typename T>
+		void StageUniform(const std::string& name, const T& data)
+		{
+			const auto* uniform = FindShaderUniform(name);
+
+			if (uniform == nullptr)
+			{
+				OHM_CORE_ERROR("Could not find uniform with name: {}.", name);
+				return;
+			}
+
+			bool uniformNotAllocated = m_StagedUniforms.find(name) == m_StagedUniforms.end();
+
+			uint32_t offset = uniformNotAllocated ? m_UniformStagingOffset : m_StagedUniforms[name].StagedBufferOffset;
+
+			m_UniformStorageBuffer.Write((uint8_t*)&data, uniform->GetSize(), offset);
+
+			if (uniformNotAllocated)
+			{
+				StagedUniform staged(uniform, m_UniformStagingOffset);
+				m_StagedUniforms[name] = staged;
+				m_UniformStagingOffset += uniform->GetSize();
+			}
+		}
+
+		template<typename T>
+		T& GetStaged(const std::string& name)
+		{
+			const auto* uniform = FindShaderUniform(name);
+
+			// TODO:: Add assertion if not found.
 		
-		float GetFloat(const std::string& name);
-		glm::vec2 GetFloat2(const std::string& name);
-		glm::vec3 GetFloat3(const std::string& name);
-		glm::vec4 GetFloat4(const std::string& name);
-		int GetInt(const std::string& name);
-		int* GetIntArray(const std::string& name, size_t count);
-		glm::mat3 GetMat3(const std::string& name);
-		glm::mat4 GetMat4(const std::string& name);
+			return m_UniformStorageBuffer.Read<T>(m_StagedUniforms[name].StagedBufferOffset);
+		}
 
 	private:
+		void AllocateStorageBuffer();
+		const ShaderUniform* FindShaderUniform(const std::string& name);
+
+	private:
+		uint32_t m_UniformStagingOffset = 0;
+		Buffer m_UniformStorageBuffer;
 		std::unordered_map<std::string, GLint> m_Uniforms;
+		std::unordered_map<std::string, StagedUniform> m_StagedUniforms;
 		Ref<Shader> m_Shader;
+		std::string m_Name;
 	};
 }

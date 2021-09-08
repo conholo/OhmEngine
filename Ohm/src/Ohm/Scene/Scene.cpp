@@ -44,7 +44,7 @@ namespace Ohm
 	void Scene::SetSceneLightingData(TransformComponent& lightTransform, LightComponent& light, const EditorCamera& camera)
 	{
 		m_LightingData.LightColor = light.Color;
-		glm::vec3 toViewSpaceLightPosition = glm::vec3(camera.GetView() * lightTransform.Transform() * glm::vec4(0.0, 0.0, 0.0, 1.0f));
+		glm::vec3 toViewSpaceLightPosition = glm::vec3(lightTransform.Transform() * camera.GetView()  * glm::vec4(0.0, 0.0, 0.0, 1.0f));
 		m_LightingData.LightPosition = toViewSpaceLightPosition;
 
 		m_SceneLightingBuffer->SetData(&m_LightingData, sizeof(Scene::LightingData));

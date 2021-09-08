@@ -7,6 +7,7 @@
 #include "Ohm/Core/Layer.h"
 #include "Ohm/Core/Log.h"
 #include "Ohm/Core/Time.h"
+#include "Ohm/Core/Buffer.h"
 //--------------------- CORE ---------------------//
 
 

@@ -6,188 +6,108 @@
 
 namespace Ohm
 {
-	Material::Material(const Ref<Shader>& shader)
-		:m_Shader(shader)
+	Material::Material(const std::string& name, const Ref<Shader>& shader)
+		:m_Name(name), m_Shader(shader)
 	{
-
+		AllocateStorageBuffer();
 	}
 
-	Material::Material(const Ref<Material>& other)
-		:m_Shader(other->m_Shader)
-	{
 
-	}
-
-	Ref<Material> Material::Copy()
+	Ref<Material> Material::Clone(const std::string& cloneName)
 	{
-		Ref<Material> copy = CreateRef<Material>(m_Shader);
+		Ref<Material> copy = CreateRef<Material>(cloneName, m_Shader);
 
 		return copy;
 	}
 
-	float Material::GetFloat(const std::string& name)
+	void Material::AllocateStorageBuffer()
 	{
-		GLint location = m_Uniforms[name];
+		const auto& uniforms = m_Shader->GetUniforms();
 
-		float value;
-		glGetUniformfv(m_Shader->GetID(), location, &value);
+		if (uniforms.size() <= 0) return;
 
-		return value;
+		uint32_t size = 0;
+
+		for (auto& [name, uniform] : uniforms)
+			size += uniform.GetSize();
+
+		m_UniformStorageBuffer.Allocate(size);
+		m_UniformStorageBuffer.ZeroInitialize();
+		OHM_CORE_TRACE("Allocated and zero initialized {} bytes to uniform storage buffer.", size);
 	}
 
-	glm::vec2 Material::GetFloat2(const std::string& name)
+	const ShaderUniform* Material::FindShaderUniform(const std::string& name)
 	{
-		GLint location = m_Uniforms[name];
+		const auto& uniforms = m_Shader->GetUniforms();
 
-		glm::vec2 value;
-		glGetUniformfv(m_Shader->GetID(), location, &value.x);
+		if (uniforms.size() <= 0) return nullptr;
 
-		return value;
-	}
-
-	glm::vec3 Material::GetFloat3(const std::string& name)
-	{
-		GLint location = m_Uniforms[name];
-
-		glm::vec3 value;
-		glGetUniformfv(m_Shader->GetID(), location, &value.x);
-
-		return value;
-	}
-
-	glm::vec4 Material::GetFloat4(const std::string& name)
-	{
-		GLint location = m_Uniforms[name];
-
-		glm::vec4 value;
-		glGetUniformfv(m_Shader->GetID(), location, &value.x);
-
-		return value;
-	}
-
-	int Material::GetInt(const std::string& name)
-	{
-		GLint location = m_Uniforms[name];
-
-		int value;
-		glGetUniformiv(m_Shader->GetID(), location, &value);
-
-		return value;
-	}
-
-	int* Material::GetIntArray(const std::string& name, size_t count)
-	{
-		GLint location = m_Uniforms[name];
-
-		std::vector<int> result;
-		result.resize(count);
-		
-		int offset = 0;
-		for (size_t i = 0; i < count; ++i, offset += sizeof(int))
+		if (uniforms.find(name) == uniforms.end())
 		{
-			int value;
-			glGetUniformiv(m_Shader->GetID(), location, result.data() + offset);
+			OHM_CORE_WARN("Could not locate uniform named: {} in shader: {}", name, m_Shader->GetName());
+			return nullptr;
 		}
-		
-		return result.data();
+
+		return &uniforms.at(name);
 	}
 
-	glm::mat3 Material::GetMat3(const std::string& name)
+	void Material::UploadStagedUniforms()
 	{
-		GLint location = m_Uniforms[name];
+		m_Shader->Bind();
 
-		glm::mat3 result(1.0f);
+		if (m_StagedUniforms.size() <= 0) return;
 
-		return result;
+		for (auto& [name, stagedUniform] : m_StagedUniforms)
+		{
+			const auto* uniform = stagedUniform.Uniform;
+
+			std::string name = uniform->GetName();
+
+			switch (uniform->GetType())
+			{
+				case ShaderDataType::Float:
+				{
+					float value = GetStaged<float>(name);
+					m_Shader->UploadUniformFloat(name, value);
+					break;
+				}
+				case ShaderDataType::Float2:
+				{
+					glm::vec2 value = GetStaged<glm::vec2>(name);
+					m_Shader->UploadUniformFloat2(name, value);
+					break;
+				}
+				case ShaderDataType::Float3:
+				{
+					glm::vec3 value = GetStaged<glm::vec3>(name);
+					m_Shader->UploadUniformFloat3(name, value);
+					break;
+				}
+				case ShaderDataType::Float4:
+				{
+					glm::vec4 value = GetStaged<glm::vec4>(name);
+					m_Shader->UploadUniformFloat4(name, value);
+					break;
+				}
+				case ShaderDataType::Int:
+				{
+					int value = GetStaged<int>(name);
+					m_Shader->UploadUniformInt(name, value);
+					break;
+				}
+				case ShaderDataType::Mat3:
+				{
+					glm::mat3 value = GetStaged<glm::mat3>(name);
+					m_Shader->UploadUniformMat3(name, value);
+					break;
+				}
+				case ShaderDataType::Mat4:
+				{
+					glm::mat4 value = GetStaged<glm::mat4>(name);
+					m_Shader->UploadUniformMat4(name, value);
+					break;
+				}
+			}
+		}
 	}
-
-	glm::mat4 Material::GetMat4(const std::string& name)
-	{
-		GLint location = m_Uniforms[name];
-
-		glm::mat4 result(1.0f);
-
-		return result;
-	}
-
-	void Material::SetFloat(const std::string& name, float value)
-	{
-		GLint location = m_Shader->UploadUniformFloat(name, value);
-
-		if (m_Uniforms.find(name) != m_Uniforms.end())
-			m_Uniforms[name] = location;
-		else
-			m_Uniforms.emplace(name, location);
-	}
-
-	void Material::SetFloat2(const std::string& name, const glm::vec2& value)
-	{
-		GLint location = m_Shader->UploadUniformFloat2(name, value);
-
-		if (m_Uniforms.find(name) != m_Uniforms.end())
-			m_Uniforms[name] = location;
-		else
-			m_Uniforms.emplace(name, location);
-	}
-
-	void Material::SetFloat3(const std::string& name, const glm::vec3& value)
-	{
-		GLint location = m_Shader->UploadUniformFloat3(name, value);
-
-		if (m_Uniforms.find(name) != m_Uniforms.end())
-			m_Uniforms[name] = location;
-		else
-			m_Uniforms.emplace(name, location);
-	}
-
-	void Material::SetFloat4(const std::string& name, const glm::vec4& value)
-	{
-		GLint location = m_Shader->UploadUniformFloat4(name, value);
-
-		if (m_Uniforms.find(name) != m_Uniforms.end())
-			m_Uniforms[name] = location;
-		else
-			m_Uniforms.emplace(name, location);
-	}
-
-	void Material::SetInt(const std::string& name, int value)
-	{
-		GLint location = m_Shader->UploadUniformInt(name, value);
-
-		if (m_Uniforms.find(name) != m_Uniforms.end())
-			m_Uniforms[name] = location;
-		else
-			m_Uniforms.emplace(name, location);
-	}
-
-	void Material::SetIntArray(const std::string& name, uint32_t count, int* basePtr)
-	{
-		GLint location = m_Shader->UploadUniformIntArray(name, count, basePtr);
-
-		if (m_Uniforms.find(name) != m_Uniforms.end())
-			m_Uniforms[name] = location;
-		else
-			m_Uniforms.emplace(name, location);
-	}
-
-	void Material::SetMat3(const std::string& name, const glm::mat3& matrix)
-	{
-		GLint location = m_Shader->UploadUniformMat3(name, matrix);
-
-		if (m_Uniforms.find(name) != m_Uniforms.end())
-			m_Uniforms[name] = location;
-		else
-			m_Uniforms.emplace(name, location);
-	}
-
-	void Material::SetMat4(const std::string& name, const glm::mat4& matrix)
-	{
-		GLint location = m_Shader->UploadUniformMat4(name, matrix);
-
-		if (m_Uniforms.find(name) != m_Uniforms.end())
-			m_Uniforms[name] = location;
-		else
-			m_Uniforms.emplace(name, location);
-	}
-
 }
