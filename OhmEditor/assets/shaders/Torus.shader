@@ -42,6 +42,7 @@ void main()
 layout(location = 0) out vec4 o_Color;
 
 uniform vec4 u_Color;
+uniform float u_SmoothBlend;
 uniform sampler2D u_Texture;
 
 struct LightingData
@@ -64,9 +65,19 @@ in vec2 v_TexCoord;
 in vec3 v_HitPosition;
 in vec3 v_RayOrigin;
 
+
+float SmoothUnion(float d1, float d2, float k)
+{
+	float h = clamp(0.5 + 0.5 * (d2 - d1) / k, 0.0, 1.0);
+	return mix(d2, d1, h) - k * h * (1.0 - h);
+}
+
+
 float DistanceToScene(vec3 position)
 {
-	return length(vec2(length(position.xz) - 0.4, position.y)) - 0.1;
+	float horizontalTorus = length(vec2(length(position.xz) - 0.3, position.y)) - 0.1;
+	float verticalTorus = length(vec2(length(position.xy) - 0.3, position.z)) - 0.1;
+	return SmoothUnion(horizontalTorus, verticalTorus, u_SmoothBlend);
 }
 
 

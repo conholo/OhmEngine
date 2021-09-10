@@ -36,9 +36,6 @@ namespace Ohm
 			Time deltaTime = time - m_LastFrameTime;
 			m_LastFrameTime = time;
 
-			RenderCommand::Clear();
-			RenderCommand::ClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-
 			for (auto* layer : m_LayerStack)
 				layer->OnUpdate(deltaTime);
 
@@ -64,7 +61,11 @@ namespace Ohm
 		dispatcher.Dispatch<WindowResizedEvent>(OHM_BIND_FN(Application::OnWindowResize));
 
 		for (Layer* layer : m_LayerStack)
+		{
+			if (event.Handled)
+				break;
 			layer->OnEvent(event);
+		}
 	}
 
 	void Application::PushLayer(Layer* layer)

@@ -26,4 +26,5 @@
 #include "Ohm/Rendering/Mesh.h"
 #include "Ohm/Rendering/Texture2D.h"
 #include "Ohm/Rendering/Material.h"
+#include "Ohm/Rendering/FrameBuffer.h"
 //--------------------- RENDERING ---------------------//

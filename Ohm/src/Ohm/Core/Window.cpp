@@ -11,6 +11,13 @@
 
 namespace Ohm
 {
+
+	static void GLFWErrorCallback(int error, const char* description)
+	{
+		OHM_CORE_ERROR("GLFW Error ({0}): {1}", error, description);
+	}
+
+
 	Window::Window(const std::string& name, uint32_t width, uint32_t height)
 		:m_WindowData({ name, width, height })
 	{
@@ -30,20 +37,15 @@ namespace Ohm
 			return;
 		}
 
-		GLFWmonitor* primary = glfwGetPrimaryMonitor();
-
-		// TODO:: Fix DPI scaling issues.
-		float x, y;
-		glfwGetMonitorContentScale(primary, &x, &y);
-
-		m_WindowData.ScaledWidth = m_WindowData.Width * x;
-		m_WindowData.ScaledHeight = m_WindowData.Height * y;
-
+		glfwSetErrorCallback(GLFWErrorCallback);
+		glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 		m_WindowHandle = glfwCreateWindow(m_WindowData.Width, m_WindowData.Height, m_WindowData.Name.c_str(), nullptr, nullptr);
 
 		glfwMakeContextCurrent(m_WindowHandle);
 
-		if (!gladLoadGL())
+		int gladStatus = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+
+		if (!gladStatus)
 		{
 			std::cout << "Failed to initialize OpenGL context" << std::endl;
 			return;
@@ -63,6 +65,8 @@ namespace Ohm
 		glfwSetWindowSizeCallback(m_WindowHandle, [](GLFWwindow* window, int width, int height)
 			{
 				WindowData& data = *(static_cast<WindowData*>(glfwGetWindowUserPointer(window)));
+				data.Width = width;
+				data.Height = height;
 				
 				WindowResizedEvent windowResizedEvent(width, height);
 				data.Callback(windowResizedEvent);

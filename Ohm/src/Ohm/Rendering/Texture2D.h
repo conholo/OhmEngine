@@ -14,6 +14,8 @@ namespace Ohm
 		void Bind(uint32_t textureSlot) const;
 		void SetData(const void* data, uint32_t size);
 
+		uint32_t GetID() const { return m_ID; }
+
 	private:
 		uint32_t m_ID;
 		uint32_t m_Width, m_Height;

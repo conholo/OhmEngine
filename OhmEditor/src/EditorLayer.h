@@ -2,6 +2,7 @@
 
 #include "Ohm.h"
 #include "Ohm/Rendering/EditorCamera.h"
+#include "Ohm/Rendering/FBO.h"
 
 namespace Ohm
 {
@@ -19,9 +20,17 @@ namespace Ohm
 		void OnEvent(Event& event) override;
 
 	private:
-		bool OnWindowResized(WindowResizedEvent& windowResizedEvent);
 
-	private:
+		Entity m_Quad;
+		glm::vec3 m_QuadPosition{ 0.0f, 8.0f, 0.0f };
+		glm::vec3 m_QuadRotationDegrees{ 0.0f };
+		glm::vec3 m_QuadRotation{ 0.0f };
+		glm::vec3 m_QuadSize{ 3.0f };
+		glm::vec4 m_QuadColor{ 0.0f, 0.5f, 0.2f, 1.0f };
+		float m_QuadSpecularStrength = 0.8f;
+		float m_QuadAmbientStrength = 0.5f;
+		float m_QuadDiffuseStrength = 1.0f;
+		bool m_QuadIsTextured = false;
 
 
 		Entity m_Torus;
@@ -30,6 +39,7 @@ namespace Ohm
 		glm::vec3 m_TorusRotation{ 0.0f };
 		glm::vec3 m_TorusSize{ 5.0f };
 		glm::vec4 m_TorusColor{ 0.0f, 0.8f, 0.8f, 1.0f };
+		float m_TorusSmoothBlend = 0.1;
 		
 
 		Entity m_Sphere;
@@ -76,8 +86,15 @@ namespace Ohm
 
 
 		EditorCamera m_Camera;
+		glm::vec2 m_ViewportSize{ 0.0f };
+		glm::vec2 m_ViewportBounds[2];
+		glm::vec4 m_ClearColor{ 0.1f, 0.1f, 0.1f, 1.0f };
 
+
+		Ref<Texture2D> m_TestTexture;
 		Ref<Scene> m_Scene;
+		Ref<Framebuffer> m_Framebuffer;
+		Ref<FBO> m_TestFBO;
 		float m_ElapsedTime = 0.0f;
 	};
 }

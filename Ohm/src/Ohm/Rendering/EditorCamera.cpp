@@ -131,7 +131,6 @@ namespace Ohm
 	void EditorCamera::SetViewportSize(float width, float height)
 	{
 		m_AspectRatio = width / height;
-		OHM_INFO(m_AspectRatio);
 		RecalculateProjection();
 	}
 
