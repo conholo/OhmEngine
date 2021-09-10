@@ -27,7 +27,8 @@ void main()
 	v_TexCoord = a_TexCoord;
 
 	vec4 viewSpacePosition = u_ModelView * vec4(a_Position, 1.0);
-	v_RayOrigin = (inverse(u_ModelMatrix) * vec4(u_CameraPosition, 1.0)).xyz; // Object space
+	vec3 cameraView = (inverse(u_ModelMatrix) * vec4(u_CameraPosition, 1.0)).xyz;
+	v_RayOrigin = cameraView;
 	v_HitPosition = a_Position;
 
 	gl_Position = u_ProjectionMatrix * viewSpacePosition;
@@ -46,7 +47,10 @@ uniform sampler2D u_Texture;
 struct LightingData
 {
 	vec4 LightColor;
-	vec3 LightPosition;
+	vec3 ViewSpaceLightPosition;
+	float _pad;
+	vec3 WorldSpaceLightPosition;
+	float LightIntensity;
 };
 
 
@@ -62,7 +66,7 @@ in vec3 v_RayOrigin;
 
 float DistanceToScene(vec3 position)
 {
-	return length(vec2(length(position.xz) - 0.3, position.y)) - 0.075;
+	return length(vec2(length(position.xz) - 0.4, position.y)) - 0.1;
 }
 
 
@@ -78,7 +82,7 @@ float RayMarch(vec3 rayOrigin, vec3 rayDirection)
 
 		distanceTraveled += distanceToSurface;
 
-		if (distanceTraveled > 100.0f || distanceToSurface < 0.1)
+		if (distanceTraveled > 100.0f || distanceToSurface < 0.001)
 			break;
 	}
 
@@ -114,10 +118,13 @@ void main()
 	{
 		vec3 rayPosition = rayOrigin + rayDirection * rayMarch;
 		vec3 normal = GetSceneNormals(rayPosition);
+		vec3 lightDirection = normalize(u_LightingData.ViewSpaceLightPosition - v_HitPosition);
 
-		float NdotL = clamp(dot(u_LightingData.LightPosition, normal), 0, 1);
+		float NdotL = max(dot(normal, lightDirection), 0.0);
 
-		result = vec4(normal, 1.0);
+		float diffuseIntensity = NdotL * u_LightingData.LightIntensity;
+
+		result = vec4(diffuseIntensity, diffuseIntensity, diffuseIntensity, 1.0);
 	}
 
 	o_Color = result * u_Color;

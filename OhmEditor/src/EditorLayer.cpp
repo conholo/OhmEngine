@@ -29,7 +29,7 @@ namespace Ohm
 		// Render Primitives Begin
 
 		// Shaders
-		Ref<Shader> blinnPhongShader = CreateRef<Shader>("assets/shaders/Blinn-Phong.shader");
+		Ref<Shader> blinnPhongShader = CreateRef<Shader>("assets/shaders/Phong.shader");
 		Ref<Shader> flatColorShader = CreateRef<Shader>("assets/shaders/flatcolor.shader");
 		Ref<Shader> torusShader = CreateRef<Shader>("assets/shaders/Torus.shader");
 
@@ -59,7 +59,7 @@ namespace Ohm
 		m_DirectionalLight = m_Scene->Create("Directional Light");
 
 		// Light
-		m_DirectionalLight.AddComponent<LightComponent>(LightType::Directional, m_LightColor, true);
+		m_DirectionalLight.AddComponent<LightComponent>(LightType::Directional, m_LightColor, 1.0f, true);
 		m_DirectionalLight.AddComponent<MeshRendererComponent>(lightDemoMaterial, cubeMesh);
 		auto& lightTranslation = m_DirectionalLight.GetComponent<TransformComponent>().Translation;
 		lightTranslation = m_LightPosition;
@@ -96,6 +96,7 @@ namespace Ohm
 		sphereMaterial->StageUniform<glm::vec4>("u_Color", m_SphereColor);
 		sphereMaterial->StageUniform<float>("u_SpecularStrength", m_SphereSpecularStrength);
 		sphereMaterial->StageUniform<float>("u_AmbientStrength", m_SphereAmbientStrength);
+		sphereMaterial->StageUniform<float>("u_DiffuseStrength", m_SphereDiffuseStrength);
 		sphereMaterial->StageUniform<int>("u_Texture", m_SphereIsTextured ? 1 : 0);
 
 
@@ -112,6 +113,7 @@ namespace Ohm
 		cubeMaterial->StageUniform<glm::vec4>("u_Color", m_CubeColor);
 		cubeMaterial->StageUniform<float>("u_SpecularStrength", m_CubeSpecularStrength);
 		cubeMaterial->StageUniform<float>("u_AmbientStrength", m_CubeAmbientStrength);
+		cubeMaterial->StageUniform<float>("u_DiffuseStrength", m_CubeDiffuseStrength);
 		cubeMaterial->StageUniform<int>("u_Texture", m_CubeIsTextured ? 1 : 0);
 
 		// Plane
@@ -127,6 +129,7 @@ namespace Ohm
 		planeMaterial->StageUniform<glm::vec4>("u_Color", m_PlaneColor);
 		planeMaterial->StageUniform<float>("u_SpecularStrength", m_PlaneSpecularStrength);
 		planeMaterial->StageUniform<float>("u_AmbientStrength", m_PlaneAmbientStrength);
+		planeMaterial->StageUniform<float>("u_DiffuseStrength", m_PlaneDiffuseStrength);
 		planeMaterial->StageUniform<int>("u_Texture", m_PlaneIsTextured ? 1 : 0);
 
 		// Torus
@@ -140,8 +143,6 @@ namespace Ohm
 
 		auto& torusMaterial = m_Torus.GetComponent<MeshRendererComponent>().MaterialInstance;
 		torusMaterial->StageUniform<glm::vec4>("u_Color", m_TorusColor);
-
-
 
 		// Light
 		auto& lightTransformComponent = m_DirectionalLight.GetComponent<TransformComponent>();
@@ -166,7 +167,7 @@ namespace Ohm
 			lightScale = m_LightSize;
 		}
 
-
+		float& intensity = m_DirectionalLight.GetComponent<LightComponent>().Intensity;
 
 		m_Camera.Update(dt);
 		EditorScene::RenderScene(m_Camera);
@@ -267,8 +268,10 @@ namespace Ohm
 		ImGui::DragFloat3("Light Scale", &m_LightSize[0], 0.1f, -100.0f, 100.f);
 		ImGui::Separator();
 		ImGui::Text("Lighting");
-		ImGui::ColorPicker4("Light Color", &m_LightColor[0]);
-		m_DirectionalLight.GetComponent<LightComponent>().Color = m_LightColor;
+
+		auto& light = m_DirectionalLight.GetComponent<LightComponent>();
+		ImGui::DragFloat("Light Intensity", &light.Intensity, 0.01f, 0.0f, 1.0f);
+		ImGui::ColorPicker4("Light Color", &light.Color[0]);
 
 		ImGui::Checkbox("Light Animation", &m_LightSpin);
 		ImGui::Separator();
@@ -308,6 +311,7 @@ namespace Ohm
 		ImGui::ColorPicker4("Sphere Color", &m_SphereColor[0]);
 		ImGui::DragFloat("Sphere Specular Strength", &m_SphereSpecularStrength, 0.01f, 0.0f, 1.0f);
 		ImGui::DragFloat("Sphere Ambient Strength", &m_SphereAmbientStrength, 0.01f, 0.0f, 1.0f);
+		ImGui::DragFloat("Sphere Diffuse Strength", &m_SphereDiffuseStrength, 0.01f, 0.0f, 1.0f);
 		ImGui::Checkbox("Sphere Textured", &m_SphereIsTextured);
 		ImGui::Separator();
 		ImGui::Separator();
@@ -327,6 +331,7 @@ namespace Ohm
 		ImGui::ColorPicker4("Cube Color", &m_CubeColor[0]);
 		ImGui::DragFloat("Cube Specular Strength", &m_CubeSpecularStrength, 0.01f, 0.0f, 1.0f);
 		ImGui::DragFloat("Cube Ambient Strength", &m_CubeAmbientStrength, 0.01f, 0.0f, 1.0f);
+		ImGui::DragFloat("Cube Diffuse Strength", &m_CubeDiffuseStrength, 0.01f, 0.0f, 1.0f);
 		ImGui::Checkbox("Cube Textured", &m_CubeIsTextured);
 		ImGui::Separator();
 		ImGui::Separator();
@@ -346,6 +351,7 @@ namespace Ohm
 		ImGui::ColorPicker4("Plane Color", &m_PlaneColor[0]);
 		ImGui::DragFloat("Plane Specular Strength", &m_PlaneSpecularStrength, 0.01f, 0.0f, 1.0f);
 		ImGui::DragFloat("Plane Ambient Strength", &m_PlaneAmbientStrength, 0.01f, 0.0f, 1.0f);
+		ImGui::DragFloat("Plane Diffuse Strength", &m_PlaneDiffuseStrength, 0.01f, 0.0f, 1.0f);
 		ImGui::Checkbox("Plane Textured", &m_PlaneIsTextured);
 		ImGui::Separator();
 		ImGui::Separator();

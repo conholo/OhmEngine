@@ -40,7 +40,10 @@ namespace Ohm
 		struct LightingData
 		{	
 			glm::vec4 LightColor;
-			glm::vec3 LightPosition;
+			glm::vec3 ViewSpaceLightPosition;
+			float _paddingl = 0;
+			glm::vec3 WorldSpaceLightPosition;
+			float LightIntensity;
 		};
 
 		LightingData m_LightingData;

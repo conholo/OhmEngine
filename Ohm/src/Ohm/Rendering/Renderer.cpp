@@ -66,7 +66,6 @@ namespace Ohm
 		RenderData::CameraData cameraData{ modelView, transform.Transform(), camera.GetView(), camera.GetProjection(), normalMatrix, camera.GetPosition() };
 		s_RenderData->CameraBuffer->SetData(&cameraData, sizeof(RenderData::CameraData));
 
-
 		RenderCommand::DrawIndexed(s_RenderData->VAO, meshRenderer.MeshData->GetIndexBuffer()->GetCount());
 
 		s_RenderData->VAO->Unbind();

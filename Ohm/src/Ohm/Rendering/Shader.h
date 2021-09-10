@@ -36,6 +36,13 @@ namespace Ohm
 		uint32_t m_UniformBufferOffset = 0;
 	};
 
+	class ShaderBlock
+	{
+	public:
+		ShaderBlock() = default;
+		ShaderBlock(const std::string& name, uint32_t size, uint32_t memberCount, const ShaderUniform& uniform);
+	};
+
 	struct ShaderBuffer
 	{
 		std::string Name;

@@ -79,11 +79,12 @@ namespace Ohm
 	{
 		LightType Type;
 		glm::vec4 Color;
+		float Intensity = 1.0f;
 		bool DebugLight = true;
 
 		LightComponent() = default;
 		LightComponent(const LightComponent&) = default;
-		LightComponent(LightType type, const glm::vec4& color = glm::vec4(1.0f), bool debug = false)
-			:Type(type), Color(color), DebugLight(debug) { }
+		LightComponent(LightType type, const glm::vec4& color = glm::vec4(1.0f), float intensity = 1.0, bool debug = false)
+			:Type(type), Color(color), DebugLight(debug), Intensity(intensity) { }
 	};
 }
