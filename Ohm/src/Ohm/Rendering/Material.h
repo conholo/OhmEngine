@@ -62,9 +62,11 @@ namespace Ohm
 			return m_UniformStorageBuffer.Read<T>(m_StagedUniforms[name].StagedBufferOffset);
 		}
 
+		const ShaderUniform* FindShaderUniform(const std::string& name);
+		const std::unordered_map<std::string, StagedUniform>& GetAvailableUniforms() { return m_StagedUniforms; }
+
 	private:
 		void AllocateStorageBuffer();
-		const ShaderUniform* FindShaderUniform(const std::string& name);
 
 	private:
 		uint32_t m_UniformStagingOffset = 0;

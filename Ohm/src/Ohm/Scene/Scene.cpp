@@ -31,6 +31,7 @@ namespace Ohm
 		if (m_Registry.valid(entity))
 		{
 			m_Registry.destroy(entity);
+			return true;
 		}
 
 		return false;

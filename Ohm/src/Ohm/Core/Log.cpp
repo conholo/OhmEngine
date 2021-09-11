@@ -4,10 +4,14 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/basic_file_sink.h>
 
+
+
 namespace Ohm
 {
 	Ref<spdlog::logger> Log::s_EngineLogger = nullptr;
 	Ref<spdlog::logger> Log::s_ClientLogger = nullptr;
+
+	std::vector<spdlog::sink_ptr> Log::s_Sinks;
 
 	void Log::Init()
 	{
@@ -27,5 +31,12 @@ namespace Ohm
 		spdlog::register_logger(s_ClientLogger);
 		s_ClientLogger->set_level(spdlog::level::trace);
 		s_ClientLogger->flush_on(spdlog::level::trace);
+	}
+
+	void Log::AddSink(const spdlog::sink_ptr& sinkPointer)
+	{
+		s_Sinks.push_back(sinkPointer);
+		s_EngineLogger->sinks().push_back(sinkPointer);
+		s_ClientLogger->sinks().push_back(sinkPointer);
 	}
 }

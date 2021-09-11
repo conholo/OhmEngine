@@ -4,6 +4,11 @@
 #include "Ohm/Rendering/EditorCamera.h"
 #include "Ohm/Rendering/FBO.h"
 
+#include "Scripts/Testing/TransformWrapper.h"
+#include "Panels/ConsolePanel.h"
+#include "Panels/Viewport.h"
+#include "Panels/SceneHierarchyPanel.h"
+
 namespace Ohm
 {
 	class EditorLayer : public Layer
@@ -86,15 +91,23 @@ namespace Ohm
 
 
 		EditorCamera m_Camera;
-		glm::vec2 m_ViewportSize{ 0.0f };
-		glm::vec2 m_ViewportBounds[2];
 		glm::vec4 m_ClearColor{ 0.1f, 0.1f, 0.1f, 1.0f };
 
 
 		Ref<Texture2D> m_TestTexture;
 		Ref<Scene> m_Scene;
 		Ref<Framebuffer> m_Framebuffer;
-		Ref<FBO> m_TestFBO;
+
+		Ref<TransformWrapper> m_CubeWrapper;
+		Ref<TransformWrapper> m_SphereWrapper;
+		Ref<TransformWrapper> m_PlaneWrapper;
+		Ref<TransformWrapper> m_TorusWrapper;
+		Ref<TransformWrapper> m_QuadWrapper;
+
+		ConsolePanel m_ConsolePanel;
+		Viewport m_ViewportPanel;
+		SceneHierarchyPanel m_SceneHierarchyPanel;
+
 		float m_ElapsedTime = 0.0f;
 	};
 }

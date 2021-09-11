@@ -17,9 +17,13 @@ namespace Ohm
 		static Ref<spdlog::logger>& GetEngineLogger() { return s_EngineLogger; }
 		static Ref<spdlog::logger>& GetClientLogger() { return s_ClientLogger; }
 
+		static void AddSink(const spdlog::sink_ptr& sinkPointer);
+
 	private:
 		static Ref<spdlog::logger> s_EngineLogger;
 		static Ref<spdlog::logger> s_ClientLogger;
+
+		static std::vector<spdlog::sink_ptr> s_Sinks;
 	};
 }
 

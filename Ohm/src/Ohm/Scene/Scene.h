@@ -50,5 +50,6 @@ namespace Ohm
 
 		friend class Entity;
 		friend class EditorScene;
+		friend class SceneHierarchyPanel;
 	};
 }

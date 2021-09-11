@@ -13,6 +13,8 @@
 
 namespace Ohm
 {
+	Renderer::Statistics Renderer::s_Stats;
+
 	struct RenderData
 	{
 		Ref<VertexArray> VAO;
@@ -52,7 +54,12 @@ namespace Ohm
 		s_RenderData->CameraBuffer = CreateRef<UniformBuffer>(sizeof(RenderData::CameraData), 0);
 	}
 
-	void Renderer::DrawMesh(const EditorCamera& camera, const MeshRendererComponent& meshRenderer, const TransformComponent& transform)
+	void Renderer::BeginScene()
+	{
+		s_Stats.Clear();
+	}
+
+	void Renderer::Draw(const EditorCamera& camera, MeshRendererComponent& meshRenderer, const TransformComponent& transform)
 	{
 		s_RenderData->VAO->Bind();
 		meshRenderer.MaterialInstance->UploadStagedUniforms();
@@ -71,6 +78,14 @@ namespace Ohm
 		s_RenderData->VAO->Unbind();
 		meshRenderer.MaterialInstance->GetShader()->Unbind();
 		meshRenderer.MeshData->Unbind();
+
+		s_Stats.TriangleCount += meshRenderer.MeshData->GetIndices().size() / 3;
+		s_Stats.VertexCount += meshRenderer.MeshData->GetVertices().size();
+	}
+
+	void Renderer::EndScene()
+	{
+
 	}
 
 	void Renderer::Shutdown()

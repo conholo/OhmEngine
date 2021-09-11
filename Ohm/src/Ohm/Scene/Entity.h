@@ -62,6 +62,6 @@ namespace Ohm
 
 	private:
 		Scene* m_Scene = nullptr;
-		entt::entity m_EntityHandle;
+		entt::entity m_EntityHandle{ entt::null };
 	};
 }

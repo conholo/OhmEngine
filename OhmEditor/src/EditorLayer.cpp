@@ -2,6 +2,8 @@
 
 #include <imgui/imgui.h>
 
+#include "Panels/Dockspace.h"
+
 #include "Ohm/Editor/EditorScene.h"
 #include <glm/glm.hpp>
 
@@ -28,8 +30,7 @@ namespace Ohm
 		framebufferSpecification.Height = 720;
 		
 		m_Framebuffer = CreateRef<Framebuffer>(framebufferSpecification);
-
-		//m_TestFBO = CreateRef<FBO>(1280, 720);
+		m_ViewportPanel.SetFramebuffer(m_Framebuffer);
 
 		m_Camera.SetPosition(glm::vec3(0.0f, 8.5f, 20.0f));
 		m_Camera.SetRotation(glm::vec2(15.0f, 0.0f));
@@ -46,6 +47,7 @@ namespace Ohm
 		// Primitives
 		Ref<Mesh> cubeMesh = Mesh::CreatePrimitive(Primitive::Cube);
 		Ref<Mesh> quadMesh = Mesh::CreatePrimitive(Primitive::Quad);
+		Ref<Mesh> planeMesh = Mesh::CreatePrimitive(Primitive::Plane);
 		Ref<Mesh> sphereMesh = Mesh::CreatePrimitive(Primitive::Sphere);
 
 		// Base Materials
@@ -71,6 +73,12 @@ namespace Ohm
 		m_Quad = m_Scene->Create("Quad");
 		m_DirectionalLight = m_Scene->Create("Directional Light");
 
+		m_CubeWrapper = CreateRef<TransformWrapper>(m_Cube.GetComponent<TransformComponent>(), glm::vec3(5.0f, 3.0f, 0.0), glm::radians(glm::vec3(45.0f)), glm::vec3(3.5f));
+		m_PlaneWrapper = CreateRef<TransformWrapper>(m_Plane.GetComponent<TransformComponent>(), glm::vec3(0.0f, -2.0f, 0.0), glm::vec3(0.0f), glm::vec3(100.0f, 0.01f, 100.0f));
+		m_SphereWrapper = CreateRef<TransformWrapper>(m_Sphere.GetComponent<TransformComponent>(), glm::vec3(-5.0f, 3.0f, 0.0), glm::vec3(0.0f), glm::vec3(2.0f));
+		m_QuadWrapper = CreateRef<TransformWrapper>(m_Quad.GetComponent<TransformComponent>(), glm::vec3(0.0f, 8.0f, 0.0), glm::radians(glm::vec3(-45.0f, 0.0f, 0.0f)), glm::vec3(3.0f));
+		m_TorusWrapper = CreateRef<TransformWrapper>(m_Torus.GetComponent<TransformComponent>(), glm::vec3(0.0f, 3.0f, 0.0), glm::vec3(0.0f) , glm::vec3(5.0f));
+
 		// Light
 		m_DirectionalLight.AddComponent<LightComponent>(LightType::Directional, m_LightColor, 1.0f, true);
 		m_DirectionalLight.AddComponent<MeshRendererComponent>(lightDemoMaterial, cubeMesh);
@@ -84,151 +92,73 @@ namespace Ohm
 		// Scene Entities
 		m_Sphere.AddComponent<MeshRendererComponent>(sphereMaterial, sphereMesh);
 		m_Cube.AddComponent<MeshRendererComponent>(cubeMaterial, cubeMesh);
-		m_Plane.AddComponent<MeshRendererComponent>(planeMaterial, cubeMesh);
+		m_Plane.AddComponent<MeshRendererComponent>(planeMaterial, planeMesh);
 		m_Torus.AddComponent<MeshRendererComponent>(torusCubeMaterial, cubeMesh);
 		m_Quad.AddComponent<MeshRendererComponent>(quadMaterial, quadMesh);
 
 		lightDemoMaterial->StageUniform<glm::vec4>("u_Color", glm::vec4(1.0f));
 
+		quadMaterial->StageUniform<glm::vec4>("u_Color", m_QuadColor);
+		quadMaterial->StageUniform<float>("u_SpecularStrength", m_QuadSpecularStrength);
+		quadMaterial->StageUniform<float>("u_AmbientStrength", m_QuadAmbientStrength);
+		quadMaterial->StageUniform<float>("u_DiffuseStrength", m_QuadDiffuseStrength);
+		quadMaterial->StageUniform<int>("u_Texture", m_QuadIsTextured ? 1 : 0);
+
+
+		// Sphere
+		sphereMaterial->StageUniform<glm::vec4>("u_Color", m_SphereColor);
+		sphereMaterial->StageUniform<float>("u_SpecularStrength", m_SphereSpecularStrength);
+		sphereMaterial->StageUniform<float>("u_AmbientStrength", m_SphereAmbientStrength);
+		sphereMaterial->StageUniform<float>("u_DiffuseStrength", m_SphereDiffuseStrength);
+		sphereMaterial->StageUniform<int>("u_Texture", m_SphereIsTextured ? 1 : 0);
+
+
+		// Cube
+		cubeMaterial->StageUniform<glm::vec4>("u_Color", m_CubeColor);
+		cubeMaterial->StageUniform<float>("u_SpecularStrength", m_CubeSpecularStrength);
+		cubeMaterial->StageUniform<float>("u_AmbientStrength", m_CubeAmbientStrength);
+		cubeMaterial->StageUniform<float>("u_DiffuseStrength", m_CubeDiffuseStrength);
+		cubeMaterial->StageUniform<int>("u_Texture", m_CubeIsTextured ? 1 : 0);
+
+		// Plane
+		planeMaterial->StageUniform<glm::vec4>("u_Color", m_PlaneColor);
+		planeMaterial->StageUniform<float>("u_SpecularStrength", m_PlaneSpecularStrength);
+		planeMaterial->StageUniform<float>("u_AmbientStrength", m_PlaneAmbientStrength);
+		planeMaterial->StageUniform<float>("u_DiffuseStrength", m_PlaneDiffuseStrength);
+		planeMaterial->StageUniform<int>("u_Texture", m_PlaneIsTextured ? 1 : 0);
+
+		// Torus
+		torusCubeMaterial->StageUniform<glm::vec4>("u_Color", m_TorusColor);
+		torusCubeMaterial->StageUniform<float>("u_SmoothBlend", m_TorusSmoothBlend);
+
+
+		float& intensity = m_DirectionalLight.GetComponent<LightComponent>().Intensity;
+
+
+		m_SceneHierarchyPanel.SetContext(m_Scene);
 		EditorScene::LoadScene(m_Scene);
 	}
 
 	void EditorLayer::OnUpdate(Time dt)
 	{
+		glm::vec2 viewportSize = m_ViewportPanel.GetViewportSize();
+
 		if (FramebufferSpecification specification = m_Framebuffer->GetFrameBufferSpecification();
-			m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&
-			(specification.Width != m_ViewportSize.x || specification.Height != m_ViewportSize.y))
+			viewportSize.x > 0.0f && viewportSize.y > 0.0f &&
+			(specification.Width != viewportSize.x || specification.Height != viewportSize.y))
 		{
-			m_Framebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
-			m_Camera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
-		}
-
-		//if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f && (m_TestFBO->Width() != m_ViewportSize.x || m_TestFBO->Height() != m_ViewportSize.y))
-		//{
-		//	m_TestFBO->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
-		//	m_Camera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
-		//}
-
-
-		// Update Entity Transforms/ Material Properties 
-		{
-			m_ElapsedTime += dt;
-
-			// Quad
-			auto& quadTransformComponent = m_Quad.GetComponent<TransformComponent>();
-			auto& quadTranslation = quadTransformComponent.Translation;
-			auto& quadRotation = quadTransformComponent.Rotation;
-			auto& quadScale = quadTransformComponent.Scale;
-			quadTranslation = m_QuadPosition;
-			quadRotation = m_QuadRotation;
-			quadScale = m_QuadSize;
-
-			auto& quadMaterial = m_Quad.GetComponent<MeshRendererComponent>().MaterialInstance;
-			quadMaterial->StageUniform<glm::vec4>("u_Color", m_QuadColor);
-			quadMaterial->StageUniform<float>("u_SpecularStrength", m_QuadSpecularStrength);
-			quadMaterial->StageUniform<float>("u_AmbientStrength", m_QuadAmbientStrength);
-			quadMaterial->StageUniform<float>("u_DiffuseStrength", m_QuadDiffuseStrength);
-			quadMaterial->StageUniform<int>("u_Texture", m_QuadIsTextured ? 1 : 0);
-
-
-			// Sphere
-			auto& sphereTransformComponent = m_Sphere.GetComponent<TransformComponent>();
-			auto& sphereTranslation = sphereTransformComponent.Translation;
-			auto& sphereRotation = sphereTransformComponent.Rotation;
-			auto& sphereScale = sphereTransformComponent.Scale;
-			sphereTranslation = m_SpherePosition;
-			sphereRotation = m_SphereRotation;
-			sphereScale = m_SphereSize;
-
-			auto& sphereMaterial = m_Sphere.GetComponent<MeshRendererComponent>().MaterialInstance;
-			sphereMaterial->StageUniform<glm::vec4>("u_Color", m_SphereColor);
-			sphereMaterial->StageUniform<float>("u_SpecularStrength", m_SphereSpecularStrength);
-			sphereMaterial->StageUniform<float>("u_AmbientStrength", m_SphereAmbientStrength);
-			sphereMaterial->StageUniform<float>("u_DiffuseStrength", m_SphereDiffuseStrength);
-			sphereMaterial->StageUniform<int>("u_Texture", m_SphereIsTextured ? 1 : 0);
-
-
-			// Cube
-			auto& cubeTransformComponent = m_Cube.GetComponent<TransformComponent>();
-			auto& cubeTranslation = cubeTransformComponent.Translation;
-			auto& cubeRotation = cubeTransformComponent.Rotation;
-			auto& cubeScale = cubeTransformComponent.Scale;
-			cubeTranslation = m_CubePosition;
-			cubeRotation = m_CubeRotation;
-			cubeScale = m_CubeSize;
-
-			auto& cubeMaterial = m_Cube.GetComponent<MeshRendererComponent>().MaterialInstance;
-			cubeMaterial->StageUniform<glm::vec4>("u_Color", m_CubeColor);
-			cubeMaterial->StageUniform<float>("u_SpecularStrength", m_CubeSpecularStrength);
-			cubeMaterial->StageUniform<float>("u_AmbientStrength", m_CubeAmbientStrength);
-			cubeMaterial->StageUniform<float>("u_DiffuseStrength", m_CubeDiffuseStrength);
-			cubeMaterial->StageUniform<int>("u_Texture", m_CubeIsTextured ? 1 : 0);
-
-			// Plane
-			auto& planeTransformComponent = m_Plane.GetComponent<TransformComponent>();
-			auto& planeTranslation = planeTransformComponent.Translation;
-			auto& planeRotation = planeTransformComponent.Rotation;
-			auto& planeScale = planeTransformComponent.Scale;
-			planeTranslation = m_PlanePosition;
-			planeRotation = m_PlaneRotation;
-			planeScale = m_PlaneSize;
-
-			auto& planeMaterial = m_Plane.GetComponent<MeshRendererComponent>().MaterialInstance;
-			planeMaterial->StageUniform<glm::vec4>("u_Color", m_PlaneColor);
-			planeMaterial->StageUniform<float>("u_SpecularStrength", m_PlaneSpecularStrength);
-			planeMaterial->StageUniform<float>("u_AmbientStrength", m_PlaneAmbientStrength);
-			planeMaterial->StageUniform<float>("u_DiffuseStrength", m_PlaneDiffuseStrength);
-			planeMaterial->StageUniform<int>("u_Texture", m_PlaneIsTextured ? 1 : 0);
-
-			// Torus
-			auto& torusTransformComponent = m_Torus.GetComponent<TransformComponent>();
-			auto& torusTranslation = torusTransformComponent.Translation;
-			auto& torusRotation = torusTransformComponent.Rotation;
-			auto& torusScale = torusTransformComponent.Scale;
-			torusTranslation = m_TorusPosition;
-			torusRotation = m_TorusRotation;
-			torusScale = m_TorusSize;
-
-			auto& torusMaterial = m_Torus.GetComponent<MeshRendererComponent>().MaterialInstance;
-			torusMaterial->StageUniform<glm::vec4>("u_Color", m_TorusColor);
-			torusMaterial->StageUniform<float>("u_SmoothBlend", m_TorusSmoothBlend);
-
-			// Light
-			auto& lightTransformComponent = m_DirectionalLight.GetComponent<TransformComponent>();
-			auto& lightTranslation = lightTransformComponent.Translation;
-
-			if (m_LightSpin)
-			{
-				float newX = sin(m_ElapsedTime);
-				float newY = cos(m_ElapsedTime);
-				float newZ = sin(m_ElapsedTime / 2.0f);
-				lightTranslation.x = newX * 15.0f;
-				lightTranslation.y = newY * 15.0f;
-				lightTranslation.z = newZ * 15.0f;
-			}
-			else
-			{
-				auto& lightRotation = lightTransformComponent.Rotation;
-				auto& lightScale = lightTransformComponent.Scale;
-
-				lightTranslation = m_LightPosition;
-				lightRotation = m_LightRotation;
-				lightScale = m_LightSize;
-			}
-
-			float& intensity = m_DirectionalLight.GetComponent<LightComponent>().Intensity;
+			m_Framebuffer->Resize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
+			m_Camera.SetViewportSize(viewportSize.x, viewportSize.y);
 		}
 
 		m_Camera.Update(dt);
 
 		m_Framebuffer->Bind();
-		//m_TestFBO->Bind();
-		RenderCommand::ClearColor(m_ClearColor.r, m_ClearColor.g, m_ClearColor.b, m_ClearColor.a);
 		RenderCommand::Clear();
+		RenderCommand::ClearColor(m_ClearColor.r, m_ClearColor.g, m_ClearColor.b, m_ClearColor.a);
 		EditorScene::RenderScene(m_Camera);
 
 		m_Framebuffer->Unbind();
-		//m_TestFBO->Unbind();
 	}
 
 	void EditorLayer::OnDetach()
@@ -238,55 +168,8 @@ namespace Ohm
 
 	void EditorLayer::OnUIRender()
 	{
-		// Note: Switch this to true to enable dockspace
-		static bool dockspaceOpen = true;
-		static bool opt_fullscreen_persistant = true;
-		bool opt_fullscreen = opt_fullscreen_persistant;
-		static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
-
-		// We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
-		// because it would be confusing to have two docking targets within each others.
-		ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
-		if (opt_fullscreen)
-		{
-			ImGuiViewport* viewport = ImGui::GetMainViewport();
-			ImGui::SetNextWindowPos(viewport->Pos);
-			ImGui::SetNextWindowSize(viewport->Size);
-			ImGui::SetNextWindowViewport(viewport->ID);
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-			window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-			window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-		}
-
-		// When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will render our background and handle the pass-thru hole, so we ask Begin() to not render a background.
-		if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
-			window_flags |= ImGuiWindowFlags_NoBackground;
-
-		// Important: note that we proceed even if Begin() returns false (aka window is collapsed).
-		// This is because we want to keep our DockSpace() active. If a DockSpace() is inactive, 
-		// all active windows docked into it will lose their parent and become undocked.
-		// We cannot preserve the docking relationship between an active window and an inactive docking, otherwise 
-		// any change of dockspace/settings would lead to windows being stuck in limbo and never being visible.
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-		ImGui::Begin("DockSpace Demo", &dockspaceOpen, window_flags);
-		ImGui::PopStyleVar();
-
-		if (opt_fullscreen)
-			ImGui::PopStyleVar(2);
-
-		// DockSpace
-		ImGuiIO& io = ImGui::GetIO();
-		ImGuiStyle& style = ImGui::GetStyle();
-		float minWinSizeX = style.WindowMinSize.x;
-		style.WindowMinSize.x = 370.0f;
-		if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
-		{
-			ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
-			ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
-		}
-
-
+		Dockspace::Begin();
+		Dockspace::Draw();
 		// Menu Bar
 		{
 			if (ImGui::BeginMenuBar())
@@ -308,151 +191,23 @@ namespace Ohm
 			}
 		}
 
-		// Entity Inspector
+		m_SceneHierarchyPanel.Draw();
+		// Console
+		m_ConsolePanel.Draw("Console");
+		// Statistics
 		{
-			ImGui::Begin("Inspector");
+			ImGui::Begin("Statistics");
 
-			// Light
-			ImGui::Separator();
-			ImGui::Text("Directional Light");
-			ImGui::Separator();
-			ImGui::Text("Transform");
-			ImGui::DragFloat3("Light Position", &m_LightPosition[0], 0.1f, -100.0f, 100.f);
-			ImGui::DragFloat3("Light Rotation", &m_LightRotationDegrees[0], 0.1f);
-			m_LightRotation = glm::vec3(glm::radians(m_LightRotationDegrees.x), glm::radians(m_LightRotationDegrees.y), glm::radians(m_LightRotationDegrees.z));
-			ImGui::DragFloat3("Light Scale", &m_LightSize[0], 0.1f, -100.0f, 100.f);
-			ImGui::Separator();
-			ImGui::Text("Lighting");
+			Renderer::Statistics stats = Renderer::GetStats();
 
-			auto& light = m_DirectionalLight.GetComponent<LightComponent>();
-			ImGui::DragFloat("Light Intensity", &light.Intensity, 0.01f, 0.0f, 1.0f);
-			ImGui::ColorPicker4("Light Color", &light.Color[0]);
-
-			ImGui::Checkbox("Light Animation", &m_LightSpin);
-			ImGui::Separator();
-			ImGui::Separator();
-
-
-			// Torus
-			ImGui::Text("Torus");
-			ImGui::Separator();
-
-			ImGui::Text("Transform");
-			ImGui::DragFloat3("Torus Position", &m_TorusPosition[0], 0.1f, -100.0f, 100.f);
-			ImGui::DragFloat3("Torus Rotation", &m_TorusRotationDegrees[0], 0.1f);
-			m_TorusRotation = glm::vec3(glm::radians(m_TorusRotationDegrees.x), glm::radians(m_TorusRotationDegrees.y), glm::radians(m_TorusRotationDegrees.z));
-			ImGui::DragFloat3("Torus Scale", &m_TorusSize[0], 0.1f, -100.0f, 100.f);
-			ImGui::Separator();
-
-			ImGui::Text("Material");
-			ImGui::ColorPicker4("Torus Color", &m_TorusColor[0]);
-			ImGui::DragFloat("Torus Smooth Blend", &m_TorusSmoothBlend, 0.01, 0.0, 1.0);
-			ImGui::Separator();
-			ImGui::Separator();
-
-
-			// Quad
-			ImGui::Text("Quad");
-			ImGui::Separator();
-
-			ImGui::Text("Transform");
-			ImGui::DragFloat3("Quad Position", &m_QuadPosition[0], 0.1f, -100.0f, 100.f);
-			ImGui::DragFloat3("Quad Rotation", &m_QuadRotationDegrees[0], 0.1f);
-			m_QuadRotation = glm::vec3(glm::radians(m_QuadRotationDegrees.x), glm::radians(m_QuadRotationDegrees.y), glm::radians(m_QuadRotationDegrees.z));
-			ImGui::DragFloat3("Quad Scale", &m_QuadSize[0], 0.1f, -100.0f, 100.f);
-			ImGui::Separator();
-
-			ImGui::Text("Material");
-			ImGui::ColorPicker4("Quad Color", &m_QuadColor[0]);
-			ImGui::DragFloat("Quad Specular Strength", &m_QuadSpecularStrength, 0.01f, 0.0f, 1.0f);
-			ImGui::DragFloat("Quad Ambient Strength", &m_QuadAmbientStrength, 0.01f, 0.0f, 1.0f);
-			ImGui::DragFloat("Quad Diffuse Strength", &m_QuadDiffuseStrength, 0.01f, 0.0f, 1.0f);
-			ImGui::Checkbox("Quad Textured", &m_QuadIsTextured);
-			ImGui::Separator();
-			ImGui::Separator();
-
-
-			// Sphere
-			ImGui::Text("Sphere");
-			ImGui::Separator();
-
-			ImGui::Text("Transform");
-			ImGui::DragFloat3("Sphere Position", &m_SpherePosition[0], 0.1f, -100.0f, 100.f);
-			ImGui::DragFloat3("Sphere Rotation", &m_SphereRotationDegrees[0], 0.1f);
-			m_SphereRotation = glm::vec3(glm::radians(m_SphereRotationDegrees.x), glm::radians(m_SphereRotationDegrees.y), glm::radians(m_SphereRotationDegrees.z));
-			ImGui::DragFloat3("Sphere Scale", &m_SphereSize[0], 0.1f, -100.0f, 100.f);
-			ImGui::Separator();
-
-			ImGui::Text("Material");
-			ImGui::ColorPicker4("Sphere Color", &m_SphereColor[0]);
-			ImGui::DragFloat("Sphere Specular Strength", &m_SphereSpecularStrength, 0.01f, 0.0f, 1.0f);
-			ImGui::DragFloat("Sphere Ambient Strength", &m_SphereAmbientStrength, 0.01f, 0.0f, 1.0f);
-			ImGui::DragFloat("Sphere Diffuse Strength", &m_SphereDiffuseStrength, 0.01f, 0.0f, 1.0f);
-			ImGui::Checkbox("Sphere Textured", &m_SphereIsTextured);
-			ImGui::Separator();
-			ImGui::Separator();
-
-			// Cube
-			ImGui::Text("Cube");
-			ImGui::Separator();
-
-			ImGui::Text("Transform");
-			ImGui::DragFloat3("Cube Position", &m_CubePosition[0], 0.1f, -100.0f, 100.f);
-			ImGui::DragFloat3("Cube Rotation", &m_CubeRotationDegrees[0], 0.1f);
-			m_CubeRotation = glm::vec3(glm::radians(m_CubeRotationDegrees.x), glm::radians(m_CubeRotationDegrees.y), glm::radians(m_CubeRotationDegrees.z));
-			ImGui::DragFloat3("Cube Scale", &m_CubeSize[0], 0.1f, -100.0f, 100.f);
-			ImGui::Separator();
-
-			ImGui::Text("Material");
-			ImGui::ColorPicker4("Cube Color", &m_CubeColor[0]);
-			ImGui::DragFloat("Cube Specular Strength", &m_CubeSpecularStrength, 0.01f, 0.0f, 1.0f);
-			ImGui::DragFloat("Cube Ambient Strength", &m_CubeAmbientStrength, 0.01f, 0.0f, 1.0f);
-			ImGui::DragFloat("Cube Diffuse Strength", &m_CubeDiffuseStrength, 0.01f, 0.0f, 1.0f);
-			ImGui::Checkbox("Cube Textured", &m_CubeIsTextured);
-			ImGui::Separator();
-			ImGui::Separator();
-
-			// Plane
-			ImGui::Text("Plane");
-			ImGui::Separator();
-
-			ImGui::Text("Transform");
-			ImGui::DragFloat3("Plane Position", &m_PlanePosition[0], 0.1f, -100.0f, 100.f);
-			ImGui::DragFloat3("Plane Rotation", &m_PlaneRotationDegrees[0], 0.1f);
-			m_PlaneRotation = glm::vec3(glm::radians(m_PlaneRotationDegrees.x), glm::radians(m_PlaneRotationDegrees.y), glm::radians(m_PlaneRotationDegrees.z));
-			ImGui::DragFloat3("Plane Scale", &m_PlaneSize[0], 0.1f, -100.0f, 100.f);
-			ImGui::Separator();
-
-			ImGui::Text("Material");
-			ImGui::ColorPicker4("Plane Color", &m_PlaneColor[0]);
-			ImGui::DragFloat("Plane Specular Strength", &m_PlaneSpecularStrength, 0.01f, 0.0f, 1.0f);
-			ImGui::DragFloat("Plane Ambient Strength", &m_PlaneAmbientStrength, 0.01f, 0.0f, 1.0f);
-			ImGui::DragFloat("Plane Diffuse Strength", &m_PlaneDiffuseStrength, 0.01f, 0.0f, 1.0f);
-			ImGui::Checkbox("Plane Textured", &m_PlaneIsTextured);
-			ImGui::Separator();
-			ImGui::Separator();
+			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+			ImGui::Text("Vertex Count: %d", stats.VertexCount);
+			ImGui::Text("Triangle Count: %d", stats.TriangleCount);
 
 			ImGui::End();
 		}
-
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
-		ImGui::Begin("Viewport");
-		auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
-		auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
-		auto viewportOffset = ImGui::GetWindowPos();
-		m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
-		m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
-
-		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-		m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
-
-		uint32_t textureID = m_Framebuffer->GetColorAttachmentID();
-		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
-		ImGui::End();
-		ImGui::PopStyleVar();
-
-
-		ImGui::End();
+		m_ViewportPanel.Draw();
+		Dockspace::End();
 	}
 
 	void EditorLayer::OnEvent(Event& event)
