@@ -8,6 +8,7 @@ namespace Ohm
 	{
 	public:
 		EVENT_CLASS_TYPE(WindowClose);
+		EVENT_CATEGORY(EventCategoryApplication);
 	};
 
 
@@ -28,6 +29,7 @@ namespace Ohm
 		}
 
 		EVENT_CLASS_TYPE(WindowResize);
+		EVENT_CATEGORY(EventCategoryApplication);
 
 	private:
 		int m_Width, m_Height;
@@ -52,6 +54,7 @@ namespace Ohm
 		}
 
 		EVENT_CLASS_TYPE(WindowMoved);
+		EVENT_CATEGORY(EventCategoryApplication);
 
 	private:
 		int m_XPosition, m_YPosition;

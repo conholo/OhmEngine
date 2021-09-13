@@ -7,11 +7,15 @@ namespace Ohm
 {
 	class MouseButtonEvent : public Event
 	{
+	public:
+		int GetButton() const { return m_Button; }
+
+		EVENT_CATEGORY(EventCategoryMouse | EventCategoryInput | EventCategoryMouseButton);
+
 	protected:
 		MouseButtonEvent(int button)
 			:m_Button(button) { }
 
-		int GetButton() const { return m_Button; }
 
 		int m_Button;
 	};
@@ -67,6 +71,7 @@ namespace Ohm
 		}
 
 		EVENT_CLASS_TYPE(MouseScrolled);
+		EVENT_CATEGORY(EventCategoryMouse | EventCategoryInput);
 
 	private:
 		float m_XOffset, m_YOffset;
@@ -90,6 +95,7 @@ namespace Ohm
 		}
 
 		EVENT_CLASS_TYPE(MouseMoved);
+		EVENT_CATEGORY(EventCategoryMouse | EventCategoryInput);
 
 	private:
 		float m_XPosition, m_YPosition;

@@ -25,6 +25,8 @@ namespace Ohm
 		void PushLayer(Layer* layer);
 		void PushOverlay(Layer* overlay);
 
+		ImGuiLayer& GetImGuiLayer() const { return *m_ImGuiLayer; }
+
 	private:
 		bool OnWindowClose(WindowClosedEvent& windowCloseEvent);
 		bool OnWindowResize(WindowResizedEvent& windowResizeEvent);

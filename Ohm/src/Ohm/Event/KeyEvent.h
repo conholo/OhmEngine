@@ -9,6 +9,8 @@ namespace Ohm
 	public:
 		int GetKeyCode() const { return m_KeyCode; }
 
+		EVENT_CATEGORY(EventCategoryKeyboard | EventCategoryInput);
+
 	protected:
 		KeyEvent(int keyCode)
 			:m_KeyCode(keyCode) { }

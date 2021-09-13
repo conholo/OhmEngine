@@ -60,11 +60,11 @@ namespace Ohm
 		dispatcher.Dispatch<WindowClosedEvent>(OHM_BIND_FN(Application::OnWindowClose));
 		dispatcher.Dispatch<WindowResizedEvent>(OHM_BIND_FN(Application::OnWindowResize));
 
-		for (Layer* layer : m_LayerStack)
+		for (auto it = m_LayerStack.rbegin(); it != m_LayerStack.rend(); ++it)
 		{
 			if (event.Handled)
 				break;
-			layer->OnEvent(event);
+			(*it)->OnEvent(event);
 		}
 	}
 

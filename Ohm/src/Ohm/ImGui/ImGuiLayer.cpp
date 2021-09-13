@@ -60,6 +60,12 @@ namespace Ohm
 
 	void ImGuiLayer::OnEvent(Event& event)
 	{
+		if (m_BlockEvents)
+		{
+			ImGuiIO& io = ImGui::GetIO();
+			event.Handled |= event.InCategory(EventCategoryMouse) & io.WantCaptureMouse;
+			event.Handled |= event.InCategory(EventCategoryKeyboard) & io.WantCaptureKeyboard;
+		}
 	}
 
 	void ImGuiLayer::Begin()

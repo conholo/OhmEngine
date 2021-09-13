@@ -22,5 +22,11 @@ namespace Ohm
 		void End();
 
 		void SetDarkTheme();
+
+		void BlockEvents(bool shouldBlock) { m_BlockEvents = shouldBlock; }
+		bool IsBlockingEvents() const { return m_BlockEvents; }
+
+	private:
+		bool m_BlockEvents = true;
 	};
 }

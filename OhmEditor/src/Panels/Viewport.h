@@ -24,6 +24,8 @@ namespace Ohm
 		glm::vec2 m_ViewportSize{ 0.0f };
 		glm::vec2 m_ViewportBoundsMin{ 0.0f };
 		glm::vec2 m_ViewportBoundsMax{ 0.0f };
+		bool m_ViewportFocused = false;
+		bool m_ViewportHovered = false;
 	};
 }
 
