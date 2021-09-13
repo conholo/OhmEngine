@@ -115,7 +115,6 @@ namespace Ohm
 			m_Framebuffer->Resize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
 			m_Camera.SetViewportSize(viewportSize.x, viewportSize.y);
 		}
-
 		m_Camera.Update(dt);
 
 		m_Framebuffer->Bind();
@@ -177,5 +176,24 @@ namespace Ohm
 	void EditorLayer::OnEvent(Event& event)
 	{
 		m_Camera.OnEvent(event);
+
+		EventDispatcher dispatcher(event);
+
+		dispatcher.Dispatch<KeyPressedEvent>(OHM_BIND_FN(EditorLayer::OnKeyPressed));
 	}
+
+	bool EditorLayer::OnKeyPressed(KeyPressedEvent& event)
+	{
+		if (event.GetKeyCode() == Key::Space)
+		{
+			OHM_CORE_INFO("Info!");
+		}
+		else if (event.GetKeyCode() == Key::LeftAlt)
+		{
+			OHM_CORE_ERROR("Error!");
+		}
+
+		return false;
+	}
+
 }

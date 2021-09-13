@@ -24,6 +24,9 @@ namespace Ohm
 		void OnEvent(Event& event) override;
 
 	private:
+		bool OnKeyPressed(KeyPressedEvent& event);
+
+	private:
 
 		Entity m_Quad;
 		Entity m_Sphere;

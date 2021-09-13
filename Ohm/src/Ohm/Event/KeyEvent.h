@@ -6,11 +6,12 @@ namespace Ohm
 {
 	class KeyEvent : public Event
 	{
+	public:
+		int GetKeyCode() const { return m_KeyCode; }
+
 	protected:
 		KeyEvent(int keyCode)
 			:m_KeyCode(keyCode) { }
-
-		int GetKeyCode() const { return m_KeyCode; }
 
 		int m_KeyCode;
 	};
