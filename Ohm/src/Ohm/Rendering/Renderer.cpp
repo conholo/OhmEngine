@@ -22,14 +22,14 @@ namespace Ohm
 		Ref<Texture2D> Texture;
 		Ref<Texture2D> WhiteTexture;
 
+
 		struct CameraData
 		{
-			glm::mat4 ModelViewMatrix;
-			glm::mat4 ModelMatrix;
-			glm::mat4 ViewMatrix;
-			glm::mat4 ProjectionMatrix;
-			glm::mat4 NormalMatrix;
-			glm::vec3 CameraPosition;
+			glm::mat4 u_ViewProjectionMatrix;
+			glm::mat4 u_ModelMatrix;
+			glm::mat4 u_ProjectionMatrix;
+			glm::mat4 u_ViewMatrix;
+			glm::mat4 u_NormalMatrix;
 		};
 
 		Ref<UniformBuffer> CameraBuffer;
@@ -69,8 +69,9 @@ namespace Ohm
 	
 		glm::mat4 modelView = camera.GetView() * transform.Transform();
 		glm::mat4 normalMatrix = glm::transpose(glm::inverse(modelView));
+		glm::mat4 viewProjection = camera.GetProjectionView();
 
-		RenderData::CameraData cameraData{ modelView, transform.Transform(), camera.GetView(), camera.GetProjection(), normalMatrix, camera.GetPosition() };
+		RenderData::CameraData cameraData{ viewProjection, transform.Transform(), camera.GetProjection(), camera.GetView(), normalMatrix };
 		s_RenderData->CameraBuffer->SetData(&cameraData, sizeof(RenderData::CameraData));
 
 		RenderCommand::DrawIndexed(s_RenderData->VAO, meshRenderer.MeshData->GetIndexBuffer()->GetCount());

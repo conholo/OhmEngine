@@ -32,7 +32,7 @@ namespace Ohm
 		Entity m_Sphere;
 		Entity m_Cube;
 		Entity m_Plane;
-		Entity m_TestFlatColorCube;
+		Entity m_DirectionalLight;
 		Ref<TransformWrapper> m_CubeWrapper;
 		Ref<TransformWrapper> m_SphereWrapper;
 		Ref<TransformWrapper> m_PlaneWrapper;
@@ -41,13 +41,6 @@ namespace Ohm
 
 
 
-		Entity m_DirectionalLight;
-		bool m_LightSpin = false;
-		glm::vec3 m_LightPosition{ 0.0f, 75.0f, 0.0f };
-		glm::vec3 m_LightSize{ 0.5f };
-		glm::vec3 m_LightRotationDegrees{ 0.0f };
-		glm::vec3 m_LightRotation{ 0.0f };
-		glm::vec4 m_LightColor{ 1.0f };
 
 
 		EditorCamera m_Camera;

@@ -41,8 +41,6 @@ namespace Ohm
 		{	
 			glm::vec4 LightColor;
 			glm::vec3 ViewSpaceLightPosition;
-			float _paddingl = 0;
-			glm::vec3 WorldSpaceLightPosition;
 			float LightIntensity;
 		};
 

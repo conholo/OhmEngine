@@ -47,27 +47,33 @@ namespace Ohm
 		{
 			switch (uniform.GetType())
 			{
-			case ShaderDataType::Float:
-			case ShaderDataType::Float2:
-			case ShaderDataType::Float3:
-			case ShaderDataType::Float4:
-			{
-				GLfloat* data = (GLfloat*)m_Shader->GetUniformData(uniform.GetType(), uniform.GetLocation());
+				case ShaderDataType::Float:
+				case ShaderDataType::Float2:
+				case ShaderDataType::Float3:
+				case ShaderDataType::Float4:
+				{
+					GLfloat* data = (GLfloat*)m_Shader->GetUniformData(uniform.GetType(), uniform.GetLocation());
 
-				m_UniformStorageBuffer.Write(data, uniform.GetSize(), uniform.GetBufferOffset());
-				break;
-			}
-			case ShaderDataType::Int:
-			{
-				GLint* data = (GLint*)m_Shader->GetUniformData(uniform.GetType(), uniform.GetLocation());
+					m_UniformStorageBuffer.Write(data, uniform.GetSize(), uniform.GetBufferOffset());
+					break;
+				}
+				case ShaderDataType::Int:
+				{
+					GLint* data = (GLint*)m_Shader->GetUniformData(uniform.GetType(), uniform.GetLocation());
 
-				m_UniformStorageBuffer.Write(data, uniform.GetSize(), uniform.GetBufferOffset());
-				break;
-			}
-			case ShaderDataType::Mat3:
-			case ShaderDataType::Mat4:
-			case ShaderDataType::Sampler2D:
-				break;
+					m_UniformStorageBuffer.Write(data, uniform.GetSize(), uniform.GetBufferOffset());
+					break;
+				}
+				case ShaderDataType::Mat3:
+				case ShaderDataType::Mat4:
+				{
+					void* data = malloc(ShaderDataTypeSize(uniform.GetType()));
+
+					m_UniformStorageBuffer.Write(data, ShaderDataTypeSize(uniform.GetType()), uniform.GetBufferOffset());
+					break;
+				}
+				case ShaderDataType::Sampler2D:
+					break;
 			}
 		}
 	}

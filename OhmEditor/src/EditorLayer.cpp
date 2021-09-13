@@ -12,7 +12,7 @@
 namespace Ohm
 {
 	EditorLayer::EditorLayer()
-		:Layer("Editor Layer"), m_Camera(45.0f, 1.77778f, 0.1f, 1000.0f)
+		:Layer("Editor Layer"), m_Camera(45.0f, 1.77778f, 1.0f, 1000.0f)
 	{
 
 	}
@@ -40,7 +40,7 @@ namespace Ohm
 		// Render Primitives Begin
 		//-----------------------------------------------------
 		// Shaders
-		Ref<Shader> blinnPhongShader = CreateRef<Shader>("assets/shaders/Phong.shader");
+		Ref<Shader> phongShader = CreateRef<Shader>("assets/shaders/Phong.shader");
 		Ref<Shader> flatColorShader = CreateRef<Shader>("assets/shaders/flatcolor.shader");
 
 		// Primitives
@@ -50,12 +50,12 @@ namespace Ohm
 		Ref<Mesh> sphereMesh = Mesh::CreatePrimitive(Primitive::Sphere);
 
 		// Materials
-		Ref<Material> cubeMaterial = CreateRef<Material>("Cube Material", blinnPhongShader);
-		Ref<Material> sphereMaterial = CreateRef<Material>("Sphere Material", blinnPhongShader);
-		Ref<Material> planeMaterial = CreateRef<Material>("Plane Material", blinnPhongShader);
-		Ref<Material> quadMaterial = CreateRef<Material>("Quad Material", blinnPhongShader);
+		Ref<Material> cubeMaterial = CreateRef<Material>("Cube Material", phongShader);
+		Ref<Material> sphereMaterial = CreateRef<Material>("Sphere Material", phongShader);
+		Ref<Material> planeMaterial = CreateRef<Material>("Plane Material", phongShader);
+		Ref<Material> quadMaterial = CreateRef<Material>("Quad Material", phongShader);
 		Ref<Material> lightDemoMaterial = CreateRef<Material>("Light Demo Material", flatColorShader);
-		Ref<Material> testFlatColorMaterial = CreateRef<Material>("Flat Color", flatColorShader);
+
 		//-----------------------------------------------------
 		// Render Primitives End
 		//-----------------------------------------------------
@@ -68,11 +68,10 @@ namespace Ohm
 		m_Plane = m_Scene->Create("Plane");
 		m_Sphere = m_Scene->Create("Sphere");
 		m_Quad = m_Scene->Create("Quad");
-		m_TestFlatColorCube = m_Scene->Create("FC Cube");
 		m_DirectionalLight = m_Scene->Create("Directional Light");
 
 		// Light
-		m_DirectionalLight.AddComponent<LightComponent>(LightType::Directional, m_LightColor, 1.0f, true);
+		m_DirectionalLight.AddComponent<LightComponent>(LightType::Directional, glm::vec4(1.0f), 1.0f, true);
 		// TODO:: NOTE TO FUTURE SELF, IF LIGHTING DATA FAILS, IT'S BECAUSE A MESH RENDERER IS CURRENTLY NEEDEED TO ACCESS SCENE DIRECTIONAL LIGHT -> CHECK EDITORSCENE
 		m_DirectionalLight.AddComponent<MeshRendererComponent>(lightDemoMaterial, cubeMesh);
 
@@ -80,7 +79,6 @@ namespace Ohm
 		m_Cube.AddComponent<MeshRendererComponent>(cubeMaterial, cubeMesh);
 		m_Plane.AddComponent<MeshRendererComponent>(planeMaterial, planeMesh);
 		m_Quad.AddComponent<MeshRendererComponent>(quadMaterial, quadMesh);
-		m_TestFlatColorCube.AddComponent<MeshRendererComponent>(testFlatColorMaterial, cubeMesh);
 
 		//-----------------------------------------------------
 		// Entities End
@@ -184,15 +182,6 @@ namespace Ohm
 
 	bool EditorLayer::OnKeyPressed(KeyPressedEvent& event)
 	{
-		if (event.GetKeyCode() == Key::Space)
-		{
-			OHM_CORE_INFO("Info!");
-		}
-		else if (event.GetKeyCode() == Key::LeftAlt)
-		{
-			OHM_CORE_ERROR("Error!");
-		}
-
 		return false;
 	}
 

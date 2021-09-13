@@ -76,6 +76,8 @@ namespace Ohm
 		{
 			OHM_CORE_INFO("Block Name: {}", blockName);
 			OHM_CORE_INFO("Block Binding: {}", block.GetBinding());
+			OHM_CORE_INFO("Block Size: {}", block.GetBlockSize());
+			OHM_CORE_INFO("Member Count: {}", block.GetMemberCount());
 
 			for (auto uniform : block.GetUniforms())
 			{
@@ -242,7 +244,13 @@ namespace Ohm
 				std::vector<GLchar> infoLog(maxLength);
 				glGetShaderInfoLog(shader, maxLength, &maxLength, &infoLog[0]);
 				
-				std::cout << infoLog.data() << std::endl;
+				std::stringstream ss;
+
+				std::string type = shader == GL_FRAGMENT_SHADER ? "FRAGMENT COMPILATION ERROR: " : "VERTEX COMPILATION ERROR: ";
+				
+				ss << type << infoLog.data();
+
+				OHM_CORE_ERROR(ss.str());
 
 				glDeleteShader(shader);
 
@@ -267,7 +275,13 @@ namespace Ohm
 			std::vector<GLchar> infoLog(maxLength);
 			glGetProgramInfoLog(program, maxLength, &maxLength, &infoLog[0]);
 
-			std::cout << infoLog.data() << std::endl;
+			std::stringstream ss;
+
+			std::string messageHeader = "LINKING ERROR: ";
+
+			ss << messageHeader << infoLog.data();
+
+			OHM_CORE_ERROR(ss.str());
 
 			glDeleteProgram(program);
 
@@ -417,7 +431,6 @@ namespace Ohm
 			}
 			else
 			{
-
 				uint32_t bufferOffset = currentOffset;
 				currentOffset += ShaderDataTypeSize(shaderDataType);
 

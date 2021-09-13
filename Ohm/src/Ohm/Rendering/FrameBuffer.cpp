@@ -120,7 +120,7 @@ namespace Ohm
 			glCreateTextures(GL_TEXTURE_2D, 1, &m_DepthAttachmentID);
 			glBindTexture(GL_TEXTURE_2D, m_DepthAttachmentID);
 
-			AttachDepthTexture(m_DepthAttachmentID, GL_DEPTH32F_STENCIL8, GL_DEPTH_STENCIL_ATTACHMENT, m_Specification.Width, m_Specification.Height);
+			AttachDepthTexture(m_DepthAttachmentID, GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL_ATTACHMENT, m_Specification.Width, m_Specification.Height);
 		}
 
 		if (m_ColorAttachmentIDs.size() > 1)
