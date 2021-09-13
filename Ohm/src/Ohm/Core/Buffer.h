@@ -53,16 +53,16 @@ namespace Ohm
 		}
 
 		template<typename T>
-		T& Read(uint32_t offset = 0)
+		T* Read(uint32_t offset = 0)
 		{
-			return *(T*)((byte*)Data + offset);
+			return (T*)((byte*)Data + offset);
 		}
 
 		void Write(void* data, uint32_t size, uint32_t offset = 0)
 		{
 			if (offset + size > Size)
 			{
-				OHM_CRITICAL("Buffer overflow!  Buffer has {} bytes allocated.  Requesting {} bytes with a {} byte offset.", Size, size, offset);
+				OHM_CORE_CRITICAL("Buffer overflow!  Buffer has {} bytes allocated.  Requesting {} bytes with a {} byte offset.", Size, size, offset);
 				return;
 			}
 

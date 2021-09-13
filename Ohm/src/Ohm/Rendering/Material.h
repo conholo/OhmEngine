@@ -28,38 +28,33 @@ namespace Ohm
 		void UploadStagedUniforms();
 
 		template<typename T>
-		void StageUniform(const std::string& name, const T& data)
+		void Set(const std::string& name, const T& data)
 		{
 			const auto* uniform = FindShaderUniform(name);
 
 			if (uniform == nullptr)
 			{
-				OHM_CORE_ERROR("Could not find uniform with name: {}.", name);
+				OHM_CORE_ERROR("Could not find uniform with name: {} in shader: {}.", name, m_Shader->GetName());
 				return;
 			}
 
-			bool uniformNotAllocated = m_StagedUniforms.find(name) == m_StagedUniforms.end();
-
-			uint32_t offset = uniformNotAllocated ? m_UniformStagingOffset : m_StagedUniforms[name].StagedBufferOffset;
-
-			m_UniformStorageBuffer.Write((uint8_t*)&data, uniform->GetSize(), offset);
-
-			if (uniformNotAllocated)
-			{
-				StagedUniform staged(uniform, m_UniformStagingOffset);
-				m_StagedUniforms[name] = staged;
-				m_UniformStagingOffset += uniform->GetSize();
-			}
+			m_UniformStorageBuffer.Write((uint8_t*)&data, uniform->GetSize(), uniform->GetBufferOffset());
 		}
 
 		template<typename T>
-		T& GetStaged(const std::string& name)
+		T* Get(const std::string& name)
 		{
 			const auto* uniform = FindShaderUniform(name);
 
 			// TODO:: Add assertion if not found.
+
+			if (uniform == nullptr)
+			{
+				OHM_CORE_ERROR("Could not find uniform with name: {} in shader: {}.", name, m_Shader->GetName());
+				return nullptr;
+			}
 		
-			return m_UniformStorageBuffer.Read<T>(m_StagedUniforms[name].StagedBufferOffset);
+			return m_UniformStorageBuffer.Read<T>(uniform->GetBufferOffset());
 		}
 
 		const ShaderUniform* FindShaderUniform(const std::string& name);
@@ -67,6 +62,7 @@ namespace Ohm
 
 	private:
 		void AllocateStorageBuffer();
+		void InitializeStorageBufferWithUniformDefaults();
 
 	private:
 		uint32_t m_UniformStagingOffset = 0;

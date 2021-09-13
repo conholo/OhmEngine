@@ -181,7 +181,7 @@ namespace Ohm
 		}
 
 	private:
-		int m_SelectedLoggerIndex = 1;
+		int m_SelectedLoggerIndex = 3;
 		ImGuiTextBuffer m_Buffer;
 		ImGuiTextFilter m_Filter;
 		ImVector<int> m_LineOffsets; // Index to lines offset. We maintain this with AddLog() calls.

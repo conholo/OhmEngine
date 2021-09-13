@@ -62,11 +62,11 @@ namespace Ohm
 	void Renderer::Draw(const EditorCamera& camera, MeshRendererComponent& meshRenderer, const TransformComponent& transform)
 	{
 		s_RenderData->VAO->Bind();
-		meshRenderer.MaterialInstance->UploadStagedUniforms();
 
 		meshRenderer.MeshData->Bind();
 		s_RenderData->VAO->EnableVertexAttributes(meshRenderer.MeshData->GetVertexBuffer());
-
+		meshRenderer.MaterialInstance->UploadStagedUniforms();
+	
 		glm::mat4 modelView = camera.GetView() * transform.Transform();
 		glm::mat4 normalMatrix = glm::transpose(glm::inverse(modelView));
 

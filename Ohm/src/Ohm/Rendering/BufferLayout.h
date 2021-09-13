@@ -95,7 +95,7 @@ namespace Ohm
 		void CalculateStrideAndOffsets()
 		{
 			m_Stride = 0;
-			size_t offset = 0;
+			uint32_t offset = 0;
 
 			for (auto& element : m_Elements)
 			{

@@ -53,6 +53,8 @@ namespace Ohm
 			case Ohm::Primitive::Sphere: return Sphere(1.0f, 36, 18);
 			default: break;
 		}
+
+		return nullptr;
 	}
 
 	Ref<Mesh> Mesh::Quad()

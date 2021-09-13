@@ -17,8 +17,8 @@ namespace Ohm
 
 		struct Statistics
 		{
-			uint32_t TriangleCount;
-			uint32_t VertexCount;
+			uint64_t TriangleCount;
+			uint64_t VertexCount;
 
 			void Clear()
 			{

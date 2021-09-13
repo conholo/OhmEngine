@@ -135,11 +135,8 @@ namespace Ohm
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
+			// TODO:: Assert
 			OHM_CORE_CRITICAL("Framebuffer is incomplete!");
-		}
-		else
-		{
-			OHM_CORE_TRACE("Framebuffer is complete!");
 		}
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);

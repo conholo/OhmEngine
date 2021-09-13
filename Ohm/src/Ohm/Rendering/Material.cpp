@@ -10,6 +10,7 @@ namespace Ohm
 		:m_Name(name), m_Shader(shader)
 	{
 		AllocateStorageBuffer();
+		InitializeStorageBufferWithUniformDefaults();
 	}
 
 
@@ -20,20 +21,55 @@ namespace Ohm
 		return copy;
 	}
 
+
 	void Material::AllocateStorageBuffer()
 	{
 		const auto& uniforms = m_Shader->GetUniforms();
 
 		if (uniforms.size() <= 0) return;
 
-		uint32_t size = 0;
+		uint32_t bufferSize = 0;
 
 		for (auto& [name, uniform] : uniforms)
-			size += uniform.GetSize();
+			bufferSize += uniform.GetSize();
 
-		m_UniformStorageBuffer.Allocate(size);
+		m_UniformStorageBuffer.Allocate(bufferSize);
 		m_UniformStorageBuffer.ZeroInitialize();
-		OHM_CORE_TRACE("Allocated and zero initialized {} bytes to uniform storage buffer.", size);
+	}
+
+	void Material::InitializeStorageBufferWithUniformDefaults()
+	{
+		const auto& uniforms = m_Shader->GetUniforms();
+
+		if (uniforms.size() <= 0) return;
+
+		for (auto& [name, uniform] : uniforms)
+		{
+			switch (uniform.GetType())
+			{
+			case ShaderDataType::Float:
+			case ShaderDataType::Float2:
+			case ShaderDataType::Float3:
+			case ShaderDataType::Float4:
+			{
+				GLfloat* data = (GLfloat*)m_Shader->GetUniformData(uniform.GetType(), uniform.GetLocation());
+
+				m_UniformStorageBuffer.Write(data, uniform.GetSize(), uniform.GetBufferOffset());
+				break;
+			}
+			case ShaderDataType::Int:
+			{
+				GLint* data = (GLint*)m_Shader->GetUniformData(uniform.GetType(), uniform.GetLocation());
+
+				m_UniformStorageBuffer.Write(data, uniform.GetSize(), uniform.GetBufferOffset());
+				break;
+			}
+			case ShaderDataType::Mat3:
+			case ShaderDataType::Mat4:
+			case ShaderDataType::Sampler2D:
+				break;
+			}
+		}
 	}
 
 	const ShaderUniform* Material::FindShaderUniform(const std::string& name)
@@ -55,56 +91,52 @@ namespace Ohm
 	{
 		m_Shader->Bind();
 
-		if (m_StagedUniforms.size() <= 0) return;
-
-		for (auto& [name, stagedUniform] : m_StagedUniforms)
+		for (auto& [name, uniform] : m_Shader->GetUniforms())
 		{
-			const auto* uniform = stagedUniform.Uniform;
+			std::string name = uniform.GetName();
 
-			std::string name = uniform->GetName();
-
-			switch (uniform->GetType())
+			switch (uniform.GetType())
 			{
 				case ShaderDataType::Float:
 				{
-					float value = GetStaged<float>(name);
-					m_Shader->UploadUniformFloat(name, value);
+					float* value = Get<float>(name);
+					m_Shader->UploadUniformFloat(name, *value);
 					break;
 				}
 				case ShaderDataType::Float2:
 				{
-					glm::vec2 value = GetStaged<glm::vec2>(name);
-					m_Shader->UploadUniformFloat2(name, value);
+					glm::vec2* value = Get<glm::vec2>(name);
+					m_Shader->UploadUniformFloat2(name, *value);
 					break;
 				}
 				case ShaderDataType::Float3:
 				{
-					glm::vec3 value = GetStaged<glm::vec3>(name);
-					m_Shader->UploadUniformFloat3(name, value);
+					glm::vec3* value = Get<glm::vec3>(name);
+					m_Shader->UploadUniformFloat3(name, *value);
 					break;
 				}
 				case ShaderDataType::Float4:
 				{
-					glm::vec4 value = GetStaged<glm::vec4>(name);
-					m_Shader->UploadUniformFloat4(name, value);
+					glm::vec4* value = Get<glm::vec4>(name);
+					m_Shader->UploadUniformFloat4(name, *value);
 					break;
 				}
 				case ShaderDataType::Int:
 				{
-					int value = GetStaged<int>(name);
-					m_Shader->UploadUniformInt(name, value);
+					int* value = Get<int>(name);
+					m_Shader->UploadUniformInt(name, *value);
 					break;
 				}
 				case ShaderDataType::Mat3:
 				{
-					glm::mat3 value = GetStaged<glm::mat3>(name);
-					m_Shader->UploadUniformMat3(name, value);
+					glm::mat3* value = Get<glm::mat3>(name);
+					m_Shader->UploadUniformMat3(name, *value);
 					break;
 				}
 				case ShaderDataType::Mat4:
 				{
-					glm::mat4 value = GetStaged<glm::mat4>(name);
-					m_Shader->UploadUniformMat4(name, value);
+					glm::mat4* value = Get<glm::mat4>(name);
+					m_Shader->UploadUniformMat4(name, *value);
 					break;
 				}
 			}

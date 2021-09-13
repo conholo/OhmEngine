@@ -4,6 +4,8 @@
 #include <imgui/imgui_internal.h>
 #include <entt.hpp>
 
+#define _CRT_SECURE_NO_WARNINGS
+
 namespace Ohm
 {
 	SceneHierarchyPanel::SceneHierarchyPanel(const Ref<Scene>& scene)
@@ -163,6 +165,11 @@ namespace Ohm
 		{
 			auto& materialInstance = entity.GetComponent<MeshRendererComponent>().MaterialInstance;
 
+			if (ImGui::Button("Dump Shader Data"))
+			{
+				materialInstance->GetShader()->DumpShaderData();
+			}
+
 			const auto& uniforms = materialInstance->GetShader()->GetUniforms();
 
 			for (const auto& [name, uniform] : uniforms)
@@ -175,41 +182,49 @@ namespace Ohm
 				{
 					case ShaderDataType::Float:
 					{
-						float value = materialInstance->GetStaged<float>(name);
-						ImGui::DragFloat(strippedName.c_str(), &value, 0.01, 0.0, 1.0);
-						materialInstance->StageUniform<float>(name, value);
+						float* value = materialInstance->Get<float>(name);
+						ImGui::DragFloat(strippedName.c_str(), value, 0.01f, 0.0f, 1.0f);
+						materialInstance->Set<float>(name, *value);
 						break;
 					}
 					case ShaderDataType::Float2:
 					{
-						glm::vec2 value = materialInstance->GetStaged<glm::vec2>(name);
-						ImGui::DragFloat2(strippedName.c_str(), &value.x, 0.01, 0.0, 0.0);
-						materialInstance->StageUniform<glm::vec2>(name, value);
+						glm::vec2* value = materialInstance->Get<glm::vec2>(name);
+						ImGui::DragFloat2(strippedName.c_str(), &value->x, 0.01f, 0.0f, 0.0f);
+						materialInstance->Set<glm::vec2>(name, *value);
 						break;
 					}
 					case ShaderDataType::Float3:
 					{
-						glm::vec3 value = materialInstance->GetStaged<glm::vec3>(name);
-						ImGui::DragFloat3(strippedName.c_str(), &value.x, 0.01, 0.0, 1.0);
-						materialInstance->StageUniform<glm::vec3>(name, value);
+						glm::vec3* value = materialInstance->Get<glm::vec3>(name);
+						ImGui::DragFloat3(strippedName.c_str(), &value->x, 0.01f, 0.0f, 1.0f);
+						materialInstance->Set<glm::vec3>(name, *value);
 						break;
 					}
 					case ShaderDataType::Float4:
 					{
-						glm::vec4 value = materialInstance->GetStaged<glm::vec4>(name);
-						ImGui::ColorPicker4(strippedName.c_str(), &value.x);
-						materialInstance->StageUniform<glm::vec4>(name, value);
+						glm::vec4* value = materialInstance->Get<glm::vec4>(name);
+						ImGui::ColorPicker4(strippedName.c_str(), &value->x);
+						materialInstance->Set<glm::vec4>(name, *value);
 						break;
 					}
 					case ShaderDataType::Int:
 					{
-						int value = materialInstance->GetStaged<int>(name);
-						ImGui::InputInt(strippedName.c_str(), &value);;
-						materialInstance->StageUniform<int>(name, value);
+						int* value = materialInstance->Get<int>(name);
+						ImGui::InputInt(strippedName.c_str(), value);
+						materialInstance->Set<int>(name, *value);
 						break;
 					}
 				}
 			}
+		}
+
+		if (entity.HasComponent<LightComponent>())
+		{
+			LightComponent& light = entity.GetComponent<LightComponent>();
+
+			ImGui::ColorPicker4("Light Color", &light.Color.x);
+			ImGui::DragFloat("Light Intensity", &light.Intensity, 0.01f, 0.0f, 1.0f);
 		}
 	}
 }

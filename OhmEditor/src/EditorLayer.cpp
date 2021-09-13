@@ -35,14 +35,13 @@ namespace Ohm
 		m_Camera.SetPosition(glm::vec3(0.0f, 8.5f, 20.0f));
 		m_Camera.SetRotation(glm::vec2(15.0f, 0.0f));
 		m_Scene = CreateRef<Scene>("Test Scene");
-		m_TestTexture = CreateRef<Texture2D>("assets/textures/lava.jpg");
 
+		//-----------------------------------------------------
 		// Render Primitives Begin
-
+		//-----------------------------------------------------
 		// Shaders
 		Ref<Shader> blinnPhongShader = CreateRef<Shader>("assets/shaders/Phong.shader");
 		Ref<Shader> flatColorShader = CreateRef<Shader>("assets/shaders/flatcolor.shader");
-		Ref<Shader> torusShader = CreateRef<Shader>("assets/shaders/Torus.shader");
 
 		// Primitives
 		Ref<Mesh> cubeMesh = Mesh::CreatePrimitive(Primitive::Cube);
@@ -50,89 +49,55 @@ namespace Ohm
 		Ref<Mesh> planeMesh = Mesh::CreatePrimitive(Primitive::Plane);
 		Ref<Mesh> sphereMesh = Mesh::CreatePrimitive(Primitive::Sphere);
 
-		// Base Materials
-		Ref<Material> baseBlinnPhongMaterial = CreateRef<Material>("Blinn Phong Base", blinnPhongShader);
-		Ref<Material> flatColorBaseMaterial = CreateRef<Material>("Flat Color Base", flatColorShader);
-		Ref<Material> torusBaseMaterial = CreateRef<Material>("Torus Base", torusShader);
-
-		// Material Instances
-		Ref<Material> cubeMaterial = baseBlinnPhongMaterial->Clone("Cube Material");
-		Ref<Material> sphereMaterial = baseBlinnPhongMaterial->Clone("Sphere Material");
-		Ref<Material> planeMaterial = baseBlinnPhongMaterial->Clone("Plane Material");
-		Ref<Material> quadMaterial = baseBlinnPhongMaterial->Clone("Quad Material");
-		Ref<Material> lightDemoMaterial = flatColorBaseMaterial->Clone("Light Demo Material");
-		Ref<Material> torusCubeMaterial = torusBaseMaterial->Clone("Torus Ray March");
-
+		// Materials
+		Ref<Material> cubeMaterial = CreateRef<Material>("Cube Material", blinnPhongShader);
+		Ref<Material> sphereMaterial = CreateRef<Material>("Sphere Material", blinnPhongShader);
+		Ref<Material> planeMaterial = CreateRef<Material>("Plane Material", blinnPhongShader);
+		Ref<Material> quadMaterial = CreateRef<Material>("Quad Material", blinnPhongShader);
+		Ref<Material> lightDemoMaterial = CreateRef<Material>("Light Demo Material", flatColorShader);
+		Ref<Material> testFlatColorMaterial = CreateRef<Material>("Flat Color", flatColorShader);
+		//-----------------------------------------------------
 		// Render Primitives End
+		//-----------------------------------------------------
 
-		// Entities
+
+		//-----------------------------------------------------
+		// Entities Begin
+		//-----------------------------------------------------
 		m_Cube = m_Scene->Create("Cube");
 		m_Plane = m_Scene->Create("Plane");
 		m_Sphere = m_Scene->Create("Sphere");
-		m_Torus = m_Scene->Create("Torus");
 		m_Quad = m_Scene->Create("Quad");
+		m_TestFlatColorCube = m_Scene->Create("FC Cube");
 		m_DirectionalLight = m_Scene->Create("Directional Light");
-
-		m_CubeWrapper = CreateRef<TransformWrapper>(m_Cube.GetComponent<TransformComponent>(), glm::vec3(5.0f, 3.0f, 0.0), glm::radians(glm::vec3(45.0f)), glm::vec3(3.5f));
-		m_PlaneWrapper = CreateRef<TransformWrapper>(m_Plane.GetComponent<TransformComponent>(), glm::vec3(0.0f, -2.0f, 0.0), glm::vec3(0.0f), glm::vec3(100.0f, 0.01f, 100.0f));
-		m_SphereWrapper = CreateRef<TransformWrapper>(m_Sphere.GetComponent<TransformComponent>(), glm::vec3(-5.0f, 3.0f, 0.0), glm::vec3(0.0f), glm::vec3(2.0f));
-		m_QuadWrapper = CreateRef<TransformWrapper>(m_Quad.GetComponent<TransformComponent>(), glm::vec3(0.0f, 8.0f, 0.0), glm::radians(glm::vec3(-45.0f, 0.0f, 0.0f)), glm::vec3(3.0f));
-		m_TorusWrapper = CreateRef<TransformWrapper>(m_Torus.GetComponent<TransformComponent>(), glm::vec3(0.0f, 3.0f, 0.0), glm::vec3(0.0f) , glm::vec3(5.0f));
 
 		// Light
 		m_DirectionalLight.AddComponent<LightComponent>(LightType::Directional, m_LightColor, 1.0f, true);
+		// TODO:: NOTE TO FUTURE SELF, IF LIGHTING DATA FAILS, IT'S BECAUSE A MESH RENDERER IS CURRENTLY NEEDEED TO ACCESS SCENE DIRECTIONAL LIGHT -> CHECK EDITORSCENE
 		m_DirectionalLight.AddComponent<MeshRendererComponent>(lightDemoMaterial, cubeMesh);
-		auto& lightTranslation = m_DirectionalLight.GetComponent<TransformComponent>().Translation;
-		lightTranslation = m_LightPosition;
-		auto& lightScale = m_DirectionalLight.GetComponent<TransformComponent>().Scale;
-		lightScale = m_LightSize;
-		auto& lightRotation = m_DirectionalLight.GetComponent<TransformComponent>().Rotation;
-		lightRotation = glm::vec3(glm::radians(m_LightRotationDegrees.x), glm::radians(m_LightRotationDegrees.y), glm::radians(m_LightRotationDegrees.z));
 
-		// Scene Entities
 		m_Sphere.AddComponent<MeshRendererComponent>(sphereMaterial, sphereMesh);
 		m_Cube.AddComponent<MeshRendererComponent>(cubeMaterial, cubeMesh);
 		m_Plane.AddComponent<MeshRendererComponent>(planeMaterial, planeMesh);
-		m_Torus.AddComponent<MeshRendererComponent>(torusCubeMaterial, cubeMesh);
 		m_Quad.AddComponent<MeshRendererComponent>(quadMaterial, quadMesh);
+		m_TestFlatColorCube.AddComponent<MeshRendererComponent>(testFlatColorMaterial, cubeMesh);
 
-		lightDemoMaterial->StageUniform<glm::vec4>("u_Color", glm::vec4(1.0f));
-
-		quadMaterial->StageUniform<glm::vec4>("u_Color", m_QuadColor);
-		quadMaterial->StageUniform<float>("u_SpecularStrength", m_QuadSpecularStrength);
-		quadMaterial->StageUniform<float>("u_AmbientStrength", m_QuadAmbientStrength);
-		quadMaterial->StageUniform<float>("u_DiffuseStrength", m_QuadDiffuseStrength);
-		quadMaterial->StageUniform<int>("u_Texture", m_QuadIsTextured ? 1 : 0);
+		//-----------------------------------------------------
+		// Entities End
+		//-----------------------------------------------------
 
 
-		// Sphere
-		sphereMaterial->StageUniform<glm::vec4>("u_Color", m_SphereColor);
-		sphereMaterial->StageUniform<float>("u_SpecularStrength", m_SphereSpecularStrength);
-		sphereMaterial->StageUniform<float>("u_AmbientStrength", m_SphereAmbientStrength);
-		sphereMaterial->StageUniform<float>("u_DiffuseStrength", m_SphereDiffuseStrength);
-		sphereMaterial->StageUniform<int>("u_Texture", m_SphereIsTextured ? 1 : 0);
-
-
-		// Cube
-		cubeMaterial->StageUniform<glm::vec4>("u_Color", m_CubeColor);
-		cubeMaterial->StageUniform<float>("u_SpecularStrength", m_CubeSpecularStrength);
-		cubeMaterial->StageUniform<float>("u_AmbientStrength", m_CubeAmbientStrength);
-		cubeMaterial->StageUniform<float>("u_DiffuseStrength", m_CubeDiffuseStrength);
-		cubeMaterial->StageUniform<int>("u_Texture", m_CubeIsTextured ? 1 : 0);
-
-		// Plane
-		planeMaterial->StageUniform<glm::vec4>("u_Color", m_PlaneColor);
-		planeMaterial->StageUniform<float>("u_SpecularStrength", m_PlaneSpecularStrength);
-		planeMaterial->StageUniform<float>("u_AmbientStrength", m_PlaneAmbientStrength);
-		planeMaterial->StageUniform<float>("u_DiffuseStrength", m_PlaneDiffuseStrength);
-		planeMaterial->StageUniform<int>("u_Texture", m_PlaneIsTextured ? 1 : 0);
-
-		// Torus
-		torusCubeMaterial->StageUniform<glm::vec4>("u_Color", m_TorusColor);
-		torusCubeMaterial->StageUniform<float>("u_SmoothBlend", m_TorusSmoothBlend);
-
-
-		float& intensity = m_DirectionalLight.GetComponent<LightComponent>().Intensity;
+		//-----------------------------------------------------
+		// Test Transform Wrappers (DELETE THESE)
+		//-----------------------------------------------------
+		m_CubeWrapper = CreateRef<TransformWrapper>(m_Cube.GetComponent<TransformComponent>(), glm::vec3(7.0f, 3.0f, 0.0), glm::radians(glm::vec3(45.0f)), glm::vec3(3.5f));
+		m_PlaneWrapper = CreateRef<TransformWrapper>(m_Plane.GetComponent<TransformComponent>(), glm::vec3(0.0f, -2.0f, 0.0), glm::vec3(0.0f), glm::vec3(100.0f, 0.01f, 100.0f));
+		m_SphereWrapper = CreateRef<TransformWrapper>(m_Sphere.GetComponent<TransformComponent>(), glm::vec3(-7.0f, 3.0f, 0.0), glm::vec3(0.0f), glm::vec3(2.0f));
+		m_QuadWrapper = CreateRef<TransformWrapper>(m_Quad.GetComponent<TransformComponent>(), glm::vec3(0.0f, 3.0f, 0.0), glm::radians(glm::vec3(-45.0f, 0.0f, 0.0f)), glm::vec3(3.0f));
+		m_LightDemoWrapper = CreateRef<TransformWrapper>(m_DirectionalLight.GetComponent<TransformComponent>(), glm::vec3(0.0f, 75.0f, 0.0), glm::vec3(0.0f), glm::vec3(.5f));
+		//-----------------------------------------------------
+		// Test Transform Wrappers (DELETE THESE)
+		//-----------------------------------------------------
 
 
 		m_SceneHierarchyPanel.SetContext(m_Scene);
@@ -190,7 +155,6 @@ namespace Ohm
 				ImGui::EndMenuBar();
 			}
 		}
-
 		m_SceneHierarchyPanel.Draw();
 		// Console
 		m_ConsolePanel.Draw("Console");

@@ -38,10 +38,11 @@ void main()
 
 layout(location = 0) out vec4 o_Color;
 
-uniform vec4 u_Color;
-uniform float u_SpecularStrength;
-uniform float u_AmbientStrength;
-uniform float u_DiffuseStrength;
+uniform vec4 u_Color = vec4(1.0, 1.0, 1.0, 1.0);
+uniform float u_SpecularStrength = 0.5;
+uniform float u_AmbientStrength = 0.3;
+uniform float u_DiffuseStrength = 0.4;
+
 
 struct LightingData
 {

@@ -31,8 +31,6 @@ namespace Ohm
 			if (light != nullptr && light->HasComponent<LightComponent>())
 				s_ActiveScene->SetSceneLightingData(light->GetComponent<TransformComponent>(), light->GetComponent<LightComponent>(), camera);
 
-			Entity ohmEntity = s_ActiveScene->GetEntityFromSceneMap(entity);
-
 			Renderer::Draw(camera, meshRenderer, transform);
 		}
 

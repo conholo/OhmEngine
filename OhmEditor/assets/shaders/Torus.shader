@@ -41,8 +41,8 @@ void main()
 
 layout(location = 0) out vec4 o_Color;
 
-uniform vec4 u_Color;
-uniform float u_SmoothBlend;
+uniform vec4 u_Color = vec4(1.0, 1.0, 1.0, 1.0);
+uniform float u_SmoothBlend = 0.25;
 uniform sampler2D u_Texture;
 
 struct LightingData
