@@ -3,6 +3,7 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 #include <entt.hpp>
+#include <algorithm>
 
 #define _CRT_SECURE_NO_WARNINGS
 
@@ -26,6 +27,67 @@ namespace Ohm
 		m_Scene->m_Registry.each([&](auto entityID)
 			{
 				Entity entity{ entityID, m_Scene.get() };
+
+				bool registered = m_RegisteredMaterialPropertyEntites.find((uint32_t)entityID) != m_RegisteredMaterialPropertyEntites.end();
+
+				if (entity.HasComponent<MeshRendererComponent>() && !registered)
+				{
+					m_RegisteredMaterialPropertyEntites.insert((uint32_t)entityID);
+					auto& meshrenderer = entity.GetComponent<MeshRendererComponent>();
+					auto& uniforms = meshrenderer.MaterialInstance->GetShader()->GetUniforms();
+
+					for (auto [name, uniform] : uniforms)
+					{
+						size_t offset = name.find_first_of('_', 0);
+						std::string strippedName = name.substr(offset + 1, strlen(name.c_str()));
+
+						std::string strippedToLower = std::string(strippedName);
+						std::transform(strippedToLower.begin(), strippedToLower.end(), strippedToLower.begin(), ::tolower);
+						bool colorFound = strippedToLower.find("color") != std::string::npos;
+
+						UIPropertyType propertyType = UIPropertyTypeFromShaderDataType(uniform.GetType(), colorFound);
+
+						switch (propertyType)
+						{
+						case UIPropertyType::Float:
+						{
+							float* value = meshrenderer.MaterialInstance->Get<float>(name);
+							m_MaterialFloatProperties[(uint32_t)entity][name] = CreateRef<UIFloat>(strippedName, value);
+							break;
+						}
+						case UIPropertyType::Int:
+						{
+							int* value = meshrenderer.MaterialInstance->Get<int>(name);
+							m_MaterialIntProperties[(uint32_t)entity][name] = CreateRef<UIInt>(strippedName, value);
+							break;
+						}
+						case UIPropertyType::Vec2:
+						{
+							glm::vec2* value = meshrenderer.MaterialInstance->Get<glm::vec2>(name);
+							m_MaterialVec2Properties[(uint32_t)entity][name] = CreateRef<UIVector2>(strippedName, value);
+							break;
+						}
+						case UIPropertyType::Vec3:
+						{
+							glm::vec3* value = meshrenderer.MaterialInstance->Get<glm::vec3>(name);
+							m_MaterialVec3Properties[(uint32_t)entity][name] = CreateRef<UIVector3>(strippedName, value);
+							break;
+						}
+						case UIPropertyType::Vec4:
+						{
+							glm::vec4* value = meshrenderer.MaterialInstance->Get<glm::vec4>(name);
+							m_MaterialVec4Properties[(uint32_t)entity][name] = CreateRef<UIVector4>(strippedName, value);
+							break;
+						}
+						case UIPropertyType::Color:
+						{
+							glm::vec4* value = meshrenderer.MaterialInstance->Get<glm::vec4>(name);
+							m_MaterialColorProperties[entity][name] = CreateRef<UIColor>(strippedName, value);
+							break;
+						}
+						}
+					}
+				}
 				DrawEntityNode(entity);
 			});
 
@@ -105,7 +167,9 @@ namespace Ohm
 		bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity, flags, tag.c_str());
 
 		if (ImGui::IsItemClicked())
+		{
 			m_SelectedEntity = entity;
+		}
 		
 		bool entityDeleted = false;
 
@@ -166,57 +230,26 @@ namespace Ohm
 			auto& materialInstance = entity.GetComponent<MeshRendererComponent>().MaterialInstance;
 
 			if (ImGui::Button("Dump Shader Data"))
-			{
 				materialInstance->GetShader()->DumpShaderData();
-			}
 
-			const auto& uniforms = materialInstance->GetShader()->GetUniforms();
-
-			for (const auto& [name, uniform] : uniforms)
-			{
-				size_t offset = name.find_first_of('_', 0);
-
-				std::string strippedName = name.substr(offset + 1, strlen(name.c_str()));
-
-				switch (uniform.GetType())
-				{
-					case ShaderDataType::Float:
-					{
-						float* value = materialInstance->Get<float>(name);
-						ImGui::DragFloat(strippedName.c_str(), value, 0.01f, 0.0f, 1.0f);
-						materialInstance->Set<float>(name, *value);
-						break;
-					}
-					case ShaderDataType::Float2:
-					{
-						glm::vec2* value = materialInstance->Get<glm::vec2>(name);
-						ImGui::DragFloat2(strippedName.c_str(), &value->x, 0.01f, 0.0f, 0.0f);
-						materialInstance->Set<glm::vec2>(name, *value);
-						break;
-					}
-					case ShaderDataType::Float3:
-					{
-						glm::vec3* value = materialInstance->Get<glm::vec3>(name);
-						ImGui::DragFloat3(strippedName.c_str(), &value->x, 0.01f, 0.0f, 1.0f);
-						materialInstance->Set<glm::vec3>(name, *value);
-						break;
-					}
-					case ShaderDataType::Float4:
-					{
-						glm::vec4* value = materialInstance->Get<glm::vec4>(name);
-						ImGui::ColorPicker4(strippedName.c_str(), &value->x);
-						materialInstance->Set<glm::vec4>(name, *value);
-						break;
-					}
-					case ShaderDataType::Int:
-					{
-						int* value = materialInstance->Get<int>(name);
-						ImGui::InputInt(strippedName.c_str(), value);
-						materialInstance->Set<int>(name, *value);
-						break;
-					}
-				}
-			}
+			if(m_MaterialFloatProperties.find(entity) != m_MaterialFloatProperties.end())
+				for (auto [uniformName, uiFloat] : m_MaterialFloatProperties[entity])
+					uiFloat->Draw();
+			if (m_MaterialIntProperties.find(entity) != m_MaterialIntProperties.end())
+				for (auto [uniformName, uiInt] : m_MaterialIntProperties[entity])
+					uiInt->Draw();
+			if (m_MaterialVec2Properties.find(entity) != m_MaterialVec2Properties.end())
+				for (auto [uniformName, uiVec2] : m_MaterialVec2Properties[entity])
+					uiVec2->Draw();
+			if (m_MaterialVec3Properties.find(entity) != m_MaterialVec3Properties.end())
+				for (auto [uniformName, uiVec3] : m_MaterialVec3Properties[entity])
+					uiVec3->Draw();
+			if (m_MaterialVec4Properties.find(entity) != m_MaterialVec4Properties.end())
+				for (auto [uniformName, uiVec4] : m_MaterialVec4Properties[entity])
+					uiVec4->Draw();
+			if (m_MaterialColorProperties.find(entity) != m_MaterialColorProperties.end())
+				for (auto [uniformName, uiColor] : m_MaterialColorProperties[entity])
+					uiColor->Draw();
 		}
 
 		if (entity.HasComponent<LightComponent>())

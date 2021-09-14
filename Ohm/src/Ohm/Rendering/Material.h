@@ -58,7 +58,6 @@ namespace Ohm
 		}
 
 		const ShaderUniform* FindShaderUniform(const std::string& name);
-		const std::unordered_map<std::string, StagedUniform>& GetAvailableUniforms() { return m_StagedUniforms; }
 
 	private:
 		void AllocateStorageBuffer();
@@ -68,7 +67,6 @@ namespace Ohm
 		uint32_t m_UniformStagingOffset = 0;
 		Buffer m_UniformStorageBuffer;
 		std::unordered_map<std::string, GLint> m_Uniforms;
-		std::unordered_map<std::string, StagedUniform> m_StagedUniforms;
 		Ref<Shader> m_Shader;
 		std::string m_Name;
 	};

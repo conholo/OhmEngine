@@ -10,6 +10,20 @@ namespace Ohm
 	typedef unsigned int GLenum;
 	typedef int GLint;
 
+	enum class ShaderUniformType
+	{
+		None = 0,
+		Float,
+		RangeFloat,
+		Vec2,
+		Vec3,
+		Vec4,
+		Color,
+		Texture,
+		Int,
+		Bool
+	};
+
 	class ShaderUniform
 	{
 	public:

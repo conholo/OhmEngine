@@ -35,15 +35,13 @@ void main()
 
 layout(location = 0) out vec4 o_Color;
 
-uniform vec4 u_Color;
-uniform vec4 u_AmbientColor;
-uniform vec4 u_SpecularColor;
+uniform vec4 u_DiffuseColor = vec4(1.0);
+uniform vec4 u_AmbientColor = vec4(0.2, 0.6, 0.3, 1.0);
 
-uniform float u_SpecularStrength;
-uniform float u_AmbientStrength;
-uniform float u_DiffuseStrength;
-
-uniform float u_SpecularPower;
+uniform float u_SpecularStrength = 0.8;
+uniform float u_AmbientStrength = 0.6;
+uniform float u_DiffuseStrength = 0.3;
+uniform float u_SpecularPower = 32.0;
 
 layout(std140, binding = 1) uniform Light
 {
@@ -71,11 +69,11 @@ void main()
 	vec3 inverseView = normalize(-v_ViewPosition);
 	vec3 reflectDirection = reflect(-lightDirection, normal);
 
-	float specular = pow(max(dot(inverseView, reflectDirection), 0.0), 32);
+	float specular = pow(max(dot(inverseView, reflectDirection), 0.0), u_SpecularPower);
 
 	vec4 spec = u_LightIntensity * specular * u_LightColor * u_SpecularStrength;
 
-	vec4 result = (diffuse + spec + ambient) * u_Color;
+	vec4 result = (diffuse + spec + ambient) * u_DiffuseColor;
 
 	o_Color = vec4(result.x, result.y, result.z, 1.0);
 }
