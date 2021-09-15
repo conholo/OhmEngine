@@ -24,9 +24,6 @@ namespace Ohm
 		void OnEvent(Event& event) override;
 
 	private:
-		bool OnKeyPressed(KeyPressedEvent& event);
-
-	private:
 
 		Entity m_Quad;
 		Entity m_Sphere;
@@ -39,16 +36,7 @@ namespace Ohm
 		Ref<TransformWrapper> m_QuadWrapper;
 		Ref<TransformWrapper> m_LightDemoWrapper;
 
-
-
-
-
-		EditorCamera m_Camera;
-		glm::vec4 m_ClearColor{ 0.1f, 0.1f, 0.1f, 1.0f };
-
-
 		Ref<Scene> m_Scene;
-		Ref<Framebuffer> m_Framebuffer;
 
 		ConsolePanel m_ConsolePanel;
 		Viewport m_ViewportPanel;

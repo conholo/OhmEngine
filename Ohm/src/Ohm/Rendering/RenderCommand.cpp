@@ -36,12 +36,30 @@ namespace Ohm
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_DEPTH_TEST);
 
+
+		//glEnable(GL_CULL_FACE);
 		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	}
 
-	void RenderCommand::Clear()
+	void RenderCommand::Clear(bool colorBufferBit, bool depthBufferBit)
 	{
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		uint32_t flags = 0;
+
+		if (colorBufferBit && depthBufferBit)
+		{
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		}
+		else
+		{
+			if (colorBufferBit)
+			{
+				glClear(GL_COLOR_BUFFER_BIT);
+			}
+			else if (depthBufferBit)
+			{
+				glClear(GL_DEPTH_BUFFER_BIT);
+			}
+		}
 	}
 
 	void RenderCommand::SetViewport(uint32_t width, uint32_t height)

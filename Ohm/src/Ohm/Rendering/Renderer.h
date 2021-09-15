@@ -2,6 +2,9 @@
 
 #include "Ohm/Scene/Component.h"
 #include "Ohm/Rendering/EditorCamera.h"
+#include "Ohm/Rendering/RenderPass.h"
+#include "Ohm/Rendering/Shader.h"
+#include "Ohm/Rendering/Mesh.h"
 
 namespace Ohm
 {
@@ -9,9 +12,12 @@ namespace Ohm
 	{
 	public:
 		static void Initialize();
-		static void RemoveMesh(uint32_t id);
 		static void BeginScene();
-		static void Draw(const EditorCamera& camera, MeshRendererComponent& meshRenderer, const TransformComponent& transform);
+		static void BeginPass(const Ref<RenderPass>& renderPass);
+		static void DrawMeshWithMaterial(const EditorCamera& camera, MeshRendererComponent& meshRenderer, const TransformComponent& transform);
+		static void DrawGeometry(MeshRendererComponent& meshRenderer);
+		static void DrawFullScreenQuad();
+		static void EndPass(const Ref<RenderPass>& renderPass);
 		static void EndScene();
 		static void Shutdown();
 

@@ -23,8 +23,9 @@ namespace Ohm
 		const std::string& GetName() const { return m_SceneName; }
 
 		Entity& GetEntityFromSceneMap(entt::entity id);
+		Entity& GetSunLight();
 
-		void SetSceneLightingData(TransformComponent& lightTransform, LightComponent& light, const EditorCamera& camera);
+		void SetSceneLightingData(const EditorCamera& camera);
 		
 	private:
 		template<typename T>
@@ -36,6 +37,8 @@ namespace Ohm
 
 		std::unordered_map<entt::entity, Entity> m_SceneMap;
 		Ref<UniformBuffer> m_SceneLightingBuffer;
+
+		uint32_t m_SunLightHandle;
 
 		struct LightingData
 		{	

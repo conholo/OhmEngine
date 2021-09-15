@@ -42,10 +42,20 @@ namespace Ohm
 		return m_SceneMap[id];
 	}
 
-	void Scene::SetSceneLightingData(TransformComponent& lightTransform, LightComponent& light, const EditorCamera& camera)
+	Entity& Scene::GetSunLight()
 	{
-		m_LightingData.LightColor = light.Color;
-		m_LightingData.LightIntensity = light.Intensity;
+		return m_SceneMap[(entt::entity)m_SunLightHandle];
+	}
+
+	void Scene::SetSceneLightingData(const EditorCamera& camera)
+	{
+		Entity& sunLight = GetEntityFromSceneMap((entt::entity)m_SunLightHandle);
+
+		LightComponent& lightComponent = sunLight.GetComponent<LightComponent>();
+		TransformComponent& lightTransform = sunLight.GetComponent<TransformComponent>();
+
+		m_LightingData.LightColor = lightComponent.Color;
+		m_LightingData.LightIntensity = lightComponent.Intensity;
 		glm::vec3 viewSpaceLightPosition = glm::vec3(camera.GetView() * glm::vec4(lightTransform.Translation, 1.0));
 		m_LightingData.ViewSpaceLightPosition = viewSpaceLightPosition;
 
@@ -79,6 +89,8 @@ namespace Ohm
 	template<>
 	void Scene::OnComponentAdded<LightComponent>(Entity entity, LightComponent& lightComponent)
 	{
-		
+		// TODO:: Assert that there's only one sun.
+		if (lightComponent.Type == LightType::Sun)
+			m_SunLightHandle = (uint32_t)entity;
 	}
 }

@@ -14,9 +14,8 @@
 
 namespace Ohm
 {
-	enum class LightType { Directional, Point, Spot };
-
-
+	// Add Sun - Only one of these...
+	enum class LightType { Sun, Directional, Point, Spot };
 
 	struct TagComponent
 	{
@@ -50,6 +49,27 @@ namespace Ohm
 			glm::mat4 scale = glm::scale(glm::mat4(1.0f), Scale);
 
 			return translation * rotation * scale;
+		}
+
+		glm::quat CalculateOrientation()
+		{
+			auto& rotation = Rotation;
+			return glm::quat(rotation);
+		}
+
+		glm::vec3 Up()
+		{
+			return glm::rotate(CalculateOrientation(), { 0.0f, 1.0f, 0.0f });
+		}
+
+		glm::vec3 Right()
+		{
+			return glm::rotate(CalculateOrientation(), { 1.0f, 0.0f, 0.0f });
+		}
+
+		glm::vec3 Forward()
+		{
+			return glm::rotate(CalculateOrientation(), { 0.0f, 0.0f, 1.0f });
 		}
 	};
 

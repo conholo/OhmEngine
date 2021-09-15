@@ -29,7 +29,7 @@ namespace Ohm
 			case 0x8B5B: return ShaderDataType::Mat3;
 			case 0x8B5C: return ShaderDataType::Mat4;
 				// Sampler2D -> Uploads with glUniform1i(name, int value);
-			case 0x8B5E: return ShaderDataType::Int;
+			case 0x8B5E: return ShaderDataType::Sampler2D;
 			default: 
 			{
 				OHM_CORE_ERROR("Invalid GLenum.  No matching ShaderDataType found for {}.", value);
@@ -112,6 +112,7 @@ namespace Ohm
 
 				return (void*)data;
 			}
+			case Ohm::ShaderDataType::Sampler2D:
 			case Ohm::ShaderDataType::Int:
 			{
 				GLint* data = (GLint*)malloc(ShaderDataTypeSize(type));
@@ -121,9 +122,8 @@ namespace Ohm
 			}
 			case Ohm::ShaderDataType::Mat3:
 			case Ohm::ShaderDataType::Mat4:
-			case Ohm::ShaderDataType::Sampler2D:
 			{
-				OHM_CORE_INFO("We're currently unable to retrieve data from uniforms of type Mat3/Mat4/Sampler2D.");
+				OHM_CORE_INFO("We're currently unable to retrieve data from uniforms of type Mat3/Mat4.");
 				return nullptr;
 			}
 		}
@@ -248,7 +248,7 @@ namespace Ohm
 
 				std::string type = shader == GL_FRAGMENT_SHADER ? "FRAGMENT COMPILATION ERROR: " : "VERTEX COMPILATION ERROR: ";
 				
-				ss << type << infoLog.data();
+				ss << m_Name << ":\n" <<  type << infoLog.data();
 
 				OHM_CORE_ERROR(ss.str());
 
@@ -277,7 +277,7 @@ namespace Ohm
 
 			std::stringstream ss;
 
-			std::string messageHeader = "LINKING ERROR: ";
+			std::string messageHeader = m_Name + ": LINKING ERROR: ";
 
 			ss << messageHeader << infoLog.data();
 

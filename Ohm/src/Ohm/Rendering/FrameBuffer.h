@@ -59,8 +59,10 @@ namespace Ohm
 
 		void ClearAttachment(uint32_t attachmentIndex, int value);
 		uint32_t GetColorAttachmentID(uint32_t index = 0) const { return m_ColorAttachmentIDs[index]; }
+		uint32_t GetDepthAttachmentID() const { return m_DepthAttachmentID; }
 
 		const FramebufferSpecification& GetFrameBufferSpecification() const { return m_Specification; }
+
 
 	private:
 		uint32_t m_ID;

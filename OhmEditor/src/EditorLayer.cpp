@@ -12,7 +12,7 @@
 namespace Ohm
 {
 	EditorLayer::EditorLayer()
-		:Layer("Editor Layer"), m_Camera(45.0f, 1.77778f, 1.0f, 1000.0f)
+		:Layer("Editor Layer")
 	{
 
 	}
@@ -24,17 +24,12 @@ namespace Ohm
 
 	void EditorLayer::OnAttach()
 	{
-		FramebufferSpecification framebufferSpecification;
-		framebufferSpecification.AttachmentData = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth };
-		framebufferSpecification.Width = 1280;
-		framebufferSpecification.Height = 720;
-		
-		m_Framebuffer = CreateRef<Framebuffer>(framebufferSpecification);
-		m_ViewportPanel.SetFramebuffer(m_Framebuffer);
-
-		m_Camera.SetPosition(glm::vec3(0.0f, 8.5f, 20.0f));
-		m_Camera.SetRotation(glm::vec2(15.0f, 0.0f));
 		m_Scene = CreateRef<Scene>("Test Scene");
+		m_SceneHierarchyPanel.SetContext(m_Scene);
+		EditorScene::LoadScene(m_Scene);
+
+		EditorScene::InitializePipeline();
+		m_ViewportPanel.SetFramebuffer(EditorScene::GetMainColorBuffer());
 
 		//-----------------------------------------------------
 		// Render Primitives Begin
@@ -71,7 +66,7 @@ namespace Ohm
 		m_DirectionalLight = m_Scene->Create("Directional Light");
 
 		// Light
-		m_DirectionalLight.AddComponent<LightComponent>(LightType::Directional, glm::vec4(1.0f), 1.0f, true);
+		m_DirectionalLight.AddComponent<LightComponent>(LightType::Sun, glm::vec4(1.0f), 1.0f, true);
 		// TODO:: NOTE TO FUTURE SELF, IF LIGHTING DATA FAILS, IT'S BECAUSE A MESH RENDERER IS CURRENTLY NEEDEED TO ACCESS SCENE DIRECTIONAL LIGHT -> CHECK EDITORSCENE
 		m_DirectionalLight.AddComponent<MeshRendererComponent>(lightDemoMaterial, cubeMesh);
 
@@ -92,35 +87,19 @@ namespace Ohm
 		m_PlaneWrapper = CreateRef<TransformWrapper>(m_Plane.GetComponent<TransformComponent>(), glm::vec3(0.0f, -2.0f, 0.0), glm::vec3(0.0f), glm::vec3(100.0f, 0.01f, 100.0f));
 		m_SphereWrapper = CreateRef<TransformWrapper>(m_Sphere.GetComponent<TransformComponent>(), glm::vec3(-7.0f, 3.0f, 0.0), glm::vec3(0.0f), glm::vec3(2.0f));
 		m_QuadWrapper = CreateRef<TransformWrapper>(m_Quad.GetComponent<TransformComponent>(), glm::vec3(0.0f, 3.0f, 0.0), glm::radians(glm::vec3(-45.0f, 0.0f, 0.0f)), glm::vec3(3.0f));
-		m_LightDemoWrapper = CreateRef<TransformWrapper>(m_DirectionalLight.GetComponent<TransformComponent>(), glm::vec3(0.0f, 75.0f, 0.0), glm::vec3(0.0f), glm::vec3(.5f));
+		m_LightDemoWrapper = CreateRef<TransformWrapper>(m_DirectionalLight.GetComponent<TransformComponent>(), glm::vec3(0.0f, 2.0f, 5.0), glm::vec3(0.0f), glm::vec3(1.0f));
 		//-----------------------------------------------------
 		// Test Transform Wrappers (DELETE THESE)
 		//-----------------------------------------------------
 
 
-		m_SceneHierarchyPanel.SetContext(m_Scene);
-		EditorScene::LoadScene(m_Scene);
 	}
 
 	void EditorLayer::OnUpdate(Time dt)
 	{
-		glm::vec2 viewportSize = m_ViewportPanel.GetViewportSize();
-
-		if (FramebufferSpecification specification = m_Framebuffer->GetFrameBufferSpecification();
-			viewportSize.x > 0.0f && viewportSize.y > 0.0f &&
-			(specification.Width != viewportSize.x || specification.Height != viewportSize.y))
-		{
-			m_Framebuffer->Resize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
-			m_Camera.SetViewportSize(viewportSize.x, viewportSize.y);
-		}
-		m_Camera.Update(dt);
-
-		m_Framebuffer->Bind();
-		RenderCommand::Clear();
-		RenderCommand::ClearColor(m_ClearColor.r, m_ClearColor.g, m_ClearColor.b, m_ClearColor.a);
-		EditorScene::RenderScene(m_Camera);
-
-		m_Framebuffer->Unbind();
+		EditorScene::ValidateResize(m_ViewportPanel.GetViewportSize());
+		EditorScene::UpdateEditorCamera(dt);
+		EditorScene::ExecutePipeline();
 	}
 
 	void EditorLayer::OnDetach()
@@ -164,25 +143,16 @@ namespace Ohm
 			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			ImGui::Text("Vertex Count: %d", stats.VertexCount);
 			ImGui::Text("Triangle Count: %d", stats.TriangleCount);
-
 			ImGui::End();
 		}
+
+
 		m_ViewportPanel.Draw();
 		Dockspace::End();
 	}
 
 	void EditorLayer::OnEvent(Event& event)
 	{
-		m_Camera.OnEvent(event);
-
-		EventDispatcher dispatcher(event);
-
-		dispatcher.Dispatch<KeyPressedEvent>(OHM_BIND_FN(EditorLayer::OnKeyPressed));
+		EditorScene::OnEvent(event);
 	}
-
-	bool EditorLayer::OnKeyPressed(KeyPressedEvent& event)
-	{
-		return false;
-	}
-
 }
