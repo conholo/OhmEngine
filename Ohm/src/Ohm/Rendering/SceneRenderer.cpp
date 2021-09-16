@@ -96,7 +96,7 @@ namespace Ohm
 		{
 			auto [transform, meshRenderer] = group.get<TransformComponent, MeshRendererComponent>(entity);
 
-			if (!meshRenderer.MaterialInstance->CastsShadows()) continue;
+			if (!meshRenderer.IsComplete() || !meshRenderer.MaterialInstance->CastsShadows()) continue;
 
 			s_PreShadowPass->GetRenderPassSpecification().Material->Set<glm::mat4>("u_ModelMatrix", transform.Transform());
 			Renderer::DrawMesh(s_EditorCamera, meshRenderer.MeshData, s_PreShadowPass->GetRenderPassSpecification().Material, transform);
@@ -114,6 +114,9 @@ namespace Ohm
 		for (auto entity : group)
 		{
 			auto [transform, meshRenderer] = group.get<TransformComponent, MeshRendererComponent>(entity);
+
+			if (!meshRenderer.IsComplete()) continue;
+
 			s_ActiveScene->SetSceneLightingData(s_EditorCamera);
 
 			// TODO:: Figure out how to not cast shadows but receive them properly.  Currently, if a material is flagged to not

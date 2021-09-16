@@ -37,6 +37,12 @@ namespace Ohm
 		template<typename T>
 		bool RemoveComponent()
 		{
+			if (typeid(T).name() == typeid(TransformComponent).name())
+			{
+				OHM_CORE_WARN("Cannot remove Transform Component!");
+				return false;
+			}
+
 			if (HasComponent<T>())
 			{
 				m_Scene->m_Registry.remove<T>(m_EntityHandle);

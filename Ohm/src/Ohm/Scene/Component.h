@@ -78,6 +78,11 @@ namespace Ohm
 		Ref<Material> MaterialInstance;
 		Ref<Mesh> MeshData;
 
+		bool IsComplete() const
+		{
+			return MaterialInstance != nullptr && MeshData != nullptr;
+		}
+
 		MeshRendererComponent() = default;
 		MeshRendererComponent(const MeshRendererComponent&) = default;
 		MeshRendererComponent(const Ref<Material>& material, const Ref<Mesh>& mesh)

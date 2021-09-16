@@ -6,8 +6,8 @@ namespace Ohm
 {
 #define PI 3.14159265359
 
-	Mesh::Mesh(std::vector<Vertex> vertices, std::vector<uint32_t> indices)
-		:m_Vertices(vertices), m_Indices(indices)
+	Mesh::Mesh(std::vector<Vertex> vertices, std::vector<uint32_t> indices, Primitive primitive)
+		:m_Vertices(vertices), m_Indices(indices), m_PrimitiveType(primitive)
 	{
 		CreateRenderPrimitives(vertices, indices);
 	}
@@ -73,7 +73,7 @@ namespace Ohm
 			 0, 1, 2, 2, 3, 0
 		};
 
-		return CreateRef<Mesh>(vertices, indices);
+		return CreateRef<Mesh>(vertices, indices, Primitive::Quad);
 	}
 
 	Ref<Mesh> Mesh::Plane()
@@ -92,7 +92,7 @@ namespace Ohm
 			 0, 1, 2, 2, 3, 0
 		};
 
-		return CreateRef<Mesh>(vertices, indices);
+		return CreateRef<Mesh>(vertices, indices, Primitive::Plane);
 	}
 
 
@@ -162,7 +162,7 @@ namespace Ohm
 			22, 23, 20
 		};
 
-		return CreateRef<Mesh>(verticesSix, indicesSix);
+		return CreateRef<Mesh>(verticesSix, indicesSix, Primitive::Cube);
 	}
 
 	Ref<Mesh> Mesh::Sphere(float radius, uint32_t sectorCount, uint32_t stackCount)
@@ -234,7 +234,20 @@ namespace Ohm
 			}
 		}
 
-		return CreateRef<Mesh>(vertices, indices);
+		return CreateRef<Mesh>(vertices, indices, Primitive::Sphere);
+	}
+
+	std::string Mesh::PrimitiveToString(Primitive primitive)
+	{
+		switch (primitive)
+		{
+			case Primitive::Cube:	return "Cube";
+			case Primitive::Sphere: return "Sphere";
+			case Primitive::Quad:	return "Quad";
+			case Primitive::Plane:	return "Plane";
+		}
+
+		return "";
 	}
 
 }

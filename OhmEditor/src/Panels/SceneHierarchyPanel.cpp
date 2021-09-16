@@ -20,6 +20,96 @@ namespace Ohm
 		m_SelectedEntity = {};
 	}
 
+	void SceneHierarchyPanel::RegisterEntityMaterialProperties(Entity entity)
+	{
+		bool hasMeshRenderer = entity.HasComponent<MeshRendererComponent>();
+
+		if (!hasMeshRenderer)
+			return;
+
+		auto& meshrenderer = entity.GetComponent<MeshRendererComponent>();
+
+		bool registered = m_RegisteredMaterialPropertyEntites.find((uint32_t)entity) != m_RegisteredMaterialPropertyEntites.end();
+		bool isComplete = meshrenderer.IsComplete();
+
+
+		if (m_PrimitiveSelectionOptions.find((uint32_t)entity) == m_PrimitiveSelectionOptions.end())
+		{
+			if (isComplete)
+			{
+				Primitive primitive = meshrenderer.MeshData->GetPrimitiveType();
+				std::string primitiveToString = Mesh::PrimitiveToString(primitive);
+				m_PrimitiveSelectionOptions[(uint32_t)entity] = { {"None", false}, {"Cube", false}, {"Sphere", false}, {"Quad", false}, {"Plane", false} };
+				m_PrimitiveSelectionOptions[(uint32_t)entity][primitiveToString] = true;
+				m_SelectedPrimitive[(uint32_t)entity] = primitiveToString;
+			}
+			else
+			{
+				// Potentially no mesh applied, initialize it with default None.
+				m_PrimitiveSelectionOptions[(uint32_t)entity] = { {"None", true}, {"Cube", false}, {"Sphere", false}, {"Quad", false}, {"Plane", false} };
+				m_SelectedPrimitive[(uint32_t)entity] = "None";
+			}
+		}
+
+		if (isComplete && !registered)
+		{
+			m_RegisteredMaterialPropertyEntites.insert((uint32_t)entity);
+			auto& uniforms = meshrenderer.MaterialInstance->GetShader()->GetUniforms();
+
+			for (auto [name, uniform] : uniforms)
+			{
+				size_t offset = name.find_first_of('_', 0);
+				std::string strippedName = name.substr(offset + 1, strlen(name.c_str()));
+
+				std::string strippedToLower = std::string(strippedName);
+				std::transform(strippedToLower.begin(), strippedToLower.end(), strippedToLower.begin(), ::tolower);
+				bool colorFound = strippedToLower.find("color") != std::string::npos;
+
+				UIPropertyType propertyType = UIPropertyTypeFromShaderDataType(uniform.GetType(), colorFound);
+
+				switch (propertyType)
+				{
+				case UIPropertyType::Float:
+				{
+					float* value = meshrenderer.MaterialInstance->Get<float>(name);
+					m_MaterialFloatProperties[(uint32_t)entity][name] = CreateRef<UIFloat>(strippedName, value);
+					break;
+				}
+				case UIPropertyType::Int:
+				{
+					int* value = meshrenderer.MaterialInstance->Get<int>(name);
+					m_MaterialIntProperties[(uint32_t)entity][name] = CreateRef<UIInt>(strippedName, value);
+					break;
+				}
+				case UIPropertyType::Vec2:
+				{
+					glm::vec2* value = meshrenderer.MaterialInstance->Get<glm::vec2>(name);
+					m_MaterialVec2Properties[(uint32_t)entity][name] = CreateRef<UIVector2>(strippedName, value);
+					break;
+				}
+				case UIPropertyType::Vec3:
+				{
+					glm::vec3* value = meshrenderer.MaterialInstance->Get<glm::vec3>(name);
+					m_MaterialVec3Properties[(uint32_t)entity][name] = CreateRef<UIVector3>(strippedName, value);
+					break;
+				}
+				case UIPropertyType::Vec4:
+				{
+					glm::vec4* value = meshrenderer.MaterialInstance->Get<glm::vec4>(name);
+					m_MaterialVec4Properties[(uint32_t)entity][name] = CreateRef<UIVector4>(strippedName, value);
+					break;
+				}
+				case UIPropertyType::Color:
+				{
+					glm::vec4* value = meshrenderer.MaterialInstance->Get<glm::vec4>(name);
+					m_MaterialColorProperties[entity][name] = CreateRef<UIColor>(strippedName, value);
+					break;
+				}
+				}
+			}
+		}
+	}
+
 	void SceneHierarchyPanel::Draw()
 	{
 		ImGui::Begin("Scene Hierarchy");
@@ -27,67 +117,7 @@ namespace Ohm
 		m_Scene->m_Registry.each([&](auto entityID)
 			{
 				Entity entity{ entityID, m_Scene.get() };
-
-				bool registered = m_RegisteredMaterialPropertyEntites.find((uint32_t)entityID) != m_RegisteredMaterialPropertyEntites.end();
-
-				if (entity.HasComponent<MeshRendererComponent>() && !registered)
-				{
-					m_RegisteredMaterialPropertyEntites.insert((uint32_t)entityID);
-					auto& meshrenderer = entity.GetComponent<MeshRendererComponent>();
-					auto& uniforms = meshrenderer.MaterialInstance->GetShader()->GetUniforms();
-
-					for (auto [name, uniform] : uniforms)
-					{
-						size_t offset = name.find_first_of('_', 0);
-						std::string strippedName = name.substr(offset + 1, strlen(name.c_str()));
-
-						std::string strippedToLower = std::string(strippedName);
-						std::transform(strippedToLower.begin(), strippedToLower.end(), strippedToLower.begin(), ::tolower);
-						bool colorFound = strippedToLower.find("color") != std::string::npos;
-
-						UIPropertyType propertyType = UIPropertyTypeFromShaderDataType(uniform.GetType(), colorFound);
-
-						switch (propertyType)
-						{
-						case UIPropertyType::Float:
-						{
-							float* value = meshrenderer.MaterialInstance->Get<float>(name);
-							m_MaterialFloatProperties[(uint32_t)entity][name] = CreateRef<UIFloat>(strippedName, value);
-							break;
-						}
-						case UIPropertyType::Int:
-						{
-							int* value = meshrenderer.MaterialInstance->Get<int>(name);
-							m_MaterialIntProperties[(uint32_t)entity][name] = CreateRef<UIInt>(strippedName, value);
-							break;
-						}
-						case UIPropertyType::Vec2:
-						{
-							glm::vec2* value = meshrenderer.MaterialInstance->Get<glm::vec2>(name);
-							m_MaterialVec2Properties[(uint32_t)entity][name] = CreateRef<UIVector2>(strippedName, value);
-							break;
-						}
-						case UIPropertyType::Vec3:
-						{
-							glm::vec3* value = meshrenderer.MaterialInstance->Get<glm::vec3>(name);
-							m_MaterialVec3Properties[(uint32_t)entity][name] = CreateRef<UIVector3>(strippedName, value);
-							break;
-						}
-						case UIPropertyType::Vec4:
-						{
-							glm::vec4* value = meshrenderer.MaterialInstance->Get<glm::vec4>(name);
-							m_MaterialVec4Properties[(uint32_t)entity][name] = CreateRef<UIVector4>(strippedName, value);
-							break;
-						}
-						case UIPropertyType::Color:
-						{
-							glm::vec4* value = meshrenderer.MaterialInstance->Get<glm::vec4>(name);
-							m_MaterialColorProperties[entity][name] = CreateRef<UIColor>(strippedName, value);
-							break;
-						}
-						}
-					}
-				}
+				RegisterEntityMaterialProperties(entity);
 				DrawEntityNode(entity);
 			});
 
@@ -99,7 +129,10 @@ namespace Ohm
 		if (ImGui::BeginPopupContextWindow(0, 1, false))
 		{
 			if (ImGui::MenuItem("Create Entity"))
-				m_Scene->Create("Entity");
+			{
+				Entity entity = m_Scene->Create("Entity");
+				m_SelectedEntity = entity;
+			}
 
 			ImGui::EndPopup();
 		}
@@ -200,6 +233,50 @@ namespace Ohm
 		}
 	}
 
+	template<typename T, typename DrawFn, typename CleanupFn>
+	void DrawComponent(const std::string& name, Entity entity, DrawFn drawFn, CleanupFn cleanupFn)
+	{
+		const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
+
+		if (!entity.HasComponent<T>()) return;
+
+		auto& component = entity.GetComponent<T>();
+
+		ImVec2 contentRegion = ImGui::GetContentRegionAvail();
+
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+		float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
+		ImGui::Separator();
+		bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, name.c_str());
+		ImGui::PopStyleVar();
+
+		ImGui::SameLine(contentRegion.x - lineHeight * 0.5f);
+		if (ImGui::Button("+", ImVec2{ lineHeight, lineHeight }))
+			ImGui::OpenPopup("Component Settings");
+
+		bool removeComponent = false;
+
+		if (ImGui::BeginPopup("Component Settings"))
+		{
+			if (ImGui::MenuItem("Remove Component"))
+				removeComponent = true;
+
+			ImGui::EndPopup();
+		}
+
+		if (open)
+		{
+			drawFn(component, entity);
+			ImGui::TreePop();
+		}
+
+		if (removeComponent)
+		{
+			cleanupFn(component, entity);
+			entity.RemoveComponent<T>();
+		}
+	}
+
 	void SceneHierarchyPanel::DrawComponents(Entity entity)
 	{
 		if (entity.HasComponent<TagComponent>())
@@ -215,57 +292,162 @@ namespace Ohm
 			}
 		}
 
-		if (entity.HasComponent<TransformComponent>())
+		ImGui::SameLine();
+		ImGui::PushItemWidth(-1);
+
+		if (ImGui::Button("Add Component"))
+			ImGui::OpenPopup("Add Component");
+
+		if (ImGui::BeginPopup("Add Component"))
 		{
-			auto& transform = entity.GetComponent<TransformComponent>();
-			DrawVector3Field("Position", transform.Translation);
-			auto& rotationDegrees = glm::degrees(transform.Rotation);
+			if (ImGui::MenuItem("Mesh Renderer"))
+			{
+				if (!m_SelectedEntity.HasComponent<MeshRendererComponent>())
+					m_SelectedEntity.AddComponent<MeshRendererComponent>();
+				else
+					OHM_CORE_WARN("Only one mesh renderer component is allowed per entity.");
+			}
+
+			ImGui::EndPopup();
+		}
+
+		ImGui::PopItemWidth();
+
+		//-------------------------TRANFORM-------------------------//
+		// Transform
+		auto drawTransform = [](auto& component, Entity entity)
+		{
+			DrawVector3Field("Position", component.Translation);
+			auto& rotationDegrees = glm::degrees(component.Rotation);
 			DrawVector3Field("Rotation", rotationDegrees);
-			transform.Rotation = glm::radians(rotationDegrees);
-			DrawVector3Field("Scale", transform.Scale, 1.0f);
-		}
+			component.Rotation = glm::radians(rotationDegrees);
+			DrawVector3Field("Scale", component.Scale, 1.0f);
+		};
+		auto cleanUpTransform = [](auto& component, Entity entity) {};
 
-		if (entity.HasComponent<MeshRendererComponent>())
+		DrawComponent<TransformComponent>("Transform", entity, drawTransform, cleanUpTransform);
+		//-------------------------TRANFORM-------------------------//
+
+
+		//-------------------------MESH RENDERER-------------------------//
+		auto drawMeshRenderer = [this](auto& component, Entity entity)
 		{
-			auto& materialInstance = entity.GetComponent<MeshRendererComponent>().MaterialInstance;
+			if (!component.IsComplete())
+			{
+				DrawMeshSelection(entity, component);
 
-			if (ImGui::Button("Dump Shader Data"))
-				materialInstance->GetShader()->DumpShaderData();
+				if (component.MaterialInstance == nullptr)
+				{
+					if (ImGui::Button("Add Default Material"))
+						component.MaterialInstance = CreateRef<Material>("Default Material", ShaderLibrary::Get("Phong"));
+				}
+				return;
+			}
 
-			bool receiveShadows = materialInstance->ReceivesShadows();
-			bool castShadows = materialInstance->CastsShadows();
-			ImGui::Checkbox("Receive Shadows", &receiveShadows);
-			ImGui::Checkbox("Cast Shadows", &castShadows);
+			const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_FramePadding;
 
-			materialInstance->SetCastsShadows(castShadows);
-			materialInstance->SetReceivesShadows(receiveShadows);
+			bool openMeshInspector = ImGui::TreeNodeEx("Mesh Settings", treeNodeFlags);
 
-			if(m_MaterialFloatProperties.find(entity) != m_MaterialFloatProperties.end())
-				for (auto [uniformName, uiFloat] : m_MaterialFloatProperties[entity])
-					uiFloat->Draw();
-			if (m_MaterialIntProperties.find(entity) != m_MaterialIntProperties.end())
-				for (auto [uniformName, uiInt] : m_MaterialIntProperties[entity])
-					uiInt->Draw();
-			if (m_MaterialVec2Properties.find(entity) != m_MaterialVec2Properties.end())
-				for (auto [uniformName, uiVec2] : m_MaterialVec2Properties[entity])
-					uiVec2->Draw();
-			if (m_MaterialVec3Properties.find(entity) != m_MaterialVec3Properties.end())
-				for (auto [uniformName, uiVec3] : m_MaterialVec3Properties[entity])
-					uiVec3->Draw();
-			if (m_MaterialVec4Properties.find(entity) != m_MaterialVec4Properties.end())
-				for (auto [uniformName, uiVec4] : m_MaterialVec4Properties[entity])
-					uiVec4->Draw();
-			if (m_MaterialColorProperties.find(entity) != m_MaterialColorProperties.end())
-				for (auto [uniformName, uiColor] : m_MaterialColorProperties[entity])
-					uiColor->Draw();
-		}
+			if (openMeshInspector)
+			{
+				DrawMeshSelection(entity, component);
+				ImGui::TreePop();
+			}
 
-		if (entity.HasComponent<LightComponent>())
+			bool openMaterialInspector = ImGui::TreeNodeEx("Material Settings", treeNodeFlags);
+
+			if (openMaterialInspector)
+			{
+				auto& materialInstance = component.MaterialInstance;
+
+				bool receiveShadows = materialInstance->ReceivesShadows();
+				bool castShadows = materialInstance->CastsShadows();
+				ImGui::Checkbox("Receive Shadows", &receiveShadows);
+				ImGui::Checkbox("Cast Shadows", &castShadows);
+
+				materialInstance->SetCastsShadows(castShadows);
+				materialInstance->SetReceivesShadows(receiveShadows);
+
+				if (m_MaterialFloatProperties.find(entity) != m_MaterialFloatProperties.end())
+					for (auto [uniformName, uiFloat] : m_MaterialFloatProperties[entity])
+						uiFloat->Draw();
+				if (m_MaterialIntProperties.find(entity) != m_MaterialIntProperties.end())
+					for (auto [uniformName, uiInt] : m_MaterialIntProperties[entity])
+						uiInt->Draw();
+				if (m_MaterialVec2Properties.find(entity) != m_MaterialVec2Properties.end())
+					for (auto [uniformName, uiVec2] : m_MaterialVec2Properties[entity])
+						uiVec2->Draw();
+				if (m_MaterialVec3Properties.find(entity) != m_MaterialVec3Properties.end())
+					for (auto [uniformName, uiVec3] : m_MaterialVec3Properties[entity])
+						uiVec3->Draw();
+				if (m_MaterialVec4Properties.find(entity) != m_MaterialVec4Properties.end())
+					for (auto [uniformName, uiVec4] : m_MaterialVec4Properties[entity])
+						uiVec4->Draw();
+				if (m_MaterialColorProperties.find(entity) != m_MaterialColorProperties.end())
+					for (auto [uniformName, uiColor] : m_MaterialColorProperties[entity])
+						uiColor->Draw();
+
+				if (ImGui::Button("Dump Shader Data"))
+					materialInstance->GetShader()->DumpShaderData();
+
+				ImGui::TreePop();
+			}
+		};
+		auto cleanUpMeshRenderer = [this](auto& component, Entity entity)
+		{
+			m_RegisteredMaterialPropertyEntites.erase((uint32_t)entity);
+			m_MaterialFloatProperties.erase((uint32_t)entity);
+			m_MaterialIntProperties.erase((uint32_t)entity);
+			m_MaterialVec2Properties.erase((uint32_t)entity);
+			m_MaterialVec3Properties.erase((uint32_t)entity);
+			m_MaterialVec4Properties.erase((uint32_t)entity);
+			m_MaterialColorProperties.erase((uint32_t)entity);
+			m_SelectedPrimitive.erase((uint32_t)entity);
+			m_PrimitiveSelectionOptions.erase((uint32_t)entity);
+		};
+
+		DrawComponent<MeshRendererComponent>("Mesh Renderer", entity, drawMeshRenderer, cleanUpMeshRenderer);
+		//-------------------------MESH RENDERER-------------------------//
+
+
+		//-------------------------LIGHT-------------------------//
+		auto drawLight = [](auto& component, Entity entity)
 		{
 			LightComponent& light = entity.GetComponent<LightComponent>();
 
 			ImGui::ColorPicker4("Light Color", &light.Color.x);
 			ImGui::DragFloat("Light Intensity", &light.Intensity, 0.01f, 0.0f, 1.0f);
+		};
+		auto cleanUpLight = [](auto& component, Entity entity) {};
+
+		DrawComponent<LightComponent>("Light", entity, drawLight, cleanUpLight);
+		//-------------------------LIGHT-------------------------//
+	}
+
+	void SceneHierarchyPanel::DrawMeshSelection(Entity entity, MeshRendererComponent& meshRenderer)
+	{
+		const char* preview = m_SelectedPrimitive[(uint32_t)entity].c_str();
+
+		if (ImGui::BeginCombo("Mesh Selection", preview))
+		{
+			for (auto [name, selected] : m_PrimitiveSelectionOptions[(uint32_t)entity])
+			{
+				if (ImGui::Selectable(name.c_str(), &selected))
+				{
+					if (name == "Cube")
+						meshRenderer.MeshData = Mesh::CreatePrimitive(Primitive::Cube);
+					else if (name == "Sphere")
+						meshRenderer.MeshData = Mesh::CreatePrimitive(Primitive::Sphere);
+					else if (name == "Quad")
+						meshRenderer.MeshData = Mesh::CreatePrimitive(Primitive::Quad);
+					else if (name == "Plane")
+						meshRenderer.MeshData = Mesh::CreatePrimitive(Primitive::Plane);
+
+					m_SelectedPrimitive[(uint32_t)entity] = name.c_str();
+				}
+			}
+
+			ImGui::EndCombo();
 		}
 	}
 }
