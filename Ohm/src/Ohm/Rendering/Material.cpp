@@ -11,6 +11,11 @@ namespace Ohm
 	{
 		AllocateStorageBuffer();
 		InitializeStorageBufferWithUniformDefaults();
+
+		SetFlag(RenderFlag::DepthTest);
+		SetFlag(RenderFlag::Blend);
+
+		CheckShouldReceiveShadows();
 	}
 
 
@@ -19,6 +24,15 @@ namespace Ohm
 		Ref<Material> copy = CreateRef<Material>(cloneName, m_Shader);
 
 		return copy;
+	}
+
+	// This probably needs to be handled differently.  Is currently called by the SceneRenderer at the time of the Geometry pass.
+	// If the material receives shadows, it sets the uniform pointing to the shadowMap as valid, otherwise an invalid tex index.	
+	void Material::CheckShouldReceiveShadows()
+	{
+		if (!Has("sampler_ShadowMap")) return;
+
+		Set<int>("sampler_ShadowMap", m_ReceiveShadows ? 2 : 0);
 	}
 
 
@@ -85,10 +99,7 @@ namespace Ohm
 		if (uniforms.size() <= 0) return nullptr;
 
 		if (uniforms.find(name) == uniforms.end())
-		{
-			OHM_CORE_WARN("Could not locate uniform named: {} in shader: {}", name, m_Shader->GetName());
 			return nullptr;
-		}
 
 		return &uniforms.at(name);
 	}
@@ -125,6 +136,12 @@ namespace Ohm
 				{
 					glm::vec4* value = Get<glm::vec4>(name);
 					m_Shader->UploadUniformFloat4(name, *value);
+					break;
+				}
+				case ShaderDataType::Sampler2D:
+				{
+					int* value = Get<int>(name);
+					m_Shader->UploadUniformInt(name, *value);
 					break;
 				}
 				case ShaderDataType::Int:

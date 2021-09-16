@@ -1,38 +1,39 @@
 #include "ohmpch.h"
-#include "Ohm/Editor/EditorScene.h"
+#include "Ohm/Rendering/SceneRenderer.h"
 #include "Ohm/Rendering/Renderer.h"
 #include "Ohm/Rendering/FrameBuffer.h"
 #include "Ohm/Core/Application.h"
 #include "Ohm/Rendering/Shader.h"
 #include "Ohm/Rendering/UniformBuffer.h"
+#include "Ohm/Rendering/RenderCommand.h"
 
 #include <glm/glm.hpp>
 #include <glad/glad.h>
 
 namespace Ohm
 {
-	Ref<Scene> EditorScene::s_ActiveScene = nullptr;
+	Ref<Scene> SceneRenderer::s_ActiveScene = nullptr;
 
-	EditorCamera EditorScene::s_EditorCamera(45.0f, 1.77776f, 0.1f, 1000.0f);
+	EditorCamera SceneRenderer::s_EditorCamera(45.0f, 1.77776f, 0.1f, 1000.0f);
 
-	Ref<RenderPass> EditorScene::s_GeometryPass = nullptr;
-	Ref<RenderPass> EditorScene::s_PreDepthPass = nullptr;
-	Ref<Shader> EditorScene::s_DebugDepthShader = nullptr;
-	Ref<UniformBuffer> EditorScene::s_ShadowUniformbuffer = nullptr;
+	Ref<RenderPass> SceneRenderer::s_GeometryPass = nullptr;
+	Ref<RenderPass> SceneRenderer::s_PreShadowPass = nullptr;
+	Ref<Shader> SceneRenderer::s_DebugDepthShader = nullptr;
+	Ref<UniformBuffer> SceneRenderer::s_ShadowUniformbuffer = nullptr;
 
-	void EditorScene::LoadScene(const Ref<Scene>& runtimeScene)
+	void SceneRenderer::LoadScene(const Ref<Scene>& runtimeScene)
 	{
 		s_EditorCamera.SetPosition(glm::vec3(0.0f, 8.5f, 20.0f));
 		s_EditorCamera.SetRotation(glm::vec2(15.0f, 0.0f));
 		s_ActiveScene = runtimeScene;
 	}
 
-	void EditorScene::UnloadScene()
+	void SceneRenderer::UnloadScene()
 	{
 		s_ActiveScene = nullptr;
 	}
 
-	void EditorScene::InitializeDepthPass()
+	void SceneRenderer::InitializePreShadowPass()
 	{
 		FramebufferSpecification preShadowFrameBufferSpec;
 
@@ -45,15 +46,17 @@ namespace Ohm
 		RenderPassSpecification preShadowRenderPassSpec;
 		preShadowRenderPassSpec.ColorWrite = false;
 		preShadowRenderPassSpec.TargetFramebuffer = CreateRef<Framebuffer>(preShadowFrameBufferSpec);
-		preShadowRenderPassSpec.Shader = CreateRef<Shader>("assets/shaders/PreDepth.shader");
-		s_DebugDepthShader = CreateRef<Shader>("assets/shaders/DepthMap.shader");
+		preShadowRenderPassSpec.Shader = ShaderLibrary::Get("PreDepth");
+		preShadowRenderPassSpec.Material = CreateRef<Material>("PreDepth", preShadowRenderPassSpec.Shader);
+		preShadowRenderPassSpec.Flags |= (uint32_t)RenderFlag::DepthTest;
+		preShadowRenderPassSpec.Flags |= (uint32_t)RenderFlag::Blend;
+		s_DebugDepthShader = ShaderLibrary::Get("DepthMap");
 
 		s_ShadowUniformbuffer = CreateRef<UniformBuffer>(sizeof(glm::mat4), 2);
-
-		s_PreDepthPass = CreateRef<RenderPass>(preShadowRenderPassSpec);
+		s_PreShadowPass = CreateRef<RenderPass>(preShadowRenderPassSpec);
 	}
 
-	void EditorScene::InitializeGeometryPass()
+	void SceneRenderer::InitializeGeometryPass()
 	{
 		FramebufferSpecification geoFramebufferSpec;
 
@@ -65,46 +68,45 @@ namespace Ohm
 		RenderPassSpecification geoRenderPassSpec;
 		geoRenderPassSpec.ClearColor = glm::vec4(0.3f, 0.3f, 0.3f, 0.0f);
 		geoRenderPassSpec.TargetFramebuffer = CreateRef<Framebuffer>(geoFramebufferSpec);
+		geoRenderPassSpec.Flags |= (uint32_t)RenderFlag::DepthTest;
+		geoRenderPassSpec.Flags |= (uint32_t)RenderFlag::Blend;
+
 
 		s_GeometryPass = CreateRef<RenderPass>(geoRenderPassSpec);
 	}
 
-	void EditorScene::DepthPass()
+	void SceneRenderer::PreShadowPass()
 	{
-		Renderer::BeginPass(s_PreDepthPass);
+		Renderer::BeginPass(s_PreShadowPass);
 		auto& light = s_ActiveScene->GetSunLight();
 
+		static glm::mat4 scaleBiasMatrix = glm::scale(glm::mat4(1.0f), { 0.5f, 0.5f, 0.5f }) * glm::translate(glm::mat4(1.0f), { 1, 1, 1 });
+
 		auto& lightTransform = light.GetComponent<TransformComponent>();
-
 		glm::mat4 lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, 1.0f, 300.0f);
-
 		glm::mat4 lightView = glm::lookAt(lightTransform.Translation, lightTransform.Forward(), lightTransform.Up());
 
 		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 
-		Ref<Shader>& preDepthShader = s_PreDepthPass->GetRenderPassSpecification().Shader;
-
 		s_ShadowUniformbuffer->SetData((void*)&lightSpaceMatrix, sizeof(lightSpaceMatrix));
-
-		preDepthShader->Bind();
 
 		auto group = s_ActiveScene->m_Registry.group<TransformComponent, MeshRendererComponent>();
 
 		for (auto entity : group)
 		{
 			auto [transform, meshRenderer] = group.get<TransformComponent, MeshRendererComponent>(entity);
-			preDepthShader->UploadUniformMat4("u_ModelMatrix", transform.Transform());
-			Renderer::DrawGeometry(meshRenderer);
+
+			if (!meshRenderer.MaterialInstance->CastsShadows()) continue;
+
+			s_PreShadowPass->GetRenderPassSpecification().Material->Set<glm::mat4>("u_ModelMatrix", transform.Transform());
+			Renderer::DrawMesh(s_EditorCamera, meshRenderer.MeshData, s_PreShadowPass->GetRenderPassSpecification().Material, transform);
 		}
 
-		preDepthShader->Unbind();
-
-		Renderer::EndPass(s_PreDepthPass);
-
-		glBindTextureUnit(2, s_PreDepthPass->GetRenderPassSpecification().TargetFramebuffer->GetDepthAttachmentID());
+		s_PreShadowPass->GetRenderPassSpecification().TargetFramebuffer->BindDepthTexture(2);
+		Renderer::EndPass(s_PreShadowPass);
 	}
 
-	void EditorScene::GeometryPass()
+	void SceneRenderer::GeometryPass()
 	{
 		Renderer::BeginPass(s_GeometryPass);
 		auto group = s_ActiveScene->m_Registry.group<TransformComponent, MeshRendererComponent>();
@@ -113,46 +115,44 @@ namespace Ohm
 		{
 			auto [transform, meshRenderer] = group.get<TransformComponent, MeshRendererComponent>(entity);
 			s_ActiveScene->SetSceneLightingData(s_EditorCamera);
-			Renderer::DrawMeshWithMaterial(s_EditorCamera, meshRenderer, transform);
+
+			// TODO:: Figure out how to not cast shadows but receive them properly.  Currently, if a material is flagged to not
+			// cast shadows, their depth is not written to the depth buffer.  This means, they won't be tested against when it comes time
+			// to render geometry with lighting.  If an object has a lower depth than the object that isn't to cast shadows but is to receive them,
+			// they will receive shadows but any fragment with a greater depth will also receive the shadow.  The expected behavior is that the object
+			// should "consume" the shadow.
+			meshRenderer.MaterialInstance->CheckShouldReceiveShadows();
+			Renderer::DrawMesh(s_EditorCamera, meshRenderer.MeshData, meshRenderer.MaterialInstance, transform);
 		}
-
-		//s_DebugDepthShader->Bind();
-		//glBindTextureUnit(2, s_PreDepthPass->GetRenderPassSpecification().TargetFramebuffer->GetDepthAttachmentID());
-		//s_DebugDepthShader->UploadUniformFloat("u_NearPlane", 1.0f);
-		//s_DebugDepthShader->UploadUniformFloat("u_FarPlane", 10.0f);
-		//s_DebugDepthShader->UploadUniformInt("sampler_DepthMap", 2);
-		//Renderer::DrawFullScreenQuad();
-		//s_DebugDepthShader->Unbind();
-
 
 		Renderer::EndPass(s_GeometryPass);
 	}
 
-	void EditorScene::InitializePipeline()
+	void SceneRenderer::InitializePipeline()
 	{
-		InitializeDepthPass();
+		InitializePreShadowPass();
 		InitializeGeometryPass();
 	}
 
-	void EditorScene::ExecutePipeline()
+	void SceneRenderer::SubmitPipeline()
 	{
 		Renderer::BeginScene();
-		DepthPass();
+		PreShadowPass();
 		GeometryPass();
 		Renderer::EndScene();
 	}
 
-	void EditorScene::UpdateEditorCamera(Time dt)
+	void SceneRenderer::UpdateEditorCamera(float deltaTime)
 	{
-		s_EditorCamera.Update(dt);
+		s_EditorCamera.Update(deltaTime);
 	}
 
-	void EditorScene::OnEvent(Event& e)
+	void SceneRenderer::OnEvent(Event& e)
 	{
 		s_EditorCamera.OnEvent(e);
 	}
 
-	Ref<Framebuffer> EditorScene::GetMainColorBuffer()
+	Ref<Framebuffer> SceneRenderer::GetMainColorBuffer()
 	{
 		if (s_GeometryPass == nullptr || s_GeometryPass->GetRenderPassSpecification().TargetFramebuffer == nullptr)
 		{
@@ -163,18 +163,18 @@ namespace Ohm
 		return s_GeometryPass->GetRenderPassSpecification().TargetFramebuffer;
 	}
 
-	Ref<Framebuffer> EditorScene::GetDepthBuffer()
+	Ref<Framebuffer> SceneRenderer::GetDepthBuffer()
 	{
-		if (s_PreDepthPass == nullptr || s_PreDepthPass->GetRenderPassSpecification().TargetFramebuffer == nullptr)
+		if (s_PreShadowPass == nullptr || s_PreShadowPass->GetRenderPassSpecification().TargetFramebuffer == nullptr)
 		{
 			OHM_CORE_ERROR("Depth Buffer not found.  Pre Depth Pass or Pre Depth Pass or FBO is nullptr.");
 			return nullptr;
 		}
 
-		return s_PreDepthPass->GetRenderPassSpecification().TargetFramebuffer;
+		return s_PreShadowPass->GetRenderPassSpecification().TargetFramebuffer;
 	}
 
-	void EditorScene::ValidateResize(glm::vec2 viewportSize)
+	void SceneRenderer::ValidateResize(glm::vec2 viewportSize)
 	{
 		if (s_GeometryPass == nullptr || s_GeometryPass->GetRenderPassSpecification().TargetFramebuffer == nullptr)
 		{

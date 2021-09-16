@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Ohm/Rendering/Shader.h"
+#include "Ohm/Rendering/Material.h"
 #include "Ohm/Rendering/Framebuffer.h"
 #include <glm/glm.hpp>
 
@@ -10,6 +11,9 @@ namespace Ohm
 	{
 		Ref<Framebuffer> TargetFramebuffer;
 		Ref<Shader> Shader;
+		Ref<Material> Material;
+		uint32_t Flags;
+
 		bool DepthWrite = true;
 		bool DepthRead = true;
 		bool ColorWrite = true;

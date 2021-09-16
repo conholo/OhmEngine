@@ -14,12 +14,12 @@ namespace Ohm
 		static void Initialize();
 		static void BeginScene();
 		static void BeginPass(const Ref<RenderPass>& renderPass);
-		static void DrawMeshWithMaterial(const EditorCamera& camera, MeshRendererComponent& meshRenderer, const TransformComponent& transform);
-		static void DrawGeometry(MeshRendererComponent& meshRenderer);
+		static void DrawMesh(const EditorCamera& camera, const Ref<Mesh>& mesh, const Ref<Material>& material, const TransformComponent& transform);
 		static void DrawFullScreenQuad();
 		static void EndPass(const Ref<RenderPass>& renderPass);
 		static void EndScene();
 		static void Shutdown();
+
 
 		struct Statistics
 		{
@@ -34,6 +34,9 @@ namespace Ohm
 		};
 
 		static Statistics GetStats() { return s_Stats; }
+
+	private:
+		static void UploadCameraUniformData(const EditorCamera& camera, const TransformComponent& transform);
 
 	private:
 		static Statistics s_Stats;

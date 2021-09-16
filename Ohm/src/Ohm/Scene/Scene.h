@@ -50,7 +50,7 @@ namespace Ohm
 		LightingData m_LightingData;
 
 		friend class Entity;
-		friend class EditorScene;
+		friend class SceneRenderer;
 		friend class SceneHierarchyPanel;
 	};
 }

@@ -35,7 +35,6 @@ namespace Ohm
 		static Application* s_Instance;
 
 	private:
-		float m_LastFrameTime = 0.0f;
 		std::string m_Name;
 		bool m_IsRunning = true;
 		Scope<Window> m_Window;

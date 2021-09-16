@@ -21,15 +21,14 @@ namespace Ohm
 	{
 		switch (value)
 		{
-			case 0x1406: return ShaderDataType::Float;
-			case 0x8B50: return ShaderDataType::Float2;
-			case 0x8B51: return ShaderDataType::Float3;
-			case 0x8B52: return ShaderDataType::Float4;
-			case 0x1404: return ShaderDataType::Int;
-			case 0x8B5B: return ShaderDataType::Mat3;
-			case 0x8B5C: return ShaderDataType::Mat4;
-				// Sampler2D -> Uploads with glUniform1i(name, int value);
-			case 0x8B5E: return ShaderDataType::Sampler2D;
+			case GL_FLOAT:		return ShaderDataType::Float;
+			case GL_FLOAT_VEC2: return ShaderDataType::Float2;
+			case GL_FLOAT_VEC3: return ShaderDataType::Float3;
+			case GL_FLOAT_VEC4: return ShaderDataType::Float4;
+			case GL_INT:		return ShaderDataType::Int;
+			case GL_FLOAT_MAT3: return ShaderDataType::Mat3;
+			case GL_FLOAT_MAT4: return ShaderDataType::Mat4;
+			case GL_SAMPLER_2D:	return ShaderDataType::Sampler2D;
 			default: 
 			{
 				OHM_CORE_ERROR("Invalid GLenum.  No matching ShaderDataType found for {}.", value);
@@ -500,4 +499,36 @@ namespace Ohm
 		return location;
 	}
 	
+
+	std::unordered_map<std::string, Ref<Shader>> ShaderLibrary::s_ShaderLibrary;
+
+	void ShaderLibrary::Add(const Ref<Shader>& shader)
+	{
+		if (s_ShaderLibrary.find(shader->GetName()) == s_ShaderLibrary.end())
+		{
+			s_ShaderLibrary[shader->GetName()] = shader;
+			OHM_CORE_TRACE("Added {} Shader to the Shader Library.", shader->GetName());
+		}
+		else
+		{
+			OHM_CORE_WARN("Shader already contained in Shader Library.  Attempted to add {} Shader to Library.", shader->GetName());
+		}
+	}
+
+	void ShaderLibrary::Load(const std::string& filePath)
+	{
+		Ref<Shader> shader = CreateRef<Shader>(filePath);
+		Add(shader);
+	}
+
+	const Ref<Shader>& ShaderLibrary::Get(const std::string& name)
+	{
+		if (s_ShaderLibrary.find(name) == s_ShaderLibrary.end())
+		{
+			OHM_CORE_ERROR("No shader with name \"{}\" found in Shader Library.", name);
+			return nullptr;
+		}
+
+		return s_ShaderLibrary.at(name);
+	}
 }

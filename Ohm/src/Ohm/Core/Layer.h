@@ -15,7 +15,7 @@ namespace Ohm
 
 		virtual void OnAttach() = 0;
 		virtual void OnDetach() = 0;
-		virtual void OnUpdate(Time dt) { }
+		virtual void OnUpdate(float deltaTime) { }
 		virtual void OnEvent(Event& event) { }
 		virtual void OnUIRender() { }
 

@@ -232,6 +232,14 @@ namespace Ohm
 			if (ImGui::Button("Dump Shader Data"))
 				materialInstance->GetShader()->DumpShaderData();
 
+			bool receiveShadows = materialInstance->ReceivesShadows();
+			bool castShadows = materialInstance->CastsShadows();
+			ImGui::Checkbox("Receive Shadows", &receiveShadows);
+			ImGui::Checkbox("Cast Shadows", &castShadows);
+
+			materialInstance->SetCastsShadows(castShadows);
+			materialInstance->SetReceivesShadows(receiveShadows);
+
 			if(m_MaterialFloatProperties.find(entity) != m_MaterialFloatProperties.end())
 				for (auto [uniformName, uiFloat] : m_MaterialFloatProperties[entity])
 					uiFloat->Draw();

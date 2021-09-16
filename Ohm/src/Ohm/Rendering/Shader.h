@@ -124,4 +124,17 @@ namespace Ohm
 		std::string m_Name;
 		uint32_t m_ID;
 	};
+
+
+	class ShaderLibrary
+	{
+	public:
+		static void Add(const Ref<Shader>& shader);
+		static void Load(const std::string& filePath);
+
+		static const Ref<Shader>& Get(const std::string& name);
+
+	private:
+		static std::unordered_map<std::string, Ref<Shader>> s_ShaderLibrary;
+	};
 }

@@ -15,7 +15,7 @@ namespace Ohm
 
 		EditorCamera(float fov, float aspectRatio, float nearClip, float farClip);
 
-		void Update(Time dt);
+		void Update(float deltaTime);
 		void OnEvent(Event& event);
 
 		void SetViewportSize(float width, float height);
@@ -45,8 +45,8 @@ namespace Ohm
 
 	private:
 
-		float m_PanSpeed = 5.0f;
-		float m_RotationSpeed = 60.0f;
+		float m_PanSpeed = 3.0f;
+		float m_RotationSpeed = 50.0f;
 
 		float m_FOV = 45.0f;
 		float m_AspectRatio;

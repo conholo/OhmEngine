@@ -41,10 +41,21 @@ namespace Ohm
 		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	}
 
+	void RenderCommand::SetFlags(uint32_t flags)
+	{
+		if (flags & (uint32_t)RenderFlag::DepthTest)
+			glEnable(GL_DEPTH_TEST);
+		else
+			glDisable(GL_DEPTH_TEST);
+
+		if (flags & (uint32_t)RenderFlag::Blend)
+			glEnable(GL_BLEND);
+		else
+			glDisable(GL_BLEND);
+	}
+
 	void RenderCommand::Clear(bool colorBufferBit, bool depthBufferBit)
 	{
-		uint32_t flags = 0;
-
 		if (colorBufferBit && depthBufferBit)
 		{
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

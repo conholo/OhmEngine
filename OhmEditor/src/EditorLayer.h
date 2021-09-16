@@ -18,7 +18,7 @@ namespace Ohm
 		virtual ~EditorLayer();
 
 		void OnAttach() override;
-		void OnUpdate(Time dt) override;
+		void OnUpdate(float deltaTime) override;
 		void OnDetach() override;
 		void OnUIRender() override;
 		void OnEvent(Event& event) override;
@@ -43,5 +43,7 @@ namespace Ohm
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 
 		float m_ElapsedTime = 0.0f;
+
+		Ref<Material> m_EngineGeometryMaterial;
 	};
 }

@@ -52,11 +52,10 @@ namespace Ohm
 		m_ProjectionMatrix = glm::perspective(glm::radians(m_FOV), m_AspectRatio, m_NearClip, m_FarClip);
 	}
 
-	void EditorCamera::Update(Time dt)
+	void EditorCamera::Update(float deltaTime)
 	{
 		const glm::vec2 mousePosition = Input::GetMousePosition();
 		const glm::vec2 mouseDelta = (mousePosition - m_CurrentMousePosition) * 0.002f;
-
 
 		if (Input::IsMouseButtonPressed(2) || Input::IsMouseButtonPressed(1))
 		{
@@ -70,30 +69,30 @@ namespace Ohm
 			{
 				// Fly forward/back
 				if (Input::IsKeyPressed(Key::W))
-					m_PositionDelta += Forward() * m_PanSpeed * dt.Seconds();
+					m_PositionDelta += Forward() * m_PanSpeed * deltaTime;
 				if (Input::IsKeyPressed(Key::S))
-					m_PositionDelta -= Forward() * m_PanSpeed * dt.Seconds();
+					m_PositionDelta -= Forward() * m_PanSpeed * deltaTime;
 
 				// Pitch/Yaw adjustment from mouse pan
 				const float yawSign = Up().y < 0.0f ? -1.0f : 1.0f;
-				m_YawDelta += yawSign * mouseDelta.x * m_RotationSpeed * dt.Seconds();
-				m_PitchDelta += mouseDelta.y * m_RotationSpeed * dt.Seconds();
+				m_YawDelta += yawSign * mouseDelta.x * m_RotationSpeed * deltaTime;
+				m_PitchDelta += mouseDelta.y * m_RotationSpeed * deltaTime;
 			}
 		}
 		else
 		{
 			// Fly up/down
 			if (Input::IsKeyPressed(Key::W))
-				m_PositionDelta += Up() * m_PanSpeed * dt.Seconds();
+				m_PositionDelta += Up() * m_PanSpeed * deltaTime;
 			if (Input::IsKeyPressed(Key::S))
-				m_PositionDelta -= Up() * m_PanSpeed * dt.Seconds();
+				m_PositionDelta -= Up() * m_PanSpeed * deltaTime;
 		}
 
 		// Fly left/right
 		if (Input::IsKeyPressed(Key::A))
-			m_PositionDelta -= Right() * m_PanSpeed * dt.Seconds();
+			m_PositionDelta -= Right() * m_PanSpeed * deltaTime;
 		if(Input::IsKeyPressed(Key::D))
-			m_PositionDelta += Right() * m_PanSpeed * dt.Seconds();
+			m_PositionDelta += Right() * m_PanSpeed * deltaTime;
 
 
 		m_Position += m_PositionDelta;

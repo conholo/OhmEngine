@@ -2,20 +2,10 @@
 
 #include "Ohm/Rendering/Shader.h"
 #include "Ohm/Core/Buffer.h"
+#include "Ohm/Rendering/RenderCommand.h"
 
 namespace Ohm
 {
-	struct StagedUniform
-	{
-		StagedUniform() = default;
-		StagedUniform(const StagedUniform& other) = default;
-		StagedUniform(const ShaderUniform* uniform, uint32_t stagedBufferOffset)
-			:Uniform(uniform), StagedBufferOffset(stagedBufferOffset) { }
-
-		const ShaderUniform* Uniform;
-		uint32_t StagedBufferOffset;
-	};
-
 	class Material
 	{
 	public:
@@ -34,7 +24,7 @@ namespace Ohm
 
 			if (uniform == nullptr)
 			{
-				OHM_CORE_ERROR("Could not find uniform with name: {} in shader: {}.", name, m_Shader->GetName());
+				OHM_CORE_WARN("Could not find uniform with name: {} in shader: {}.", name, m_Shader->GetName());
 				return;
 			}
 
@@ -50,24 +40,49 @@ namespace Ohm
 
 			if (uniform == nullptr)
 			{
-				OHM_CORE_ERROR("Could not find uniform with name: {} in shader: {}.", name, m_Shader->GetName());
+				OHM_CORE_WARN("Could not find uniform with name: {} in shader: {}.", name, m_Shader->GetName());
 				return nullptr;
 			}
 		
 			return m_UniformStorageBuffer.Read<T>(uniform->GetBufferOffset());
 		}
 
+		bool Has(const std::string& name)
+		{
+			const auto* uniform = FindShaderUniform(name);
+
+			return uniform != nullptr;
+		}
+
 		const ShaderUniform* FindShaderUniform(const std::string& name);
+
+		uint32_t GetFlags() const { return m_RenderFlags; }
+		bool GetFlag(RenderFlag flag) const { return (uint32_t)flag & m_RenderFlags; }
+		void SetFlag(RenderFlag flag, bool value = true)
+		{
+			m_RenderFlags = value ? m_RenderFlags | (uint32_t)flag : m_RenderFlags & ~(uint32_t)flag;
+		}
+
+		bool CastsShadows() const { return m_CastShadows; };
+		void SetCastsShadows(bool value) { m_CastShadows = value; }
+
+		bool ReceivesShadows() const { return m_ReceiveShadows; }
+		void SetReceivesShadows(bool value) { m_ReceiveShadows = value; }
+
+		void CheckShouldReceiveShadows();
 
 	private:
 		void AllocateStorageBuffer();
 		void InitializeStorageBufferWithUniformDefaults();
 
 	private:
+		bool m_CastShadows = true;
+		bool m_ReceiveShadows = true;
 		uint32_t m_UniformStagingOffset = 0;
 		Buffer m_UniformStorageBuffer;
 		std::unordered_map<std::string, GLint> m_Uniforms;
 		Ref<Shader> m_Shader;
 		std::string m_Name;
+		uint32_t m_RenderFlags;
 	};
 }

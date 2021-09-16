@@ -31,13 +31,9 @@ namespace Ohm
 	{
 		while (m_IsRunning)
 		{
-			float time = (float)glfwGetTime();
-
-			Time deltaTime = time - m_LastFrameTime;
-			m_LastFrameTime = time;
-
+			Time::Tick();
 			for (auto* layer : m_LayerStack)
-				layer->OnUpdate(deltaTime);
+				layer->OnUpdate(Time::DeltaTime());
 
 			m_ImGuiLayer->Begin();
 			for (auto* layer : m_LayerStack)

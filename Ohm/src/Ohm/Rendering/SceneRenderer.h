@@ -9,17 +9,17 @@
 
 namespace Ohm
 {
-	class EditorScene
+	class SceneRenderer
 	{
 	public:
 
 		static void LoadScene(const Ref<Scene>& runtimeScene);
 		static void UnloadScene();
 
-		static void UpdateEditorCamera(Time dt);
+		static void UpdateEditorCamera(float deltaTime);
 
 		static void InitializePipeline();
-		static void ExecutePipeline();
+		static void SubmitPipeline();
 		static void OnEvent(Event& e);
 
 		static Ref<Framebuffer> GetMainColorBuffer();
@@ -27,10 +27,10 @@ namespace Ohm
 
 		static void ValidateResize(glm::vec2 viewportSize);
 	private:
-		static void InitializeDepthPass();
+		static void InitializePreShadowPass();
 		static void InitializeGeometryPass();
 
-		static void DepthPass();
+		static void PreShadowPass();
 		static void GeometryPass();
 
 	private:
@@ -38,7 +38,7 @@ namespace Ohm
 		static EditorCamera s_EditorCamera;
 
 		static Ref<RenderPass> s_GeometryPass;
-		static Ref<RenderPass> s_PreDepthPass;
+		static Ref<RenderPass> s_PreShadowPass;
 
 		static Ref<UniformBuffer> s_ShadowUniformbuffer;
 		static Ref<Shader> s_DebugDepthShader;

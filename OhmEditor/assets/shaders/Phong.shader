@@ -45,7 +45,7 @@ void main()
 layout(location = 0) out vec4 o_Color;
 
 uniform vec4 u_DiffuseColor = vec4(1.0);
-uniform vec4 u_AmbientColor = vec4(0.2, 0.6, 0.3, 1.0);
+uniform vec4 u_AmbientColor = vec4(1.0);
 
 uniform float u_SpecularStrength = 0.8;
 uniform float u_AmbientStrength = 0.6;

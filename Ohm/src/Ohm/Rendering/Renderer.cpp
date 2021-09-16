@@ -8,12 +8,12 @@
 #include "Ohm/Rendering/RenderCommand.h"
 #include "Ohm/Rendering/Texture2D.h"
 #include "Ohm/Rendering/UniformBuffer.h"
+#include "Ohm/Core/Time.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace Ohm
 {
-
 	Renderer::Statistics Renderer::s_Stats;
 
 	struct RenderData
@@ -22,7 +22,13 @@ namespace Ohm
 		Ref<Shader> Shader;
 		Ref<Texture2D> Texture;
 		Ref<Texture2D> WhiteTexture;
+		RenderFlag Flags;
 
+		struct GlobalData
+		{
+			float ElapsedTime;
+			float DeltaTime;
+		};
 
 		struct CameraData
 		{
@@ -34,6 +40,7 @@ namespace Ohm
 		};
 
 		Ref<UniformBuffer> CameraBuffer;
+		Ref<UniformBuffer> GlobalBuffer;
 	};
 
 	static RenderData* s_RenderData = nullptr;
@@ -53,65 +60,61 @@ namespace Ohm
 		s_RenderData->WhiteTexture->Bind(0);
 		s_RenderData->Texture->Bind(1);
 		s_RenderData->CameraBuffer = CreateRef<UniformBuffer>(sizeof(RenderData::CameraData), 0);
+
+		s_RenderData->GlobalBuffer = CreateRef<UniformBuffer>(sizeof(RenderData::GlobalBuffer), 3);
+
+		ShaderLibrary::Load("assets/shaders/Phong.shader");
+		ShaderLibrary::Load("assets/shaders/PreDepth.shader");
+		ShaderLibrary::Load("assets/shaders/DepthMap.shader");
+		ShaderLibrary::Load("assets/shaders/flatcolor.shader");
+		ShaderLibrary::Load("assets/shaders/VertexDeformation.shader");
 	}
 
-	void Renderer::BeginScene()
+	void Renderer::UploadCameraUniformData(const EditorCamera& camera, const TransformComponent& transform)
 	{
-		s_Stats.Clear();
-	}
-
-	void Renderer::BeginPass(const Ref<RenderPass>& renderPass)
-	{
-		auto& specification = renderPass->GetRenderPassSpecification();
-		Ref<Framebuffer> passFB = renderPass->GetRenderPassSpecification().TargetFramebuffer;
-		RenderCommand::SetViewport(passFB->GetFrameBufferSpecification().Width, passFB->GetFrameBufferSpecification().Height);
-		passFB->Bind();
-		RenderCommand::ClearColor(specification.ClearColor.r, specification.ClearColor.g, specification.ClearColor.b, specification.ClearColor.a);
-		RenderCommand::Clear(specification.ColorWrite, specification.DepthRead);
-	}
-
-	void Renderer::DrawMeshWithMaterial(const EditorCamera& camera, MeshRendererComponent& meshRenderer, const TransformComponent& transform)
-	{
-		s_RenderData->VAO->Bind();
-
-		meshRenderer.MeshData->Bind();
-		s_RenderData->VAO->EnableVertexAttributes(meshRenderer.MeshData->GetVertexBuffer());
-		meshRenderer.MaterialInstance->UploadStagedUniforms();
-	
-		if (meshRenderer.MaterialInstance->GetShader()->GetName() == "Phong")
-		{
-			meshRenderer.MaterialInstance->GetShader()->UploadUniformInt("sampler_ShadowMap", 2);
-		}
-
-
-
 		glm::mat4 modelView = camera.GetView() * transform.Transform();
 		glm::mat4 normalMatrix = glm::transpose(glm::inverse(modelView));
 		glm::mat4 viewProjection = camera.GetProjectionView();
 
 		RenderData::CameraData cameraData{ viewProjection, transform.Transform(), camera.GetProjection(), camera.GetView(), normalMatrix };
 		s_RenderData->CameraBuffer->SetData(&cameraData, sizeof(RenderData::CameraData));
-
-		RenderCommand::DrawIndexed(s_RenderData->VAO, meshRenderer.MeshData->GetIndexBuffer()->GetCount());
-
-		s_RenderData->VAO->Unbind();
-		meshRenderer.MaterialInstance->GetShader()->Unbind();
-		meshRenderer.MeshData->Unbind();
-
-		s_Stats.TriangleCount += meshRenderer.MeshData->GetIndices().size() / 3;
-		s_Stats.VertexCount += meshRenderer.MeshData->GetVertices().size();
 	}
 
-	void Renderer::DrawGeometry(MeshRendererComponent& meshRenderer)
+	void Renderer::BeginScene()
+	{
+		float globalTimeValues[2] = { Time::Elapsed(), Time::DeltaTime() };
+
+		s_RenderData->GlobalBuffer->SetData((void*)globalTimeValues, sizeof(float) * 2);
+		s_Stats.Clear();
+	}
+
+	void Renderer::BeginPass(const Ref<RenderPass>& renderPass)
+	{
+		RenderCommand::SetFlags(renderPass->GetRenderPassSpecification().Flags);
+		auto& specification = renderPass->GetRenderPassSpecification();
+		Ref<Framebuffer> passFB = renderPass->GetRenderPassSpecification().TargetFramebuffer;
+		passFB->Bind();
+		RenderCommand::ClearColor(specification.ClearColor.r, specification.ClearColor.g, specification.ClearColor.b, specification.ClearColor.a);
+		RenderCommand::Clear(specification.ColorWrite, specification.DepthRead);
+	}
+
+	void Renderer::DrawMesh(const EditorCamera& camera, const Ref<Mesh>& mesh, const Ref<Material>& material, const TransformComponent& transform)
 	{
 		s_RenderData->VAO->Bind();
-		meshRenderer.MeshData->Bind();
-		s_RenderData->VAO->EnableVertexAttributes(meshRenderer.MeshData->GetVertexBuffer());
+		mesh->Bind();
+		s_RenderData->VAO->EnableVertexAttributes(mesh->GetVertexBuffer());
+		material->UploadStagedUniforms();
+		
+		UploadCameraUniformData(camera, transform);
 
-		RenderCommand::DrawIndexed(s_RenderData->VAO, meshRenderer.MeshData->GetIndexBuffer()->GetCount());
+		RenderCommand::DrawIndexed(s_RenderData->VAO, mesh->GetIndexBuffer()->GetCount());
 
 		s_RenderData->VAO->Unbind();
-		meshRenderer.MeshData->Unbind();
+		material->GetShader()->Unbind();
+		mesh->Unbind();
+
+		s_Stats.TriangleCount += mesh->GetIndices().size() / 3;
+		s_Stats.VertexCount += mesh->GetVertices().size();
 	}
 
 	void Renderer::DrawFullScreenQuad()

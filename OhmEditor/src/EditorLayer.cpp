@@ -4,7 +4,7 @@
 
 #include "Panels/Dockspace.h"
 
-#include "Ohm/Editor/EditorScene.h"
+#include "Ohm/Rendering/SceneRenderer.h"
 #include <glm/glm.hpp>
 
 #include <cmath>
@@ -24,82 +24,30 @@ namespace Ohm
 
 	void EditorLayer::OnAttach()
 	{
+		m_EngineGeometryMaterial = CreateRef<Material>("Base Material", ShaderLibrary::Get("Phong"));
 		m_Scene = CreateRef<Scene>("Test Scene");
 		m_SceneHierarchyPanel.SetContext(m_Scene);
-		EditorScene::LoadScene(m_Scene);
+		SceneRenderer::LoadScene(m_Scene);
 
-		EditorScene::InitializePipeline();
-		m_ViewportPanel.SetFramebuffer(EditorScene::GetMainColorBuffer());
+		SceneRenderer::InitializePipeline();
+		m_ViewportPanel.SetFramebuffer(SceneRenderer::GetMainColorBuffer());
 
-		//-----------------------------------------------------
-		// Render Primitives Begin
-		//-----------------------------------------------------
-		// Shaders
-		Ref<Shader> phongShader = CreateRef<Shader>("assets/shaders/Phong.shader");
-		Ref<Shader> flatColorShader = CreateRef<Shader>("assets/shaders/flatcolor.shader");
-
-		// Primitives
-		Ref<Mesh> cubeMesh = Mesh::CreatePrimitive(Primitive::Cube);
-		Ref<Mesh> quadMesh = Mesh::CreatePrimitive(Primitive::Quad);
-		Ref<Mesh> planeMesh = Mesh::CreatePrimitive(Primitive::Plane);
-		Ref<Mesh> sphereMesh = Mesh::CreatePrimitive(Primitive::Sphere);
-
-		// Materials
-		Ref<Material> cubeMaterial = CreateRef<Material>("Cube Material", phongShader);
-		Ref<Material> sphereMaterial = CreateRef<Material>("Sphere Material", phongShader);
-		Ref<Material> planeMaterial = CreateRef<Material>("Plane Material", phongShader);
-		Ref<Material> quadMaterial = CreateRef<Material>("Quad Material", phongShader);
-		Ref<Material> lightDemoMaterial = CreateRef<Material>("Light Demo Material", flatColorShader);
-
-		//-----------------------------------------------------
-		// Render Primitives End
-		//-----------------------------------------------------
-
-
-		//-----------------------------------------------------
-		// Entities Begin
-		//-----------------------------------------------------
-		m_Cube = m_Scene->Create("Cube");
-		m_Plane = m_Scene->Create("Plane");
-		m_Sphere = m_Scene->Create("Sphere");
-		m_Quad = m_Scene->Create("Quad");
 		m_DirectionalLight = m_Scene->Create("Directional Light");
-
-		// Light
 		m_DirectionalLight.AddComponent<LightComponent>(LightType::Sun, glm::vec4(1.0f), 1.0f, true);
-		// TODO:: NOTE TO FUTURE SELF, IF LIGHTING DATA FAILS, IT'S BECAUSE A MESH RENDERER IS CURRENTLY NEEDEED TO ACCESS SCENE DIRECTIONAL LIGHT -> CHECK EDITORSCENE
-		m_DirectionalLight.AddComponent<MeshRendererComponent>(lightDemoMaterial, cubeMesh);
+		m_DirectionalLight.AddComponent<MeshRendererComponent>(m_EngineGeometryMaterial->Clone("Directional Light Debug Material"), Mesh::CreatePrimitive(Primitive::Cube));
+		m_DirectionalLight.GetComponent<TransformComponent>().Translation = glm::vec3(0.0f, 10.0f, 0.0f);
+		m_DirectionalLight.GetComponent<TransformComponent>().Scale = glm::vec3(0.25f);
 
-		m_Sphere.AddComponent<MeshRendererComponent>(sphereMaterial, sphereMesh);
-		m_Cube.AddComponent<MeshRendererComponent>(cubeMaterial, cubeMesh);
-		m_Plane.AddComponent<MeshRendererComponent>(planeMaterial, planeMesh);
-		m_Quad.AddComponent<MeshRendererComponent>(quadMaterial, quadMesh);
-
-		//-----------------------------------------------------
-		// Entities End
-		//-----------------------------------------------------
-
-
-		//-----------------------------------------------------
-		// Test Transform Wrappers (DELETE THESE)
-		//-----------------------------------------------------
-		m_CubeWrapper = CreateRef<TransformWrapper>(m_Cube.GetComponent<TransformComponent>(), glm::vec3(7.0f, 3.0f, 0.0), glm::radians(glm::vec3(45.0f)), glm::vec3(3.5f));
-		m_PlaneWrapper = CreateRef<TransformWrapper>(m_Plane.GetComponent<TransformComponent>(), glm::vec3(0.0f, -2.0f, 0.0), glm::vec3(0.0f), glm::vec3(100.0f, 0.01f, 100.0f));
-		m_SphereWrapper = CreateRef<TransformWrapper>(m_Sphere.GetComponent<TransformComponent>(), glm::vec3(-7.0f, 3.0f, 0.0), glm::vec3(0.0f), glm::vec3(2.0f));
-		m_QuadWrapper = CreateRef<TransformWrapper>(m_Quad.GetComponent<TransformComponent>(), glm::vec3(0.0f, 3.0f, 0.0), glm::radians(glm::vec3(-45.0f, 0.0f, 0.0f)), glm::vec3(3.0f));
-		m_LightDemoWrapper = CreateRef<TransformWrapper>(m_DirectionalLight.GetComponent<TransformComponent>(), glm::vec3(0.0f, 2.0f, 5.0), glm::vec3(0.0f), glm::vec3(1.0f));
-		//-----------------------------------------------------
-		// Test Transform Wrappers (DELETE THESE)
-		//-----------------------------------------------------
-
-
+		//Entity test = m_Scene->Create("Vertex Test");
+		//MeshRendererComponent& meshRenderer = test.AddComponent<MeshRendererComponent>(CreateRef<Material>("Vert Deformation Mat", ShaderLibrary::Get("VertexDeformation")), Mesh::CreatePrimitive(Primitive::Plane));
+		//test.GetComponent<TransformComponent>().Scale = glm::vec3(10.0f, 1.0f, 10.0f);
 	}
 
-	void EditorLayer::OnUpdate(Time dt)
+	void EditorLayer::OnUpdate(float deltaTime)
 	{
-		EditorScene::ValidateResize(m_ViewportPanel.GetViewportSize());
-		EditorScene::UpdateEditorCamera(dt);
-		EditorScene::ExecutePipeline();
+		SceneRenderer::ValidateResize(m_ViewportPanel.GetViewportSize());
+		SceneRenderer::UpdateEditorCamera(deltaTime);
+		SceneRenderer::SubmitPipeline();
 	}
 
 	void EditorLayer::OnDetach()
@@ -118,13 +66,56 @@ namespace Ohm
 				if (ImGui::BeginMenu("File"))
 				{
 					ImGui::Separator();
-
 					if (ImGui::MenuItem("Quit"))
 						Application::Close();
-
-
 					ImGui::Separator();
 
+					ImGui::EndMenu();
+				}
+
+				if (ImGui::BeginMenu("Create"))
+				{
+					ImGui::Separator();
+					if (ImGui::BeginMenu("3D-Primtives"))
+					{
+						ImGui::Separator();
+						
+						if (ImGui::MenuItem("Cube"))
+						{
+							Entity cube = m_Scene->Create("Cube");
+							cube.AddComponent<MeshRendererComponent>(m_EngineGeometryMaterial->Clone("Cube Base Material"), Mesh::CreatePrimitive(Primitive::Cube));
+							m_SceneHierarchyPanel.SetSelectedEntity(cube);
+						}
+						ImGui::Separator();
+
+						if (ImGui::MenuItem("Sphere"))
+						{
+							Entity sphere = m_Scene->Create("Sphere");
+							sphere.AddComponent<MeshRendererComponent>(m_EngineGeometryMaterial->Clone("Sphere Base Material"), Mesh::CreatePrimitive(Primitive::Sphere));
+							m_SceneHierarchyPanel.SetSelectedEntity(sphere);
+						}
+						ImGui::Separator();
+
+						if (ImGui::MenuItem("Quad"))
+						{
+							Entity quad = m_Scene->Create("Quad");
+							quad.AddComponent<MeshRendererComponent>(m_EngineGeometryMaterial->Clone("Quad Base Material"), Mesh::CreatePrimitive(Primitive::Quad));
+							m_SceneHierarchyPanel.SetSelectedEntity(quad);
+						}
+						ImGui::Separator();
+
+						if (ImGui::MenuItem("Plane"))
+						{
+							Entity plane = m_Scene->Create("Plane");
+							plane.AddComponent<MeshRendererComponent>(m_EngineGeometryMaterial->Clone("Plane Base Material"), Mesh::CreatePrimitive(Primitive::Plane));
+							m_SceneHierarchyPanel.SetSelectedEntity(plane);
+						}
+
+						ImGui::Separator();
+						ImGui::EndMenu();
+					}
+
+					ImGui::Separator();
 					ImGui::EndMenu();
 				}
 
@@ -153,6 +144,6 @@ namespace Ohm
 
 	void EditorLayer::OnEvent(Event& event)
 	{
-		EditorScene::OnEvent(event);
+		SceneRenderer::OnEvent(event);
 	}
 }
