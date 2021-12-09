@@ -8,7 +8,10 @@ namespace Ohm
 	Viewport::Viewport(const Ref<Framebuffer>& framebuffer)
 		:m_Framebuffer(framebuffer)
 	{
+	}
 
+	Viewport::Viewport()
+	{
 	}
 
 	void Viewport::Draw()

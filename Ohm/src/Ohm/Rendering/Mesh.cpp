@@ -47,10 +47,11 @@ namespace Ohm
 	{
 		switch (primitive)
 		{
-			case Ohm::Primitive::Quad: return Quad();
-			case Ohm::Primitive::Cube: return Cube();
-			case Ohm::Primitive::Plane: return Plane();
-			case Ohm::Primitive::Sphere: return Sphere(1.0f, 36, 18);
+			case Ohm::Primitive::Quad:				return Quad();
+			case Ohm::Primitive::FullScreenQuad:	return FullScreenQuad();
+			case Ohm::Primitive::Cube:				return Cube();
+			case Ohm::Primitive::Plane:				return Plane();
+			case Ohm::Primitive::Sphere:			return Sphere(1.0f, 36, 18);
 			default: break;
 		}
 
@@ -66,6 +67,25 @@ namespace Ohm
 			Vertex{ { 0.5f, -0.5f, 0.0f}, {1.0f, 0.0f}, {0.0f, 0.0f, 1.0f} },
 			Vertex{ { 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f} },
 			Vertex{ {-0.5f,  0.5f, 0.0f}, {0.0f, 1.0f}, {0.0f, 0.0f, 1.0f} },
+		};
+
+		std::vector<uint32_t> indices =
+		{
+			 0, 1, 2, 2, 3, 0
+		};
+
+		return CreateRef<Mesh>(vertices, indices, Primitive::Quad);
+	}
+
+	Ref<Mesh> Mesh::FullScreenQuad()
+	{
+		// LAYOUT: Position (3F) - TexCoords (2F) - Normals (3F)
+		std::vector<Vertex> vertices =
+		{
+			Vertex{ {-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f, 1.0f} },
+			Vertex{ { 1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, 0.0f, 1.0f} },
+			Vertex{ { 1.0f,  1.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f} },
+			Vertex{ {-1.0f,  1.0f, 0.0f}, {0.0f, 1.0f}, {0.0f, 0.0f, 1.0f} },
 		};
 
 		std::vector<uint32_t> indices =

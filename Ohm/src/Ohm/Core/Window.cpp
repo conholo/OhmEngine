@@ -152,6 +152,11 @@ namespace Ohm
 		glfwSwapBuffers(m_WindowHandle);
 	}
 
+	void Window::ToggleIsMaximized()
+	{
+		glfwMaximizeWindow(m_WindowHandle);
+	}
+
 	void Window::SetVSync(bool enable)
 	{
 		glfwSwapInterval(enable ? 1 : 0);

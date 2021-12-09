@@ -119,9 +119,9 @@ void main()
 
 	// Specular
 	vec3 inverseView = normalize(-v_ViewPosition);
-	vec3 reflectDirection = reflect(-lightDirection, normal);
+	vec3 halfway = normalize(lightDirection + inverseView);
 
-	float specular = pow(max(dot(inverseView, reflectDirection), 0.0), u_SpecularPower);
+	float specular = pow(max(dot(normal, halfway), 0.0), u_SpecularPower);
 
 	vec4 spec = u_LightIntensity * specular * u_LightColor * u_SpecularStrength;
 

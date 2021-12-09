@@ -28,3 +28,7 @@
 #include "Ohm/Rendering/Material.h"
 #include "Ohm/Rendering/FrameBuffer.h"
 //--------------------- RENDERING ---------------------//
+
+//--------------------- UI ---------------------//
+#include "Ohm/UI/PropertyDrawer.h"
+//--------------------- UI ---------------------//

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Ohm/Core/Memory.h"
+#include "glm/gtx/string_cast.hpp"
 
 #pragma warning(push, 0)
 #include <spdlog/spdlog.h>

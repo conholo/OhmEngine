@@ -14,8 +14,6 @@ void main()
 	gl_Position = vec4(a_Position, 1.0);
 }
 
-
-
 #type fragment
 
 #version 450 core
@@ -38,7 +36,7 @@ float LinearizeDepth(float depth)
 
 void main()
 {
-	// vec4 depthValue = vec4(vec3(LinearizeDepth(depthValue) / u_FarPlane), 1.0); // perspective
+	//vec4 depthValue = vec4(vec3(LinearizeDepth(depthValue) / u_FarPlane), 1.0); // perspective
 	float depthValue = texture(sampler_DepthMap, v_TexCoord).x;
 	o_Color = vec4(vec3(depthValue), 1.0);
 }

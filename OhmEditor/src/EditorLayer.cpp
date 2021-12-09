@@ -24,23 +24,26 @@ namespace Ohm
 
 	void EditorLayer::OnAttach()
 	{
+		Application::GetApplication().GetWindow().ToggleIsMaximized();
 		m_EngineGeometryMaterial = CreateRef<Material>("Base Material", ShaderLibrary::Get("Phong"));
 		m_Scene = CreateRef<Scene>("Test Scene");
 		m_SceneHierarchyPanel.SetContext(m_Scene);
 		SceneRenderer::LoadScene(m_Scene);
-
 		SceneRenderer::InitializePipeline();
+
 		m_ViewportPanel.SetFramebuffer(SceneRenderer::GetMainColorBuffer());
+		SceneRenderer::ValidateResize(m_ViewportPanel.GetViewportSize());
 
 		m_DirectionalLight = m_Scene->Create("Directional Light");
 		m_DirectionalLight.AddComponent<LightComponent>(LightType::Sun, glm::vec4(1.0f), 1.0f, true);
-		m_DirectionalLight.AddComponent<MeshRendererComponent>(m_EngineGeometryMaterial->Clone("Directional Light Debug Material"), Mesh::CreatePrimitive(Primitive::Cube));
+		m_DirectionalLight.AddComponent<MeshRendererComponent>(m_EngineGeometryMaterial->Clone("Directional Light Debug Material"), Mesh::CreatePrimitive(Primitive::Sphere));
 		m_DirectionalLight.GetComponent<TransformComponent>().Translation = glm::vec3(0.0f, 10.0f, 0.0f);
 		m_DirectionalLight.GetComponent<TransformComponent>().Scale = glm::vec3(0.25f);
 
 		//Entity test = m_Scene->Create("Vertex Test");
 		//MeshRendererComponent& meshRenderer = test.AddComponent<MeshRendererComponent>(CreateRef<Material>("Vert Deformation Mat", ShaderLibrary::Get("VertexDeformation")), Mesh::CreatePrimitive(Primitive::Plane));
 		//test.GetComponent<TransformComponent>().Scale = glm::vec3(10.0f, 1.0f, 10.0f);
+
 	}
 
 	void EditorLayer::OnUpdate(float deltaTime)
@@ -137,6 +140,12 @@ namespace Ohm
 			ImGui::End();
 		}
 
+		// Scene Drawer 
+		{
+			ImGui::Begin("Scene Renderer Parameters");
+			SceneRenderer::DrawSceneRendererUI(m_ViewportPanel.GetViewportSize());
+			ImGui::End();
+		}
 
 		m_ViewportPanel.Draw();
 		Dockspace::End();

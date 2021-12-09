@@ -9,7 +9,7 @@ namespace Ohm
 {
 	enum class Primitive
 	{
-		Quad, Cube, Sphere, Plane
+		Quad, Cube, Sphere, Plane, FullScreenQuad
 	};
 
 	class Mesh
@@ -36,6 +36,7 @@ namespace Ohm
 	private:
 		void CreateRenderPrimitives(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
 		static Ref<Mesh> Quad();
+		static Ref<Mesh> FullScreenQuad();
 		static Ref<Mesh> Cube();
 		static Ref<Mesh> Plane();
 

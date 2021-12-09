@@ -7,6 +7,7 @@ namespace Ohm
 	{
 		None = 0,
 		RGBA8,
+		RGBA32F,
 		RED_INTEGER,
 		DEPTH24STENCIL8,
 
@@ -54,6 +55,8 @@ namespace Ohm
 
 		void Invalidate();
 		void BindDepthTexture(uint32_t slot) const;
+		void BindColorAttachmentTexture(uint32_t index, uint32_t slot) const;
+		void UnbindAttachmentTexture(uint32_t slot) const;
 
 		void Resize(uint32_t width, uint32_t height);
 		int ReadPixel(uint32_t attachmentIndex, int x, int y);

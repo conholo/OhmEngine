@@ -65,44 +65,44 @@ namespace Ohm
 				std::transform(strippedToLower.begin(), strippedToLower.end(), strippedToLower.begin(), ::tolower);
 				bool colorFound = strippedToLower.find("color") != std::string::npos;
 
-				UIPropertyType propertyType = UIPropertyTypeFromShaderDataType(uniform.GetType(), colorFound);
+				UI::UIPropertyType propertyType = UI::UIPropertyTypeFromShaderDataType(uniform.GetType(), colorFound);
 
 				switch (propertyType)
 				{
-				case UIPropertyType::Float:
+				case UI::UIPropertyType::Float:
 				{
 					float* value = meshrenderer.MaterialInstance->Get<float>(name);
-					m_MaterialFloatProperties[(uint32_t)entity][name] = CreateRef<UIFloat>(strippedName, value);
+					m_MaterialFloatProperties[(uint32_t)entity][name] = CreateRef<UI::UIFloat>(strippedName, value);
 					break;
 				}
-				case UIPropertyType::Int:
+				case UI::UIPropertyType::Int:
 				{
 					int* value = meshrenderer.MaterialInstance->Get<int>(name);
-					m_MaterialIntProperties[(uint32_t)entity][name] = CreateRef<UIInt>(strippedName, value);
+					m_MaterialIntProperties[(uint32_t)entity][name] = CreateRef<UI::UIInt>(strippedName, value);
 					break;
 				}
-				case UIPropertyType::Vec2:
+				case UI::UIPropertyType::Vec2:
 				{
 					glm::vec2* value = meshrenderer.MaterialInstance->Get<glm::vec2>(name);
-					m_MaterialVec2Properties[(uint32_t)entity][name] = CreateRef<UIVector2>(strippedName, value);
+					m_MaterialVec2Properties[(uint32_t)entity][name] = CreateRef<UI::UIVector2>(strippedName, value);
 					break;
 				}
-				case UIPropertyType::Vec3:
+				case UI::UIPropertyType::Vec3:
 				{
 					glm::vec3* value = meshrenderer.MaterialInstance->Get<glm::vec3>(name);
-					m_MaterialVec3Properties[(uint32_t)entity][name] = CreateRef<UIVector3>(strippedName, value);
+					m_MaterialVec3Properties[(uint32_t)entity][name] = CreateRef<UI::UIVector3>(strippedName, value);
 					break;
 				}
-				case UIPropertyType::Vec4:
+				case UI::UIPropertyType::Vec4:
 				{
 					glm::vec4* value = meshrenderer.MaterialInstance->Get<glm::vec4>(name);
-					m_MaterialVec4Properties[(uint32_t)entity][name] = CreateRef<UIVector4>(strippedName, value);
+					m_MaterialVec4Properties[(uint32_t)entity][name] = CreateRef<UI::UIVector4>(strippedName, value);
 					break;
 				}
-				case UIPropertyType::Color:
+				case UI::UIPropertyType::Color:
 				{
 					glm::vec4* value = meshrenderer.MaterialInstance->Get<glm::vec4>(name);
-					m_MaterialColorProperties[entity][name] = CreateRef<UIColor>(strippedName, value);
+					m_MaterialColorProperties[entity][name] = CreateRef<UI::UIColor>(strippedName, value);
 					break;
 				}
 				}
@@ -414,6 +414,8 @@ namespace Ohm
 		auto drawLight = [](auto& component, Entity entity)
 		{
 			LightComponent& light = entity.GetComponent<LightComponent>();
+
+
 
 			ImGui::ColorPicker4("Light Color", &light.Color.x);
 			ImGui::DragFloat("Light Intensity", &light.Intensity, 0.01f, 0.0f, 1.0f);

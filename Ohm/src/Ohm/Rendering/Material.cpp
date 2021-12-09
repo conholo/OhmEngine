@@ -18,7 +18,6 @@ namespace Ohm
 		CheckShouldReceiveShadows();
 	}
 
-
 	Ref<Material> Material::Clone(const std::string& cloneName)
 	{
 		Ref<Material> copy = CreateRef<Material>(cloneName, m_Shader);
@@ -34,7 +33,6 @@ namespace Ohm
 
 		Set<int>("sampler_ShadowMap", m_ReceiveShadows ? 2 : 0);
 	}
-
 
 	void Material::AllocateStorageBuffer()
 	{

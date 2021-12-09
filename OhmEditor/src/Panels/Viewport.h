@@ -8,7 +8,7 @@ namespace Ohm
 	class Viewport
 	{
 	public:
-		Viewport() = default;
+		Viewport();
 		Viewport(const Ref<Framebuffer>& framebuffer);
 
 		void SetFramebuffer(const Ref<Framebuffer>& framebuffer) { m_Framebuffer = framebuffer; }

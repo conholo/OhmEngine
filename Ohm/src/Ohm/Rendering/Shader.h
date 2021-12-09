@@ -106,8 +106,10 @@ namespace Ohm
 		GLint UploadUniformIntArray(const std::string& name, uint32_t count, int* basePtr);
 		GLint UploadUniformMat3(const std::string& name, const glm::mat3& matrix);
 		GLint UploadUniformMat4(const std::string& name, const glm::mat4& matrix);
-
 		void* GetUniformData(ShaderDataType type, GLint location);
+
+		void EnableShaderImageAccessBarrierBit();
+		void DispatchCompute(uint32_t groupX, uint32_t groupY, uint32_t groupZ);
 
 	private:
 		std::string ReadFile(const std::string& filePath);
@@ -123,6 +125,7 @@ namespace Ohm
 		uint32_t m_DefaultBlockUniformCount = 0;
 		std::string m_Name;
 		uint32_t m_ID;
+		bool m_IsCompute = false;
 	};
 
 

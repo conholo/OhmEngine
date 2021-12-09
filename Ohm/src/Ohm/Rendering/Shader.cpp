@@ -130,6 +130,22 @@ namespace Ohm
 		return nullptr;
 	}
 
+	void Shader::EnableShaderImageAccessBarrierBit()
+	{
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+	}
+
+	void Shader::DispatchCompute(uint32_t groupX, uint32_t groupY, uint32_t groupZ)
+	{
+		if (!m_IsCompute)
+		{
+			OHM_ERROR("{} is not of type Compute Shader.  Cannot dispatch.", m_NamedBlockUniformCount);
+			return;
+		}
+
+		glUseProgram(m_ID);
+		glDispatchCompute(groupX, groupY, groupZ);
+	}
 
 	Shader::Shader(const std::string& filePath)
 	{
@@ -186,6 +202,8 @@ namespace Ohm
 			return GL_VERTEX_SHADER;
 		else if (type == "fragment")
 			return GL_FRAGMENT_SHADER;
+		else if (type == "compute")
+			return GL_COMPUTE_SHADER;
 
 		return GL_FALSE;
 	}
@@ -218,12 +236,13 @@ namespace Ohm
 	void Shader::Compile(const std::unordered_map<GLenum, std::string>& shaderSources)
 	{
 		GLuint program = glCreateProgram();
-		std::array<GLenum, 2> glShaderIDs;
+		std::vector<GLuint> shaderIDs;
 		int glShaderIDIndex = 0;
 
 		for (auto& kv : shaderSources)
 		{
 			GLenum type = kv.first;
+			m_IsCompute = type == GL_COMPUTE_SHADER;
 			const std::string& source = kv.second;
 
 			GLuint shader = glCreateShader(type);
@@ -245,8 +264,15 @@ namespace Ohm
 				
 				std::stringstream ss;
 
-				std::string type = shader == GL_FRAGMENT_SHADER ? "FRAGMENT COMPILATION ERROR: " : "VERTEX COMPILATION ERROR: ";
-				
+				std::string type;
+
+				if (shader == GL_FRAGMENT_SHADER)
+					type = "FRAGMENT COMPILATION ERROR";
+				else if (shader == GL_VERTEX_SHADER)
+					type = "VERTEX COMPILATION ERROR: ";
+				else if (shader == GL_COMPUTE_SHADER)
+					type = "COMPUTE COMPILATION ERROR: ";
+
 				ss << m_Name << ":\n" <<  type << infoLog.data();
 
 				OHM_CORE_ERROR(ss.str());
@@ -257,7 +283,7 @@ namespace Ohm
 			}
 
 			glAttachShader(program, shader);
-			glShaderIDs[glShaderIDIndex++] = shader;
+			shaderIDs.push_back(shader);
 		}
 
 		m_ID = program;
@@ -284,13 +310,13 @@ namespace Ohm
 
 			glDeleteProgram(program);
 
-			for (auto id : glShaderIDs)
+			for (auto id : shaderIDs)
 				glDeleteShader(id);
 
 			return;
 		}
 
-		for (auto id : glShaderIDs)
+		for (auto id : shaderIDs)
 		{
 			glDetachShader(program, id);
 			glDeleteShader(id);

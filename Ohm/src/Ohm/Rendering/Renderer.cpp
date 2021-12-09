@@ -22,6 +22,7 @@ namespace Ohm
 		Ref<Shader> Shader;
 		Ref<Texture2D> Texture;
 		Ref<Texture2D> WhiteTexture;
+		Ref<Mesh> FullScreenQuad;
 		RenderFlag Flags;
 
 		struct GlobalData
@@ -52,22 +53,47 @@ namespace Ohm
 
 		s_RenderData->VAO = CreateRef<VertexArray>();
 
-		s_RenderData->WhiteTexture = CreateRef<Texture2D>(1, 1);
+		Texture2DSpecification whiteSpec =
+		{
+			TextureUtils::WrapMode::Repeat,
+			TextureUtils::FilterMode::Linear,
+			TextureUtils::FilterMode::Linear,
+			TextureUtils::ImageInternalFormat::RGBA8,
+			TextureUtils::ImageDataLayout::RGBA,
+			TextureUtils::ImageDataType::UByte,
+			1, 1
+		};
+
+		s_RenderData->FullScreenQuad = Mesh::CreatePrimitive(Primitive::FullScreenQuad);
+
+		s_RenderData->WhiteTexture = CreateRef<Texture2D>(whiteSpec);
 		uint32_t whiteTextureData = 0xffffffff;
 		s_RenderData->WhiteTexture->SetData(&whiteTextureData, sizeof(uint32_t));
 
-		s_RenderData->Texture = CreateRef<Texture2D>("assets/textures/lava.jpg");
-		s_RenderData->WhiteTexture->Bind(0);
-		s_RenderData->Texture->Bind(1);
+		Texture2DSpecification testTextureSpec =
+		{
+			TextureUtils::WrapMode::Repeat,
+			TextureUtils::FilterMode::Linear,
+			TextureUtils::FilterMode::Linear,
+			TextureUtils::ImageInternalFormat::FromImage,
+			TextureUtils::ImageDataLayout::FromImage,
+			TextureUtils::ImageDataType::UByte
+		};
+
+		s_RenderData->Texture = CreateRef<Texture2D>("assets/textures/lava.jpg", testTextureSpec);
+		s_RenderData->WhiteTexture->BindToSamplerSlot(0);
+		s_RenderData->Texture->BindToSamplerSlot(1);
 		s_RenderData->CameraBuffer = CreateRef<UniformBuffer>(sizeof(RenderData::CameraData), 0);
 
 		s_RenderData->GlobalBuffer = CreateRef<UniformBuffer>(sizeof(RenderData::GlobalBuffer), 3);
 
 		ShaderLibrary::Load("assets/shaders/Phong.shader");
-		ShaderLibrary::Load("assets/shaders/PreDepth.shader");
+		ShaderLibrary::Load("assets/shaders/ShadowMap.shader");
 		ShaderLibrary::Load("assets/shaders/DepthMap.shader");
 		ShaderLibrary::Load("assets/shaders/flatcolor.shader");
 		ShaderLibrary::Load("assets/shaders/VertexDeformation.shader");
+		ShaderLibrary::Load("assets/shaders/SceneComposite.shader");
+		ShaderLibrary::Load("assets/shaders/Bloom.shader");
 	}
 
 	void Renderer::UploadCameraUniformData(const EditorCamera& camera, const TransformComponent& transform)
@@ -120,14 +146,13 @@ namespace Ohm
 	void Renderer::DrawFullScreenQuad()
 	{
 		s_RenderData->VAO->Bind();
-		Ref<Mesh> quad(Mesh::CreatePrimitive(Primitive::Quad));
-		quad->Bind();
-		s_RenderData->VAO->EnableVertexAttributes(quad->GetVertexBuffer());
+		s_RenderData->FullScreenQuad->Bind();
+		s_RenderData->VAO->EnableVertexAttributes(s_RenderData->FullScreenQuad->GetVertexBuffer());
 
-		RenderCommand::DrawIndexed(s_RenderData->VAO, quad->GetIndexBuffer()->GetCount());
+		RenderCommand::DrawIndexed(s_RenderData->VAO, s_RenderData->FullScreenQuad->GetIndexBuffer()->GetCount());
 
 		s_RenderData->VAO->Unbind();
-		quad->Unbind();
+		s_RenderData->FullScreenQuad->Unbind();
 	}
 
 	void Renderer::EndPass(const Ref<RenderPass>& renderPass)

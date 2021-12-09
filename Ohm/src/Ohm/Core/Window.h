@@ -22,6 +22,7 @@ namespace Ohm
 		uint32_t GetWidth() const { return m_WindowData.Width; }
 		uint32_t GetHeight() const { return m_WindowData.Height; }
 
+		void ToggleIsMaximized();
 		void SetVSync(bool enable);
 		bool IsVSync() const { return m_WindowData.VSync; }
 
