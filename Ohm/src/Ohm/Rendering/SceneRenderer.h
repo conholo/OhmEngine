@@ -55,6 +55,7 @@ namespace Ohm
 			Ref<Texture2D> BloomDirtTexture;
 			const uint32_t BloomWorkGroupSize = 4;
 
+			bool DisplayBloomDebug = false;
 			bool BloomEnabled = true;
 			bool BloomDirtEnabled = true;
 			float BloomThreshold = 20.0f;

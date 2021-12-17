@@ -1,5 +1,6 @@
 #include "ohmpch.h"
 #include "Ohm/Rendering/Shader.h"
+#include "Ohm/Rendering/Material.h"
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -112,6 +113,13 @@ namespace Ohm
 				return (void*)data;
 			}
 			case Ohm::ShaderDataType::Sampler2D:
+			{
+				GLint* data = (GLint*)malloc(ShaderDataTypeSize(type));
+				glGetUniformiv(m_ID, location, data);
+				(TextureUniform*)data;
+
+				return (void*)data;
+			}
 			case Ohm::ShaderDataType::Int:
 			{
 				GLint* data = (GLint*)malloc(ShaderDataTypeSize(type));
@@ -406,6 +414,7 @@ namespace Ohm
 			glGetActiveUniformBlockiv(m_ID, blockIndices[i], GL_UNIFORM_BLOCK_DATA_SIZE, &blockSize);
 			glGetActiveUniformBlockiv(m_ID, blockIndices[i], GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, &activeCount);
 
+			
 			GLint* activeIndices = (GLint*)malloc(sizeof(GLint) * activeCount);
 			glGetActiveUniformBlockiv(m_ID, blockIndices[i], GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, activeIndices);
 

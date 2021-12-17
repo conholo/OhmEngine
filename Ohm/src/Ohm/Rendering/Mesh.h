@@ -30,7 +30,7 @@ namespace Ohm
 		void Bind() const;
 
 		static Ref<Mesh> CreatePrimitive(Primitive primitive);
-		static Ref<Mesh> Sphere(float radius, uint32_t sectorCount, uint32_t stackCount);
+		static Ref<Mesh> Sphere(float radius);
 		static std::string PrimitiveToString(Primitive primitive);
 
 	private:

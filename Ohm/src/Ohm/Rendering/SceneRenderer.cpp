@@ -6,6 +6,7 @@
 #include "Ohm/Rendering/Shader.h"
 #include "Ohm/Rendering/UniformBuffer.h"
 #include "Ohm/Rendering/RenderCommand.h"
+#include "Ohm/UI/PropertyDrawer.h"
 
 #include <glm/glm.hpp>
 #include <glad/glad.h>
@@ -97,6 +98,7 @@ namespace Ohm
 		s_BloomProperties->BloomComputeTextures.resize(3);
 		Texture2DSpecification fileTexSpec =
 		{
+			"Bloom Dirt Mask",
 			TextureUtils::WrapMode::Repeat,
 			TextureUtils::FilterMode::Linear,
 			TextureUtils::FilterMode::Linear,
@@ -105,7 +107,7 @@ namespace Ohm
 			TextureUtils::ImageDataType::UByte,
 		};
 
-		s_BloomProperties->BloomDirtTexture = CreateRef<Texture2D>("assets/textures/dirt-mask.png", fileTexSpec);
+		s_BloomProperties->BloomDirtTexture = TextureLibrary::Load(fileTexSpec, "assets/textures/dirt-mask.png");
 
 		glm::vec2 windowDimensions = { Application::GetApplication().GetWindow().GetWidth(), Application::GetApplication().GetWindow().GetHeight() };
 		uint32_t halfWidth = windowDimensions.x / 2;
@@ -115,6 +117,7 @@ namespace Ohm
 
 		Texture2DSpecification bloomSpec =
 		{
+			"Bloom 1",
 			TextureUtils::WrapMode::ClampToEdge,
 			TextureUtils::FilterMode::LinearMipLinear,
 			TextureUtils::FilterMode::Linear,
@@ -127,7 +130,9 @@ namespace Ohm
 		s_BloomProperties->BloomShader = ShaderLibrary::Get("Bloom");;
 		s_BloomProperties->BloomComputeTextures.resize(3);
 		s_BloomProperties->BloomComputeTextures[0] = CreateRef<Texture2D>(bloomSpec);
+		bloomSpec.Name = "Bloom 2";
 		s_BloomProperties->BloomComputeTextures[1] = CreateRef<Texture2D>(bloomSpec);
+		bloomSpec.Name = "Bloom 3";
 		s_BloomProperties->BloomComputeTextures[2] = CreateRef<Texture2D>(bloomSpec);
 	}
 
@@ -170,13 +175,13 @@ namespace Ohm
 		{
 			auto [transform, meshRenderer] = group.get<TransformComponent, MeshRendererComponent>(entity);
 
-			if (!meshRenderer.IsComplete() || !meshRenderer.MaterialInstance->CastsShadows()) continue;
+			if (!meshRenderer.IsComplete()) continue;
 
 			s_ShadowPass->GetRenderPassSpecification().Material->Set<glm::mat4>("u_ModelMatrix", transform.Transform());
 			Renderer::DrawMesh(s_EditorCamera, meshRenderer.MeshData, s_ShadowPass->GetRenderPassSpecification().Material, transform);
 		}
 
-		s_ShadowPass->GetRenderPassSpecification().TargetFramebuffer->BindDepthTexture(2);
+		s_ShadowPass->GetRenderPassSpecification().TargetFramebuffer->BindDepthTexture(0);
 		Renderer::EndPass(s_ShadowPass);
 	}
 
@@ -192,13 +197,7 @@ namespace Ohm
 			if (!meshRenderer.IsComplete()) continue;
 
 			s_ActiveScene->SetSceneLightingData(s_EditorCamera);
-
-			// TODO:: Figure out how to not cast shadows but receive them properly.  Currently, if a material is flagged to not
-			// cast shadows, their depth is not written to the depth buffer.  This means, they won't be tested against when it comes time
-			// to render geometry with lighting.  If an object has a lower depth than the object that isn't to cast shadows but is to receive them,
-			// they will receive shadows but any fragment with a greater depth will also receive the shadow.  The expected behavior is that the object
-			// should "consume" the shadow.
-			meshRenderer.MaterialInstance->CheckShouldReceiveShadows();
+			meshRenderer.MaterialInstance->BindActiveTextures();
 			Renderer::DrawMesh(s_EditorCamera, meshRenderer.MeshData, meshRenderer.MaterialInstance, transform);
 		}
 
@@ -218,7 +217,7 @@ namespace Ohm
 
 		bloomConstants.Params = { s_BloomProperties->BloomThreshold, s_BloomProperties->BloomThreshold - s_BloomProperties->BloomKnee, s_BloomProperties->BloomKnee * 2.0f, 0.25f / s_BloomProperties->BloomKnee };
 
-		//------------------ MODE_PREFILTER -----------------//
+		//------------------ PREFILTER -----------------//
 		uint32_t workGroupsX = s_BloomProperties->BloomComputeTextures[0]->GetWidth() / s_BloomProperties->BloomWorkGroupSize;
 		uint32_t workGroupsY = s_BloomProperties->BloomComputeTextures[0]->GetHeight() / s_BloomProperties->BloomWorkGroupSize;
 
@@ -236,10 +235,10 @@ namespace Ohm
 
 			s_GeometryPass->GetRenderPassSpecification().TargetFramebuffer->UnbindAttachmentTexture(0);
 		}
-		//------------------ MODE_PREFILTER -----------------//
+		//------------------ PREFILTER -----------------//
 
 
-		//------------------ MODE_DOWNSAMPLE -----------------//
+		//------------------ DOWNSAMPLE -----------------//
 		bloomConstants.Mode = 1;
 		uint32_t mips = s_BloomProperties->BloomComputeTextures[0]->GetMipCount() - 2;
 
@@ -276,9 +275,9 @@ namespace Ohm
 				s_BloomProperties->BloomShader->EnableShaderImageAccessBarrierBit();
 			}
 		}
-		//------------------ MODE_DOWNSAMPLE -----------------//
+		//------------------ DOWNSAMPLE -----------------//
 
-		//------------------ MODE_UPSAMPLE_FIRST -----------------//
+		//------------------ UPSAMPLE_FIRST -----------------//
 		{
 			bloomConstants.Mode = 2;
 			bloomConstants.LOD--;
@@ -297,7 +296,7 @@ namespace Ohm
 			s_BloomProperties->BloomShader->DispatchCompute(workGroupsX, workGroupsY, 1);
 			s_BloomProperties->BloomShader->EnableShaderImageAccessBarrierBit();
 		}
-		//------------------ MODE_UPSAMPLE_FIRST -----------------//
+		//------------------ UPSAMPLE_FIRST -----------------//
 
 
 		//------------------ UPSAMPLE -----------------//
@@ -366,6 +365,9 @@ namespace Ohm
 		s_Drawers->BloomKneeDrawer->Draw();
 		s_Drawers->BloomDirtIntensityDrawer->Draw();
 
+		UI::UIBool::Draw("Display Compute Textures", &s_BloomProperties->DisplayBloomDebug);
+
+		if (!s_BloomProperties->DisplayBloomDebug) return;
 		glm::vec2 windowSize = { Application::GetApplication().GetWindow().GetWidth(), Application::GetApplication().GetWindow().GetHeight() };
 		float aspect = (float)viewportSize.x / (float)viewportSize.y;
 		ImGui::Image((ImTextureID)s_BloomProperties->BloomComputeTextures[0]->GetID(), { 300 * aspect, 300 }, { 0, 1 }, { 1, 0 });

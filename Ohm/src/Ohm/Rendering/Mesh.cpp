@@ -51,7 +51,7 @@ namespace Ohm
 			case Ohm::Primitive::FullScreenQuad:	return FullScreenQuad();
 			case Ohm::Primitive::Cube:				return Cube();
 			case Ohm::Primitive::Plane:				return Plane();
-			case Ohm::Primitive::Sphere:			return Sphere(1.0f, 36, 18);
+			case Ohm::Primitive::Sphere:			return Sphere(1.0f);
 			default: break;
 		}
 
@@ -185,72 +185,52 @@ namespace Ohm
 		return CreateRef<Mesh>(verticesSix, indicesSix, Primitive::Cube);
 	}
 
-	Ref<Mesh> Mesh::Sphere(float radius, uint32_t sectorCount, uint32_t stackCount)
+	Ref<Mesh> Mesh::Sphere(float radius)
 	{
-		if (radius <= 0)
-			radius = 0.1f;
-
 		std::vector<Vertex> vertices;
+		std::vector<uint32_t> indices;
 
-		glm::vec3 vertexPosition(0.0f);
-		glm::vec3 normal(0.0f);
-		glm::vec2 texCoords(0.0f);
+		constexpr float latitudeBands = 30;
+		constexpr float longitudeBands = 30;
 
-		float xy;
-		float lengthInverse = 1 / radius;
-
-		float sectorStep = 2 * PI / sectorCount;
-		float stackStep = PI / stackCount;
-		float sectorAngle, stackAngle;
-
-		for (uint32_t i = 0; i <= stackCount; i++)
+		for (float latitude = 0.0f; latitude <= latitudeBands; latitude++)
 		{
-			stackAngle = PI / 2 - i * stackStep;
-			xy = radius * glm::cos(stackAngle);
-			vertexPosition.z = radius * glm::sin(stackAngle);
+			const float theta = latitude * (float)PI / latitudeBands;
+			const float sinTheta = glm::sin(theta);
+			const float cosTheta = glm::cos(theta);
 
-			for (uint32_t j = 0; j <= sectorCount; j++)
+			float texT = 1.0f - theta / PI;
+
+			for (float longitude = 0.0f; longitude <= longitudeBands; longitude++)
 			{
-				sectorAngle = j * sectorStep;
+				const float phi = longitude * 2.0f * (float)PI / longitudeBands;
+				const float sinPhi = glm::sin(phi);
+				const float cosPhi = glm::cos(phi);
 
-				vertexPosition.x = xy * glm::cos(sectorAngle);
-				vertexPosition.y = xy * glm::sin(sectorAngle);
+				float texS = 1.0f - (phi / (2 * PI));
 
-				normal.x = vertexPosition.x * lengthInverse;
-				normal.y = vertexPosition.y * lengthInverse;
-				normal.z = vertexPosition.z * lengthInverse;
-
-				texCoords.x = (float)j / sectorCount;
-				texCoords.y = (float)i / stackCount;
-
-				vertices.push_back({ vertexPosition, texCoords, normal });
+				Vertex vertex;
+				vertex.Normals = { cosPhi * sinTheta, cosTheta, sinPhi * sinTheta };
+				vertex.TexCoords = { texS, texT };
+				vertex.VertexPosition = { radius * vertex.Normals.x, radius * vertex.Normals.y, radius * vertex.Normals.z };
+				vertices.push_back(vertex);
 			}
 		}
 
-		std::vector<uint32_t> indices;
-
-		int k1, k2;
-
-		for (uint32_t i = 0; i < stackCount; i++)
+		for (uint32_t latitude = 0; latitude < (uint32_t)latitudeBands; latitude++)
 		{
-			k1 = i * (sectorCount + 1);
-			k2 = k1 + sectorCount + 1;
-
-			for (uint32_t j = 0; j < sectorCount; j++, k1++, k2++)
+			for (uint32_t longitude = 0; longitude < (uint32_t)longitudeBands; longitude++)
 			{
-				if (i != 0)
-				{
-					indices.push_back(k1);
-					indices.push_back(k2);
-					indices.push_back(k1 + 1);
-				}
+				const uint32_t first = (latitude * ((uint32_t)longitudeBands + 1)) + longitude;
+				const uint32_t second = first + (uint32_t)longitudeBands + 1;
 
-				if (i != stackCount - 1)
-				{
-					indices.push_back(k1 + 1);
-					indices.push_back(k2);
-					indices.push_back(k2 + 1);
-				}
+				indices.push_back(first);
+				indices.push_back(first + 1);
+				indices.push_back(second);
+
+				indices.push_back(second);
+				indices.push_back(first + 1);
+				indices.push_back(second + 1);
 			}
 		}
 

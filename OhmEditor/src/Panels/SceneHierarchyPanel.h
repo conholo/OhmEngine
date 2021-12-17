@@ -44,6 +44,7 @@ namespace Ohm
 		std::unordered_map<uint32_t, std::unordered_map<std::string, Ref<UI::UIVector3>>>	m_MaterialVec3Properties;
 		std::unordered_map<uint32_t, std::unordered_map<std::string, Ref<UI::UIVector4>>>	m_MaterialVec4Properties;
 		std::unordered_map<uint32_t, std::unordered_map<std::string, Ref<UI::UIColor>>>		m_MaterialColorProperties;
+		std::unordered_map<uint32_t, std::unordered_map<std::string, Ref<UI::UITexture2D>>>	m_MaterialTextureProperties;
 
 		std::unordered_map<uint32_t, std::unordered_map<std::string, bool>>				m_PrimitiveSelectionOptions;
 		std::unordered_map<uint32_t, std::string>										m_SelectedPrimitive;

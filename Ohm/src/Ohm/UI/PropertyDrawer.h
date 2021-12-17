@@ -3,6 +3,7 @@
 #include <string>
 #include <glm/glm.hpp>
 #include "Ohm/Rendering/BufferLayout.h"
+#include "Ohm/Rendering/Material.h"
 
 namespace Ohm
 {
@@ -171,6 +172,40 @@ namespace Ohm
 		private:
 			glm::vec4* m_Color = nullptr;;
 			glm::vec4 m_DefaultColor{ 1.0f };
+		};
+
+		class UITexture2D : UIProperty
+		{
+		public:
+			UITexture2D() = default;
+			UITexture2D(const std::string& label, const Ref<Material>& material, TextureUniform* value, const std::string& textureUniformName)
+				:UIProperty(label), m_Material(material), m_TextureUniform(value), m_TextureUniformName(textureUniformName)
+			{
+			}
+
+			void Draw() override;
+
+		private:
+			std::string m_TextureUniformName;
+			TextureUniform* m_TextureUniform;
+			Ref<Material> m_Material;
+			glm::vec4 m_DefaultColor{ 1.0f };
+		};
+
+		class UIBool : UIProperty
+		{
+		public:
+			UIBool() = default;
+			UIBool(const std::string& label, bool* value)
+				:UIProperty(label), m_Value(value)
+			{
+			}
+
+			void Draw() override;
+			static void Draw(const std::string& label, bool* value);
+
+		private:
+			bool* m_Value;
 		};
 	}
 }

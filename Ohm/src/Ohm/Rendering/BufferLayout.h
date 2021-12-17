@@ -35,7 +35,8 @@ namespace Ohm
 			case ShaderDataType::Int:		return 1 * 4;
 			case ShaderDataType::Mat3:		return 3 * 3 * 4;
 			case ShaderDataType::Mat4:		return 4 * 4 * 4;
-			case ShaderDataType::Sampler2D:	return 4;
+			// 3 Ints, second int represents bool for hide in inspector, made int to keep better alignment
+			case ShaderDataType::Sampler2D:	return 3 * 4;
 			default:						return 0;
 		}
 	}

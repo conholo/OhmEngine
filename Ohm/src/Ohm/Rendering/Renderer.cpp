@@ -55,6 +55,7 @@ namespace Ohm
 
 		Texture2DSpecification whiteSpec =
 		{
+			"White Texture",
 			TextureUtils::WrapMode::Repeat,
 			TextureUtils::FilterMode::Linear,
 			TextureUtils::FilterMode::Linear,
@@ -66,25 +67,11 @@ namespace Ohm
 
 		s_RenderData->FullScreenQuad = Mesh::CreatePrimitive(Primitive::FullScreenQuad);
 
-		s_RenderData->WhiteTexture = CreateRef<Texture2D>(whiteSpec);
+		s_RenderData->WhiteTexture = TextureLibrary::Load(whiteSpec);
 		uint32_t whiteTextureData = 0xffffffff;
 		s_RenderData->WhiteTexture->SetData(&whiteTextureData, sizeof(uint32_t));
 
-		Texture2DSpecification testTextureSpec =
-		{
-			TextureUtils::WrapMode::Repeat,
-			TextureUtils::FilterMode::Linear,
-			TextureUtils::FilterMode::Linear,
-			TextureUtils::ImageInternalFormat::FromImage,
-			TextureUtils::ImageDataLayout::FromImage,
-			TextureUtils::ImageDataType::UByte
-		};
-
-		s_RenderData->Texture = CreateRef<Texture2D>("assets/textures/lava.jpg", testTextureSpec);
-		s_RenderData->WhiteTexture->BindToSamplerSlot(0);
-		s_RenderData->Texture->BindToSamplerSlot(1);
 		s_RenderData->CameraBuffer = CreateRef<UniformBuffer>(sizeof(RenderData::CameraData), 0);
-
 		s_RenderData->GlobalBuffer = CreateRef<UniformBuffer>(sizeof(RenderData::GlobalBuffer), 3);
 
 		ShaderLibrary::Load("assets/shaders/Phong.shader");

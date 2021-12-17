@@ -2,6 +2,7 @@
 #include "Ohm/UI/PropertyDrawer.h"
 #include "Ohm/Core/Input.h"
 #include "Ohm/Core/Log.h"
+#include "Ohm/Rendering/Texture2D.h"
 
 #include <imgui.h>
 
@@ -20,6 +21,7 @@ namespace Ohm
 			case ShaderDataType::Float3:		return UIPropertyType::Vec3;
 			case ShaderDataType::Float4:		return isColor ? UIPropertyType::Color : UIPropertyType::Vec4;
 			case ShaderDataType::Int:			return UIPropertyType::Int;
+			case ShaderDataType::Sampler2D:		return UIPropertyType::Texture;
 			default:							return UIPropertyType::None;
 			}
 		}
@@ -212,6 +214,59 @@ namespace Ohm
 			}
 
 			ImGui::PopID();
+		}
+
+		void UITexture2D::Draw()
+		{
+			if (m_TextureUniform->HideInInspector) return;
+
+			Ref<Texture2D> currentTexture = TextureLibrary::GetTextureAt((*m_TextureUniform).RendererID);
+
+			if (currentTexture == nullptr) return;
+
+			ImGui::PushID(m_Label.c_str());
+
+			std::stringstream ss;
+			ss << "##" << m_UUID;
+
+			ImGui::LabelText(ss.str().c_str(), m_Label.c_str());
+
+			if (ImGui::ImageButton((ImTextureID)currentTexture->GetID(), { 50, 50 }, { 0, 1 }, { 1, 0 }))
+			{
+				ImGui::OpenPopup("Texture Selection");
+			}
+
+			if (ImGui::BeginPopup("Texture Selection"))
+			{
+				if (ImGui::BeginCombo("Texture Library", currentTexture->GetName().c_str()))
+				{
+					std::unordered_map<std::string, Ref<Texture2D>> availableTextures = TextureLibrary::GetLibrary();
+
+					for (auto [name, texture] : availableTextures)
+					{
+						if (texture->GetID() == m_TextureUniform->RendererID) continue;
+
+						if (ImGui::Selectable(name.c_str(), true))
+							m_Material->UpdateActiveTexture(m_TextureUniformName, texture->GetID());
+					}
+
+					ImGui::EndCombo();
+				}
+
+				ImGui::EndPopup();
+			}
+
+			ImGui::PopID();
+		}
+
+		void UIBool::Draw()
+		{
+			ImGui::Checkbox(m_Label.c_str(), m_Value);
+		}
+
+		void UIBool::Draw(const std::string& label, bool* value)
+		{
+			ImGui::Checkbox(label.c_str(), value);
 		}
 	}
 }

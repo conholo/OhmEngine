@@ -23,9 +23,11 @@ layout(std140, binding = 2) uniform Shadow
 out vec3 v_ViewPosition;
 out vec3 v_Normal;
 out vec4 v_LightSpacePosition;
+out vec2 v_TexCoord;
 
 void main()
 {
+	v_TexCoord = a_TexCoord;
 	vec4 viewPosition = u_ViewMatrix * u_ModelMatrix * vec4(a_Position, 1.0);
 	v_ViewPosition = viewPosition.xyz;
 
@@ -53,6 +55,7 @@ uniform float u_DiffuseStrength = 0.3;
 uniform float u_SpecularPower = 32.0;
 
 uniform sampler2D sampler_ShadowMap;
+uniform sampler2D sampler_Texture;
 
 layout(std140, binding = 1) uniform Light
 {
@@ -61,6 +64,7 @@ layout(std140, binding = 1) uniform Light
 	float u_LightIntensity;
 };
 
+in vec2 v_TexCoord;
 in vec3 v_ViewPosition;
 in vec3 v_Normal;
 in vec4 v_LightSpacePosition;
@@ -127,6 +131,9 @@ void main()
 
 	float shadow = ShadowCalculation(v_LightSpacePosition, lightDirection, normal);
 	vec4 result = (ambient + (1.0 - shadow) * (diffuse + spec)) * u_DiffuseColor;
+
+	vec3 texColor = texture(sampler_Texture, v_TexCoord).rgb;
+	result.rgb *= texColor;
 
 	o_Color = vec4(result.x, result.y, result.z, 1.0);
 }

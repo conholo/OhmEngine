@@ -40,6 +40,9 @@ namespace Ohm
 		m_DirectionalLight.GetComponent<TransformComponent>().Translation = glm::vec3(0.0f, 10.0f, 0.0f);
 		m_DirectionalLight.GetComponent<TransformComponent>().Scale = glm::vec3(0.25f);
 
+		TextureLibrary::Load("assets/textures/lava.jpg");
+		TextureLibrary::Load("assets/textures/uv.png");
+
 		//Entity test = m_Scene->Create("Vertex Test");
 		//MeshRendererComponent& meshRenderer = test.AddComponent<MeshRendererComponent>(CreateRef<Material>("Vert Deformation Mat", ShaderLibrary::Get("VertexDeformation")), Mesh::CreatePrimitive(Primitive::Plane));
 		//test.GetComponent<TransformComponent>().Scale = glm::vec3(10.0f, 1.0f, 10.0f);

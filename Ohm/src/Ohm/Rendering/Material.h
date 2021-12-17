@@ -6,6 +6,13 @@
 
 namespace Ohm
 {
+	struct TextureUniform
+	{
+		uint32_t RendererID = 0;
+		int32_t HideInInspector = 1;
+		int32_t TextureUnit = -1;
+	};
+
 	class Material
 	{
 	public:
@@ -63,24 +70,18 @@ namespace Ohm
 			m_RenderFlags = value ? m_RenderFlags | (uint32_t)flag : m_RenderFlags & ~(uint32_t)flag;
 		}
 
-		bool CastsShadows() const { return m_CastShadows; };
-		void SetCastsShadows(bool value) { m_CastShadows = value; }
-
-		bool ReceivesShadows() const { return m_ReceiveShadows; }
-		void SetReceivesShadows(bool value) { m_ReceiveShadows = value; }
-
-		void CheckShouldReceiveShadows();
+		void BindActiveTextures();
+		void UpdateActiveTexture(const std::string& uniformName, uint32_t newID);
 
 	private:
 		void AllocateStorageBuffer();
 		void InitializeStorageBufferWithUniformDefaults();
 
 	private:
-		bool m_CastShadows = true;
-		bool m_ReceiveShadows = true;
 		uint32_t m_UniformStagingOffset = 0;
 		Buffer m_UniformStorageBuffer;
 		std::unordered_map<std::string, GLint> m_Uniforms;
+		std::unordered_map<std::string, uint32_t> m_Textures;
 		Ref<Shader> m_Shader;
 		std::string m_Name;
 		uint32_t m_RenderFlags;

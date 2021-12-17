@@ -105,6 +105,12 @@ namespace Ohm
 					m_MaterialColorProperties[entity][name] = CreateRef<UI::UIColor>(strippedName, value);
 					break;
 				}
+				case UI::UIPropertyType::Texture:
+				{
+					TextureUniform* value = meshrenderer.MaterialInstance->Get<TextureUniform>(name);
+					m_MaterialTextureProperties[entity][name] = CreateRef<UI::UITexture2D>(strippedName, meshrenderer.MaterialInstance, value, name);
+					break;
+				}
 				}
 			}
 		}
@@ -360,14 +366,6 @@ namespace Ohm
 			{
 				auto& materialInstance = component.MaterialInstance;
 
-				bool receiveShadows = materialInstance->ReceivesShadows();
-				bool castShadows = materialInstance->CastsShadows();
-				ImGui::Checkbox("Receive Shadows", &receiveShadows);
-				ImGui::Checkbox("Cast Shadows", &castShadows);
-
-				materialInstance->SetCastsShadows(castShadows);
-				materialInstance->SetReceivesShadows(receiveShadows);
-
 				if (m_MaterialFloatProperties.find(entity) != m_MaterialFloatProperties.end())
 					for (auto [uniformName, uiFloat] : m_MaterialFloatProperties[entity])
 						uiFloat->Draw();
@@ -386,6 +384,9 @@ namespace Ohm
 				if (m_MaterialColorProperties.find(entity) != m_MaterialColorProperties.end())
 					for (auto [uniformName, uiColor] : m_MaterialColorProperties[entity])
 						uiColor->Draw();
+				if (m_MaterialTextureProperties.find(entity) != m_MaterialTextureProperties.end())
+					for (auto [uniformName, uiTexture2D] : m_MaterialTextureProperties[entity])
+						uiTexture2D->Draw();
 
 				if (ImGui::Button("Dump Shader Data"))
 					materialInstance->GetShader()->DumpShaderData();

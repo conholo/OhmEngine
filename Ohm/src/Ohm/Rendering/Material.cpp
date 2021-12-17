@@ -1,5 +1,6 @@
 #include "ohmpch.h"
 #include "Ohm/Rendering/Material.h"
+#include "Ohm/Rendering/Texture2D.h"
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -14,8 +15,6 @@ namespace Ohm
 
 		SetFlag(RenderFlag::DepthTest);
 		SetFlag(RenderFlag::Blend);
-
-		CheckShouldReceiveShadows();
 	}
 
 	Ref<Material> Material::Clone(const std::string& cloneName)
@@ -25,13 +24,23 @@ namespace Ohm
 		return copy;
 	}
 
-	// This probably needs to be handled differently.  Is currently called by the SceneRenderer at the time of the Geometry pass.
-	// If the material receives shadows, it sets the uniform pointing to the shadowMap as valid, otherwise an invalid tex index.	
-	void Material::CheckShouldReceiveShadows()
+	void Material::BindActiveTextures()
 	{
-		if (!Has("sampler_ShadowMap")) return;
+		auto textureSlots = TextureLibrary::BindAndGetMaterialTextureSlots(m_Textures);
 
-		Set<int>("sampler_ShadowMap", m_ReceiveShadows ? 2 : 0);
+		for (auto [name, slot] : textureSlots)
+			Set<TextureUniform>(name, { m_Textures[name], name == "sampler_ShadowMap" ? 1 : 0, slot });
+	}
+
+	void Material::UpdateActiveTexture(const std::string& uniformName, uint32_t newID)
+	{
+		if (m_Textures.find(uniformName) == m_Textures.end())
+		{
+			OHM_ERROR("Cannot update texture with name {}.  This texture could not be found.", uniformName);
+			return;
+		}
+
+		m_Textures[uniformName] = newID;
 	}
 
 	void Material::AllocateStorageBuffer()
@@ -85,7 +94,14 @@ namespace Ohm
 					break;
 				}
 				case ShaderDataType::Sampler2D:
+				{
+					TextureUniform* data = (TextureUniform*)m_Shader->GetUniformData(uniform.GetType(), uniform.GetLocation());
+					data->RendererID = TextureLibrary::Get("White Texture")->GetID();
+					m_Textures[name] = data->RendererID;
+
+					m_UniformStorageBuffer.Write(data, uniform.GetSize(), uniform.GetBufferOffset());
 					break;
+				}
 			}
 		}
 	}
@@ -138,8 +154,8 @@ namespace Ohm
 				}
 				case ShaderDataType::Sampler2D:
 				{
-					int* value = Get<int>(name);
-					m_Shader->UploadUniformInt(name, *value);
+					TextureUniform* value = Get<TextureUniform>(name);
+					m_Shader->UploadUniformInt(name, (*value).TextureUnit);
 					break;
 				}
 				case ShaderDataType::Int:
