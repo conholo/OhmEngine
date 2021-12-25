@@ -15,6 +15,7 @@
 #include "Ohm/Scene/Component.h"
 #include "Ohm/Scene/Scene.h"
 #include "Ohm/Scene/Entity.h"
+#include "Ohm/Scene/SceneSerializer.h"
 //--------------------- Scene ---------------------//
 
 
@@ -31,4 +32,5 @@
 
 //--------------------- UI ---------------------//
 #include "Ohm/UI/PropertyDrawer.h"
+#include "Ohm/UI/UIDrawerHelpers.h"
 //--------------------- UI ---------------------//

@@ -3,8 +3,10 @@
 #include "Ohm/Core/Input.h"
 #include "Ohm/Core/Log.h"
 #include "Ohm/Rendering/Texture2D.h"
+#include "Ohm/UI/UIDrawerHelpers.h"
 
 #include <imgui.h>
+#include <imgui_internal.h>
 
 namespace Ohm
 {
@@ -68,22 +70,24 @@ namespace Ohm
 			std::stringstream ss;
 			ss << "Float Properties" << "##" << m_UUID;
 
-			if (m_FloatParameters.IsDrag)
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+			if (ImGui::BeginTable(m_Label.c_str(), 2, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable))
 			{
-				std::stringstream ssDragFloat;
-				ssDragFloat << m_Label.c_str() << "##Drag" << m_UUID;
-
-				ImGui::DragFloat(ssDragFloat.str().c_str(), m_Value, m_FloatParameters.SpeedStep, m_FloatParameters.Min, m_FloatParameters.Max, m_FloatParameters.Format);
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text(m_Label.c_str());
+				ImGui::TableSetColumnIndex(1);
+				ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+				if (m_FloatParameters.IsDrag)
+					ImGui::DragFloat("", m_Value, m_FloatParameters.SpeedStep, m_FloatParameters.Min, m_FloatParameters.Max, m_FloatParameters.Format);
+				else
+					ImGui::InputFloat("", m_Value, m_FloatParameters.SpeedStep, m_FloatParameters.FastStep, m_FloatParameters.Format);
+				ImGui::PopItemWidth();
 				DrawFloatParametersPopup(m_UUID, m_FloatParameters);
+				ImGui::EndTable();
 			}
-			else
-			{
-				std::stringstream ssInputFloat;
-				ssInputFloat << m_Label.c_str() << "##Input" << m_UUID;
-
-				ImGui::InputFloat(ssInputFloat.str().c_str(), m_Value, m_FloatParameters.SpeedStep, m_FloatParameters.FastStep, m_FloatParameters.Format);
-				DrawFloatParametersPopup(m_UUID, m_FloatParameters);
-			}
+			ImGui::PopStyleVar();
 
 			ClampFloat(m_Value, m_FloatParameters.Min, m_FloatParameters.Max);
 
@@ -119,8 +123,11 @@ namespace Ohm
 				DrawFloatParametersPopup(m_UUID, m_FloatParameters);
 			}
 
-			ClampFloat(&m_Value->x, m_FloatParameters.Min, m_FloatParameters.Max);
-			ClampFloat(&m_Value->y, m_FloatParameters.Min, m_FloatParameters.Max);
+			if (m_FloatParameters.Min < m_FloatParameters.Max && m_FloatParameters.Min != 0 && m_FloatParameters.Max != 0)
+			{
+				ClampFloat(&m_Value->x, m_FloatParameters.Min, m_FloatParameters.Max);
+				ClampFloat(&m_Value->y, m_FloatParameters.Min, m_FloatParameters.Max);
+			}
 
 			ImGui::PopID();
 		}
@@ -149,9 +156,12 @@ namespace Ohm
 				DrawFloatParametersPopup(m_UUID, m_FloatParameters);
 			}
 
-			ClampFloat(&m_Value->x, m_FloatParameters.Min, m_FloatParameters.Max);
-			ClampFloat(&m_Value->y, m_FloatParameters.Min, m_FloatParameters.Max);
-			ClampFloat(&m_Value->z, m_FloatParameters.Min, m_FloatParameters.Max);
+			if (m_FloatParameters.Min < m_FloatParameters.Max && m_FloatParameters.Min != 0 && m_FloatParameters.Max != 0)
+			{
+				ClampFloat(&m_Value->x, m_FloatParameters.Min, m_FloatParameters.Max);
+				ClampFloat(&m_Value->y, m_FloatParameters.Min, m_FloatParameters.Max);
+				ClampFloat(&m_Value->z, m_FloatParameters.Min, m_FloatParameters.Max);
+			}
 
 			ImGui::PopID();
 		}
@@ -168,7 +178,8 @@ namespace Ohm
 				std::stringstream ssDragFloat;
 				ssDragFloat << m_Label.c_str() << "##Drag" << m_UUID;
 
-				ImGui::DragFloat4(ssDragFloat.str().c_str(), &m_Value->x, m_FloatParameters.SpeedStep, m_FloatParameters.Min, m_FloatParameters.Max, m_FloatParameters.Format);
+				//ImGui::DragFloat4(ssDragFloat.str().c_str(), &m_Value->x, m_FloatParameters.SpeedStep, m_FloatParameters.Min, m_FloatParameters.Max, m_FloatParameters.Format);
+				DrawVector4Field2("", *m_Value, 1.0f);
 				DrawFloatParametersPopup(m_UUID, m_FloatParameters);
 			}
 			else
@@ -180,10 +191,13 @@ namespace Ohm
 				DrawFloatParametersPopup(m_UUID, m_FloatParameters);
 			}
 
-			ClampFloat(&m_Value->x, m_FloatParameters.Min, m_FloatParameters.Max);
-			ClampFloat(&m_Value->y, m_FloatParameters.Min, m_FloatParameters.Max);
-			ClampFloat(&m_Value->z, m_FloatParameters.Min, m_FloatParameters.Max);
-			ClampFloat(&m_Value->w, m_FloatParameters.Min, m_FloatParameters.Max);
+			if (m_FloatParameters.Min < m_FloatParameters.Max && m_FloatParameters.Min != 0 && m_FloatParameters.Max != 0)
+			{
+				ClampFloat(&m_Value->x, m_FloatParameters.Min, m_FloatParameters.Max);
+				ClampFloat(&m_Value->y, m_FloatParameters.Min, m_FloatParameters.Max);
+				ClampFloat(&m_Value->z, m_FloatParameters.Min, m_FloatParameters.Max);
+				ClampFloat(&m_Value->w, m_FloatParameters.Min, m_FloatParameters.Max);
+			}
 
 			ImGui::PopID();
 		}
@@ -193,26 +207,34 @@ namespace Ohm
 			ImGui::PushID(m_Label.c_str());
 
 			ImVec4 color{ m_Color->r, m_Color->g, m_Color->b, m_Color->a };
-
-			std::stringstream ss;
-			ss << "##" << m_UUID;
-
-			ImGui::LabelText(ss.str().c_str(), m_Label.c_str());
-
 			std::stringstream pickerSS;
-
 			pickerSS << "\"" << m_Label.c_str() << "\"" << " Picker";
 
-			if (ImGui::ColorButton(pickerSS.str().c_str(), color, ImGuiColorEditFlags_HDR, { 50, 50 }))
-				ImGui::OpenPopup("Color Picker");
-
-			if (ImGui::BeginPopup("Color Picker"))
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+			if (ImGui::BeginTable(m_Label.c_str(), 2, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable))
 			{
-				ImGuiColorEditFlags flags = ImGuiColorEditFlags_HDR | ImGuiColorEditFlags_Float;
-				ImGui::ColorPicker4(m_Label.c_str(), &m_Color->x, flags, NULL);
-				ImGui::EndPopup();
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text(m_Label.c_str());
+
+				ImGui::TableSetColumnIndex(1);
+				if (ImGui::ColorButton(pickerSS.str().c_str(), color, ImGuiColorEditFlags_HDR, { 10, 10 }))
+					ImGui::OpenPopup("Color Picker");
+
+				if (ImGui::BeginPopup("Color Picker"))
+				{
+					ImGuiColorEditFlags flags = ImGuiColorEditFlags_HDR | ImGuiColorEditFlags_Float;
+					ImGui::ColorPicker4(m_Label.c_str(), &m_Color->x, flags, NULL);
+					ImGui::EndPopup();
+				}
+				
+				m_ColorVec4Drawer.Draw();
+
+				ImGui::EndTable();
 			}
 
+			ImGui::PopStyleVar();
 			ImGui::PopID();
 		}
 
@@ -229,33 +251,44 @@ namespace Ohm
 			std::stringstream ss;
 			ss << "##" << m_UUID;
 
-			ImGui::LabelText(ss.str().c_str(), m_Label.c_str());
-
-			if (ImGui::ImageButton((ImTextureID)currentTexture->GetID(), { 50, 50 }, { 0, 1 }, { 1, 0 }))
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+			if (ImGui::BeginTable(m_Label.c_str(), 2, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable))
 			{
-				ImGui::OpenPopup("Texture Selection");
-			}
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::AlignTextToFramePadding();
+				ImGui::LabelText(ss.str().c_str(), m_Label.c_str());
 
-			if (ImGui::BeginPopup("Texture Selection"))
-			{
-				if (ImGui::BeginCombo("Texture Library", currentTexture->GetName().c_str()))
+				ImGui::TableSetColumnIndex(1);
+				if (ImGui::ImageButton((ImTextureID)currentTexture->GetID(), { 50, 50 }, { 0, 1 }, { 1, 0 }))
 				{
-					std::unordered_map<std::string, Ref<Texture2D>> availableTextures = TextureLibrary::GetLibrary();
-
-					for (auto [name, texture] : availableTextures)
-					{
-						if (texture->GetID() == m_TextureUniform->RendererID) continue;
-
-						if (ImGui::Selectable(name.c_str(), true))
-							m_Material->UpdateActiveTexture(m_TextureUniformName, texture->GetID());
-					}
-
-					ImGui::EndCombo();
+					ImGui::OpenPopup("Texture Selection");
 				}
 
-				ImGui::EndPopup();
+				if (ImGui::BeginPopup("Texture Selection"))
+				{
+					if (ImGui::BeginCombo("Texture Library", currentTexture->GetName().c_str()))
+					{
+						std::unordered_map<std::string, Ref<Texture2D>> availableTextures = TextureLibrary::GetLibrary();
+
+						for (auto [name, texture] : availableTextures)
+						{
+							if (texture->GetID() == m_TextureUniform->RendererID) continue;
+
+							if (ImGui::Selectable(name.c_str(), true))
+								m_Material->UpdateActiveTexture(m_TextureUniformName, texture->GetID());
+						}
+
+						ImGui::EndCombo();
+					}
+
+					ImGui::EndPopup();
+				}
+
+				ImGui::EndTable();
 			}
 
+			ImGui::PopStyleVar();
 			ImGui::PopID();
 		}
 

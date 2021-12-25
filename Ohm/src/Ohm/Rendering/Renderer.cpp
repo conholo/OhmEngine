@@ -33,11 +33,12 @@ namespace Ohm
 
 		struct CameraData
 		{
-			glm::mat4 u_ViewProjectionMatrix;
-			glm::mat4 u_ModelMatrix;
-			glm::mat4 u_ProjectionMatrix;
-			glm::mat4 u_ViewMatrix;
-			glm::mat4 u_NormalMatrix;
+			glm::vec4 CameraPosition;
+			glm::mat4 ViewProjectionMatrix;
+			glm::mat4 ModelMatrix;
+			glm::mat4 ProjectionMatrix;
+			glm::mat4 ViewMatrix;
+			glm::mat4 NormalMatrix;
 		};
 
 		Ref<UniformBuffer> CameraBuffer;
@@ -85,11 +86,10 @@ namespace Ohm
 
 	void Renderer::UploadCameraUniformData(const EditorCamera& camera, const TransformComponent& transform)
 	{
-		glm::mat4 modelView = camera.GetView() * transform.Transform();
-		glm::mat4 normalMatrix = glm::transpose(glm::inverse(modelView));
+		glm::mat4 normalMatrix = glm::transpose(glm::inverse(transform.Transform()));
 		glm::mat4 viewProjection = camera.GetProjectionView();
 
-		RenderData::CameraData cameraData{ viewProjection, transform.Transform(), camera.GetProjection(), camera.GetView(), normalMatrix };
+		RenderData::CameraData cameraData{ glm::vec4(camera.GetPosition(), 1.0), viewProjection, transform.Transform(), camera.GetProjection(), camera.GetView(), normalMatrix };
 		s_RenderData->CameraBuffer->SetData(&cameraData, sizeof(RenderData::CameraData));
 	}
 

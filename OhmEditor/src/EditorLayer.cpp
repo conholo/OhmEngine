@@ -25,7 +25,6 @@ namespace Ohm
 	void EditorLayer::OnAttach()
 	{
 		Application::GetApplication().GetWindow().ToggleIsMaximized();
-		m_EngineGeometryMaterial = CreateRef<Material>("Base Material", ShaderLibrary::Get("Phong"));
 		m_Scene = CreateRef<Scene>("Test Scene");
 		m_SceneHierarchyPanel.SetContext(m_Scene);
 		SceneRenderer::LoadScene(m_Scene);
@@ -34,19 +33,16 @@ namespace Ohm
 		m_ViewportPanel.SetFramebuffer(SceneRenderer::GetMainColorBuffer());
 		SceneRenderer::ValidateResize(m_ViewportPanel.GetViewportSize());
 
-		m_DirectionalLight = m_Scene->Create("Directional Light");
-		m_DirectionalLight.AddComponent<LightComponent>(LightType::Sun, glm::vec4(1.0f), 1.0f, true);
-		m_DirectionalLight.AddComponent<MeshRendererComponent>(m_EngineGeometryMaterial->Clone("Directional Light Debug Material"), Mesh::CreatePrimitive(Primitive::Sphere));
-		m_DirectionalLight.GetComponent<TransformComponent>().Translation = glm::vec3(0.0f, 10.0f, 0.0f);
-		m_DirectionalLight.GetComponent<TransformComponent>().Scale = glm::vec3(0.25f);
-
 		TextureLibrary::Load("assets/textures/lava.jpg");
 		TextureLibrary::Load("assets/textures/uv.png");
+		TextureLibrary::Load("assets/textures/space.jpg");
+		TextureLibrary::Load("assets/textures/map.jpg");
+		TextureLibrary::Load("assets/textures/ground-blue.jpg");
 
-		//Entity test = m_Scene->Create("Vertex Test");
-		//MeshRendererComponent& meshRenderer = test.AddComponent<MeshRendererComponent>(CreateRef<Material>("Vert Deformation Mat", ShaderLibrary::Get("VertexDeformation")), Mesh::CreatePrimitive(Primitive::Plane));
-		//test.GetComponent<TransformComponent>().Scale = glm::vec3(10.0f, 1.0f, 10.0f);
+		ShaderLibrary::Load("assets/shaders/PBR.shader");
+		ShaderLibrary::Load("assets/shaders/PhongWS.shader");
 
+		m_EngineGeometryMaterial = CreateRef<Material>("Base Material", ShaderLibrary::Get("PhongWS"));
 	}
 
 	void EditorLayer::OnUpdate(float deltaTime)
@@ -82,7 +78,7 @@ namespace Ohm
 				if (ImGui::BeginMenu("Create"))
 				{
 					ImGui::Separator();
-					if (ImGui::BeginMenu("3D-Primtives"))
+					if (ImGui::BeginMenu("3D-Primitives"))
 					{
 						ImGui::Separator();
 						
@@ -125,9 +121,34 @@ namespace Ohm
 					ImGui::EndMenu();
 				}
 
+				if (ImGui::BeginMenu("Save/Load"))
+				{
+					ImGui::Separator();
+
+					if (ImGui::MenuItem("Save Scene"))
+					{
+						SceneSerializer serializer(m_Scene);
+						std::string filePath = "assets/scenes/TestScene.scene";
+						serializer.Serialize(filePath);
+					}
+
+					ImGui::Separator();
+
+					if (ImGui::MenuItem("Load Scene"))
+					{
+						SceneSerializer serializer(m_Scene);
+						std::string filePath = "assets/scenes/TestScene.scene";
+						serializer.Deserialize(filePath);
+					}
+
+					ImGui::Separator();
+					ImGui::EndMenu();
+				}
+
 				ImGui::EndMenuBar();
 			}
 		}
+
 		m_SceneHierarchyPanel.Draw();
 		// Console
 		m_ConsolePanel.Draw("Console");

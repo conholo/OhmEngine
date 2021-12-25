@@ -156,9 +156,10 @@ namespace Ohm
 
 	void SceneRenderer::ShadowPass()
 	{
-		Renderer::BeginPass(s_ShadowPass);
-		auto& light = s_ActiveScene->GetSunLight();
+		if (!s_ActiveScene->HasMainLight()) return;
 
+		auto& light = s_ActiveScene->GetSunLight();
+		Renderer::BeginPass(s_ShadowPass);
 		static glm::mat4 scaleBiasMatrix = glm::scale(glm::mat4(1.0f), { 0.5f, 0.5f, 0.5f }) * glm::translate(glm::mat4(1.0f), { 1, 1, 1 });
 
 		auto& lightTransform = light.GetComponent<TransformComponent>();
@@ -196,7 +197,9 @@ namespace Ohm
 
 			if (!meshRenderer.IsComplete()) continue;
 
-			s_ActiveScene->SetSceneLightingData(s_EditorCamera);
+			if (s_ActiveScene->HasMainLight())
+				s_ActiveScene->SetSceneLightingData(s_EditorCamera);
+
 			meshRenderer.MaterialInstance->BindActiveTextures();
 			Renderer::DrawMesh(s_EditorCamera, meshRenderer.MeshData, meshRenderer.MaterialInstance, transform);
 		}

@@ -18,12 +18,14 @@ IncludeDirectories["glm"] = "Ohm/vendor/glm"
 IncludeDirectories["entt"] = "Ohm/vendor/entt/include"
 IncludeDirectories["ImGui"] = "Ohm/vendor/ImGui"
 IncludeDirectories["stb_image"] = "Ohm/vendor/stb_image"
+IncludeDirectories["yaml_cpp"] = "Ohm/vendor/yaml-cpp"
 
 
 group "Dependencies"
 	include "Ohm/vendor/GLFW"
 	include "Ohm/vendor/glad"
 	include "Ohm/vendor/ImGui"
+	include "Ohm/vendor/yaml-cpp"
 group ""
 
 project "Ohm"
@@ -62,13 +64,15 @@ project "Ohm"
 		"%{IncludeDirectories.entt}",
 		"%{IncludeDirectories.ImGui}",
 		"%{IncludeDirectories.stb_image}",
+		"%{IncludeDirectories.yaml_cpp}/include",
 	}
 
 	links
 	{
 		"GLFW",
 		"glad",
-		"ImGui"
+		"ImGui",
+		"yaml-cpp"
 	}
 
 	pchheader "ohmpch.h"
@@ -104,17 +108,19 @@ project "OhmEditor"
 
 	files
 	{
-		"%{prj.name}/src/**.h",
+		"%{prj.name}/**.h",
 		"%{prj.name}/src/**.cpp",
 	}
 
 	includedirs 
 	{
+		"%{prj.name}/src",
 		"Ohm/src",
 		"Ohm/vendor",
 		"Ohm/vendor/spdlog/include",
 		"%{IncludeDirectories.glm}",
 		"%{IncludeDirectories.entt}",
+		"%{IncludeDirectories.yaml_cpp}/include",
 	}
 
 	links 

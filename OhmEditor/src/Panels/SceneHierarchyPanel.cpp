@@ -123,6 +123,9 @@ namespace Ohm
 		m_Scene->m_Registry.each([&](auto entityID)
 			{
 				Entity entity{ entityID, m_Scene.get() };
+
+				if (!entity) return;
+
 				RegisterEntityMaterialProperties(entity);
 				DrawEntityNode(entity);
 			});
@@ -150,50 +153,6 @@ namespace Ohm
 			DrawComponents(m_SelectedEntity);
 		ImGui::End();
 
-	}
-
-	static void DrawVector3Field(const std::string& label, glm::vec3& value, float resetValue = 0.0)
-	{
-		ImGui::PushID(label.c_str());
-
-		ImGui::Columns(2);
-		ImGui::SetColumnWidth(0, 100.0f);
-		ImGui::Text(label.c_str());
-		ImGui::NextColumn();
-
-		ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
-
-		float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
-		ImVec2 buttonSize = { lineHeight + 3.0f, lineHeight };
-
-		if (ImGui::Button("X", buttonSize))
-			value.x = resetValue;
-
-		ImGui::SameLine();
-		ImGui::DragFloat("##X", &value.x, 0.1f, 0.0f, 0.0f, "%.2f");
-		ImGui::PopItemWidth();
-		ImGui::SameLine();
-
-		if (ImGui::Button("Y", buttonSize))
-			value.y = resetValue;
-
-		ImGui::SameLine();
-		ImGui::DragFloat("##Y", &value.y, 0.1f, 0.0f, 0.0f, "%.2f");
-		ImGui::PopItemWidth();
-		ImGui::SameLine();
-
-		if (ImGui::Button("Z", buttonSize))
-			value.z = resetValue;
-
-		ImGui::SameLine();
-		ImGui::DragFloat("##Z", &value.z, 0.1f, 0.0f, 0.0f, "%.2f");
-		ImGui::PopItemWidth();
-
-
-		ImGui::PopStyleVar();
-		ImGui::Columns(1);
-		ImGui::PopID();
 	}
 
 	void SceneHierarchyPanel::DrawEntityNode(Entity entity)
@@ -314,6 +273,14 @@ namespace Ohm
 					OHM_CORE_WARN("Only one mesh renderer component is allowed per entity.");
 			}
 
+			if (ImGui::MenuItem("Directional Light"))
+			{
+				if (!m_SelectedEntity.HasComponent<LightComponent>())
+					m_SelectedEntity.AddComponent<LightComponent>();
+				else
+					OHM_CORE_WARN("Only one light component is allowed per entity.");
+			}
+
 			ImGui::EndPopup();
 		}
 
@@ -323,11 +290,11 @@ namespace Ohm
 		// Transform
 		auto drawTransform = [](auto& component, Entity entity)
 		{
-			DrawVector3Field("Position", component.Translation);
+			UI::DrawVector3Field("Position", component.Translation);
 			auto& rotationDegrees = glm::degrees(component.Rotation);
-			DrawVector3Field("Rotation", rotationDegrees);
+			UI::DrawVector3Field("Rotation", rotationDegrees);
 			component.Rotation = glm::radians(rotationDegrees);
-			DrawVector3Field("Scale", component.Scale, 1.0f);
+			UI::DrawVector3Field("Scale", component.Scale, 1.0f);
 		};
 		auto cleanUpTransform = [](auto& component, Entity entity) {};
 
@@ -345,7 +312,7 @@ namespace Ohm
 				if (component.MaterialInstance == nullptr)
 				{
 					if (ImGui::Button("Add Default Material"))
-						component.MaterialInstance = CreateRef<Material>("Default Material", ShaderLibrary::Get("Phong"));
+						component.MaterialInstance = CreateRef<Material>("Default Material", ShaderLibrary::Get("PBR"));
 				}
 				return;
 			}

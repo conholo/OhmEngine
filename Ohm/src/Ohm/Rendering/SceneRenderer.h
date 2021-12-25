@@ -58,10 +58,10 @@ namespace Ohm
 			bool DisplayBloomDebug = false;
 			bool BloomEnabled = true;
 			bool BloomDirtEnabled = true;
-			float BloomThreshold = 20.0f;
+			float BloomThreshold = 1.5f;
 			float BloomKnee = 0.220f;
 			float BloomIntensity = 0.790f;
-			float BloomDirtIntensity = 1.0f;
+			float BloomDirtIntensity = 0.2f;
 		};
 		static Ref<BloomProperties> s_BloomProperties;
 

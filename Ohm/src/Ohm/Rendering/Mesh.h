@@ -9,7 +9,7 @@ namespace Ohm
 {
 	enum class Primitive
 	{
-		Quad, Cube, Sphere, Plane, FullScreenQuad
+		None = 0, Quad, Cube, Sphere, Plane, FullScreenQuad
 	};
 
 	class Mesh

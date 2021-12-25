@@ -56,8 +56,7 @@ namespace Ohm
 
 		m_LightingData.LightColor = lightComponent.Color;
 		m_LightingData.LightIntensity = lightComponent.Intensity;
-		glm::vec3 viewSpaceLightPosition = glm::vec3(camera.GetView() * glm::vec4(lightTransform.Translation, 1.0));
-		m_LightingData.ViewSpaceLightPosition = viewSpaceLightPosition;
+		m_LightingData.LightPosition = lightTransform.Translation;
 
 		m_SceneLightingBuffer->SetData(&m_LightingData, sizeof(Scene::LightingData));
 	}

@@ -1,0 +1,63 @@
+Scene: Untitled
+Entities:
+  - Entity: 128371928312731
+    TagComponent:
+      Tag: Directional Light
+    TransformComponent:
+      Translation: [0, 46.7000008, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.25, 0.25, 0.25]
+    MeshRendererComponent:
+      PrimitiveType: 3
+      Shader Name: Phong
+      Material Name: Directional Light Debug Material
+      Material Uniforms:
+        FloatUniforms:
+          u_AmbientStrength: 1
+          u_DiffuseStrength: 1
+          u_SpecularPower: 32
+          u_SpecularStrength: 0.800000012
+        IntUniforms:
+          {}
+        Vec2Uniforms:
+          {}
+        Vec3Uniforms:
+          {}
+        Vec4Uniforms:
+          u_AmbientColor: [1, 1, 1, 1]
+          u_DiffuseColor: [1, 1, 1, 1]
+        TextureUniforms:
+          sampler_ShadowMap: [1, 1, 0]
+          sampler_Texture: [1, 0, 1]
+    LightComponent:
+      Color: [1, 0.999989986, 0.999989986, 1]
+      Intensity: 1
+  - Entity: 128371928312730
+    TagComponent:
+      Tag: Sphere
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [5, 5, 5]
+    MeshRendererComponent:
+      PrimitiveType: 3
+      Shader Name: Phong
+      Material Name: Default Material
+      Material Uniforms:
+        FloatUniforms:
+          u_AmbientStrength: 1
+          u_DiffuseStrength: 1
+          u_SpecularPower: 32
+          u_SpecularStrength: 0.800000012
+        IntUniforms:
+          {}
+        Vec2Uniforms:
+          {}
+        Vec3Uniforms:
+          {}
+        Vec4Uniforms:
+          u_AmbientColor: [1, 1, 1, 1]
+          u_DiffuseColor: [1, 1, 5.30000019, 1]
+        TextureUniforms:
+          sampler_ShadowMap: [1, 1, 0]
+          sampler_Texture: [5, 0, 1]

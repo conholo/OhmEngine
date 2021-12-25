@@ -13,6 +13,17 @@ namespace Ohm
 		int32_t TextureUnit = -1;
 	};
 
+	struct MaterialUniformData
+	{
+		std::unordered_map<std::string, float> FloatUniforms;
+		std::unordered_map<std::string, int> IntUniforms;
+		std::unordered_map<std::string, TextureUniform> TextureUniforms;
+		std::unordered_map<std::string, glm::vec2> Vec2Uniforms;
+		std::unordered_map<std::string, glm::vec3> Vec3Uniforms;
+		std::unordered_map<std::string, glm::vec4> Vec4Uniforms;
+	};
+
+
 	class Material
 	{
 	public:
@@ -73,9 +84,12 @@ namespace Ohm
 		void BindActiveTextures();
 		void UpdateActiveTexture(const std::string& uniformName, uint32_t newID);
 
+		MaterialUniformData GetMaterialUniformData();
+
 	private:
 		void AllocateStorageBuffer();
 		void InitializeStorageBufferWithUniformDefaults();
+
 
 	private:
 		uint32_t m_UniformStagingOffset = 0;

@@ -22,6 +22,8 @@ namespace Ohm
 
 		const std::string& GetName() const { return m_SceneName; }
 
+
+		bool HasMainLight() const { return m_SunLightHandle != -1; }
 		Entity& GetEntityFromSceneMap(entt::entity id);
 		Entity& GetSunLight();
 
@@ -38,12 +40,12 @@ namespace Ohm
 		std::unordered_map<entt::entity, Entity> m_SceneMap;
 		Ref<UniformBuffer> m_SceneLightingBuffer;
 
-		uint32_t m_SunLightHandle;
+		int32_t m_SunLightHandle = -1;
 
 		struct LightingData
 		{	
 			glm::vec4 LightColor;
-			glm::vec3 ViewSpaceLightPosition;
+			glm::vec3 LightPosition;
 			float LightIntensity;
 		};
 
@@ -52,5 +54,6 @@ namespace Ohm
 		friend class Entity;
 		friend class SceneRenderer;
 		friend class SceneHierarchyPanel;
+		friend class SceneSerializer;
 	};
 }

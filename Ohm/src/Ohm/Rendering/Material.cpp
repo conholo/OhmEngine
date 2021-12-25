@@ -43,6 +43,68 @@ namespace Ohm
 		m_Textures[uniformName] = newID;
 	}
 
+	MaterialUniformData Material::GetMaterialUniformData()
+	{
+		MaterialUniformData data;
+
+		for (auto& [name, uniform] : m_Shader->GetUniforms())
+		{
+			std::string name = uniform.GetName();
+
+			switch (uniform.GetType())
+			{
+			case ShaderDataType::Float:
+			{
+				float* value = Get<float>(name);
+				data.FloatUniforms[name] = *value;
+				break;
+			}
+			case ShaderDataType::Float2:
+			{
+				glm::vec2* value = Get<glm::vec2>(name);
+				data.Vec2Uniforms[name] = *value;
+				break;
+			}
+			case ShaderDataType::Float3:
+			{
+				glm::vec3* value = Get<glm::vec3>(name);
+				data.Vec3Uniforms[name] = *value;
+				break;
+			}
+			case ShaderDataType::Float4:
+			{
+				glm::vec4* value = Get<glm::vec4>(name);
+				data.Vec4Uniforms[name] = *value;
+				break;
+			}
+			case ShaderDataType::Sampler2D:
+			{
+				TextureUniform* value = Get<TextureUniform>(name);
+				data.TextureUniforms[name] = *value;
+				break;
+			}
+			case ShaderDataType::Int:
+			{
+				int* value = Get<int>(name);
+				data.IntUniforms[name] = *value;
+				break;
+			}
+			case ShaderDataType::Mat3:
+			{
+				glm::mat3* value = Get<glm::mat3>(name);
+				break;
+			}
+			case ShaderDataType::Mat4:
+			{
+				glm::mat4* value = Get<glm::mat4>(name);
+				break;
+			}
+			}
+		}
+
+		return data;
+	}
+
 	void Material::AllocateStorageBuffer()
 	{
 		const auto& uniforms = m_Shader->GetUniforms();

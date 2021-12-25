@@ -96,6 +96,8 @@ namespace Ohm
 			UIVector(const std::string& label)
 				:UIProperty(label)
 			{
+				m_FloatParameters.Min = 0.0f;
+				m_FloatParameters.Max = 0.0f;
 			}
 
 			virtual void Draw() = 0;
@@ -163,13 +165,14 @@ namespace Ohm
 		public:
 			UIColor() = default;
 			UIColor(const std::string& label, glm::vec4* color)
-				:UIProperty(label), m_Color(color)
+				:UIProperty(label), m_Color(color), m_ColorVec4Drawer("", color)
 			{
 			}
 
 			void Draw() override;
 
 		private:
+			UIVector4 m_ColorVec4Drawer;
 			glm::vec4* m_Color = nullptr;;
 			glm::vec4 m_DefaultColor{ 1.0f };
 		};

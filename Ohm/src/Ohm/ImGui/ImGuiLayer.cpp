@@ -73,6 +73,8 @@ namespace Ohm
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
+		//bool draw = true;
+		//ImGui::ShowDemoWindow(&draw);
 	}
 
 	void ImGuiLayer::End()

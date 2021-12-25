@@ -14,3 +14,6 @@
 	path = Ohm/vendor/imgui
 	url = https://github.com/TheCherno/imgui
 	ignore = untracked
+[submodule "Ohm/vendor/yaml-cpp"]
+	path = Ohm/vendor/yaml-cpp
+	url = https://github.com/TheCherno/yaml-cpp
