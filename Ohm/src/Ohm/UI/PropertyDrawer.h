@@ -58,6 +58,7 @@ namespace Ohm
 			}
 
 			void Draw() override;
+			static void Draw(const std::string& label, float* value);
 
 			void SetIsDrag(bool isDrag) { m_FloatParameters.IsDrag = isDrag; }
 			void SetMin(float min) { m_FloatParameters.Min = min; }
@@ -137,6 +138,7 @@ namespace Ohm
 			}
 
 			void Draw() override;
+			static void Draw(const std::string& label, glm::vec3* value);
 
 		private:
 			glm::vec3* m_Value = nullptr;;

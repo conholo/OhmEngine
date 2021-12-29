@@ -15,7 +15,9 @@ namespace Ohm
 		static void BeginScene();
 		static void BeginPass(const Ref<RenderPass>& renderPass);
 		static void DrawMesh(const EditorCamera& camera, const Ref<Mesh>& mesh, const Ref<Material>& material, const TransformComponent& transform);
+		static void DrawMesh(const EditorCamera& camera, const Ref<Mesh>& mesh);
 		static void DrawFullScreenQuad();
+		static void DrawUnitCube();
 		static void EndPass(const Ref<RenderPass>& renderPass);
 		static void EndScene();
 		static void Shutdown();

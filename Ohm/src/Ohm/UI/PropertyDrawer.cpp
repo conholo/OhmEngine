@@ -94,6 +94,31 @@ namespace Ohm
 			ImGui::PopID();
 		}
 
+		void UIFloat::Draw(const std::string& label, float* value)
+		{
+			ImGui::PushID(label.c_str());
+
+			std::stringstream ss;
+			ss << "Float Properties" << "##" << label;
+
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+			if (ImGui::BeginTable(label.c_str(), 2, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable))
+			{
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text(label.c_str());
+				ImGui::TableSetColumnIndex(1);
+				ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+				ImGui::DragFloat("", value, 0.01f, 0.0f, 0.0f, "%.3f");
+				ImGui::PopItemWidth();
+				ImGui::EndTable();
+			}
+			ImGui::PopStyleVar();
+
+			ImGui::PopID();
+		}
+
 		void UIInt::Draw()
 		{
 			ImGui::InputInt(m_Label.c_str(), m_Value, m_Step);
@@ -162,6 +187,31 @@ namespace Ohm
 				ClampFloat(&m_Value->y, m_FloatParameters.Min, m_FloatParameters.Max);
 				ClampFloat(&m_Value->z, m_FloatParameters.Min, m_FloatParameters.Max);
 			}
+
+			ImGui::PopID();
+		}
+
+		void UIVector3::Draw(const std::string& label, glm::vec3* value)
+		{
+			ImGui::PushID(label.c_str());
+
+			std::stringstream ss;
+			ss << "Float Properties" << "##" << label;
+
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+			if (ImGui::BeginTable(label.c_str(), 2, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable))
+			{
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text(label.c_str());
+				ImGui::TableSetColumnIndex(1);
+				ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+				DrawVector3FieldTable("", *value, 1.0f);
+				ImGui::PopItemWidth();
+				ImGui::EndTable();
+			}
+			ImGui::PopStyleVar();
 
 			ImGui::PopID();
 		}
@@ -299,7 +349,23 @@ namespace Ohm
 
 		void UIBool::Draw(const std::string& label, bool* value)
 		{
-			ImGui::Checkbox(label.c_str(), value);
+			ImGui::PushID(label.c_str());
+
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+			if (ImGui::BeginTable(label.c_str(), 2, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable))
+			{
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text(label.c_str());
+				ImGui::TableSetColumnIndex(1);
+				ImGui::Checkbox("", value);
+				ImGui::EndTable();
+			}
+			ImGui::PopStyleVar();
+
+			ImGui::PopID();
+
 		}
 	}
 }

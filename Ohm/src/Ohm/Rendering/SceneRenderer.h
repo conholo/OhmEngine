@@ -5,6 +5,7 @@
 #include "Ohm/Rendering/RenderPass.h"
 #include "Ohm/Rendering/EditorCamera.h"
 #include "Ohm/Rendering/Texture2D.h"
+#include "Ohm/Rendering/TextureCube.h"
 #include "Ohm/Core/Time.h"
 #include "Ohm/Event/Event.h"
 #include "Ohm/UI/PropertyDrawer.h"
@@ -37,17 +38,27 @@ namespace Ohm
 
 		static void InitializeShadowPass();
 		static void InitializeGeometryPass();
+		static void InitializeSkybox();
+		static void InitializeGrid();
 
 		static void InitializeBloomPass();
 		static void InitializeCompositePass();
 
 		static void ShadowPass();
 		static void GeometryPass();
+		static void DrawSkybox();
+		static void DrawGrid();
 
 		static void BloomPass();
 		static void CompositePass();
 
 	private:
+		struct SceneRenderProperties
+		{
+			float Exposure = 1.0f;
+		};
+		static Ref<SceneRenderProperties> s_SceneRenderProperties;
+
 		struct BloomProperties
 		{
 			Ref<Shader> BloomShader;
@@ -61,9 +72,44 @@ namespace Ohm
 			float BloomThreshold = 1.5f;
 			float BloomKnee = 0.220f;
 			float BloomIntensity = 0.790f;
-			float BloomDirtIntensity = 0.2f;
+			float BloomDirtIntensity = 0.0f;
 		};
 		static Ref<BloomProperties> s_BloomProperties;
+
+		struct GridData
+		{
+			Ref<Shader> GridShader;
+			Ref<Mesh> FullScreenQuad;
+		};
+
+		static Ref<GridData> s_GridData;
+
+		struct GridSettings
+		{
+			bool DrawGrid = true;
+			float InnerScale = 1.0f;
+			float OuterScale = 0.1f;
+			glm::vec3 GridColor = {0.08f, 0.08f, 0.08f};
+		};
+
+		static Ref<GridSettings> s_GridSettings;
+
+	private:
+		static Ref<Mesh> s_EnvironmentCube;
+		static Ref<TextureCube> s_EnvironmentMap;
+		static Ref<Shader> s_EnvironmentMapShader;
+		static Ref<Shader> s_SkyboxShader;
+
+		struct SkyboxProperties
+		{
+			float Intensity = 1.0f;
+		    uint32_t LOD = 0;
+
+			float Turbidity = 2.5f;
+			float Azimuth = 2.5f;
+			float Inclination = 4.5f;
+		};
+		static Ref<SkyboxProperties> s_SkyboxProperties;
 
 	private:
 		static Ref<Scene> s_ActiveScene;
@@ -77,17 +123,5 @@ namespace Ohm
 		static Ref<Shader> s_DebugDepthShader;
 
 		static glm::ivec2 m_ViewportSize;
-
-		struct UIPropertyDrawers
-		{
-			float Exposure = 1.0f;
-			Ref<UI::UIFloat> ExposureDrawer = CreateRef<UI::UIFloat>("Exposure", &Exposure);
-			Ref<UI::UIFloat> BloomIntensityDrawer;
-			Ref<UI::UIFloat> BloomKneeDrawer;
-			Ref<UI::UIFloat> BloomThresholdDrawer;
-			Ref<UI::UIFloat> BloomDirtIntensityDrawer;
-		};
-
-		static Ref<UIPropertyDrawers> s_Drawers;
 	};
 }

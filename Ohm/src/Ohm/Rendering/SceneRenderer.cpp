@@ -25,15 +25,23 @@ namespace Ohm
 	Ref<Shader> SceneRenderer::s_DebugDepthShader = nullptr;
 	Ref<UniformBuffer> SceneRenderer::s_ShadowUniformbuffer = nullptr;
 
-	Ref<SceneRenderer::UIPropertyDrawers> SceneRenderer::s_Drawers = nullptr;
-	Ref<SceneRenderer::BloomProperties> SceneRenderer::s_BloomProperties = nullptr;
+	Ref<Mesh> SceneRenderer::s_EnvironmentCube = nullptr;
+	Ref<TextureCube> SceneRenderer::s_EnvironmentMap = nullptr;
+	Ref<Shader> SceneRenderer::s_EnvironmentMapShader = nullptr;
+	Ref<Shader> SceneRenderer::s_SkyboxShader = nullptr;
 
+	Ref<SceneRenderer::SkyboxProperties> SceneRenderer::s_SkyboxProperties = nullptr;
+	Ref<SceneRenderer::SceneRenderProperties> SceneRenderer::s_SceneRenderProperties = nullptr;
+	Ref<SceneRenderer::BloomProperties> SceneRenderer::s_BloomProperties = nullptr;
+	Ref<SceneRenderer::GridSettings> SceneRenderer::s_GridSettings = nullptr;
+	Ref<SceneRenderer::GridData> SceneRenderer::s_GridData = nullptr;
 
 	void SceneRenderer::LoadScene(const Ref<Scene>& runtimeScene)
 	{
 		s_EditorCamera.SetPosition(glm::vec3(0.0f, 8.5f, 20.0f));
 		s_EditorCamera.SetRotation(glm::vec2(15.0f, 0.0f));
 		s_ActiveScene = runtimeScene;
+		s_SceneRenderProperties = CreateRef<SceneRenderer::SceneRenderProperties>();
 	}
 
 	void SceneRenderer::UnloadScene()
@@ -43,12 +51,43 @@ namespace Ohm
 
 	void SceneRenderer::InitializeUI()
 	{
-		s_Drawers = CreateRef<SceneRenderer::UIPropertyDrawers>();
+	}
 
-		s_Drawers->BloomIntensityDrawer = CreateRef<UI::UIFloat>("Bloom Intensity", &s_BloomProperties->BloomIntensity);
-		s_Drawers->BloomThresholdDrawer = CreateRef<UI::UIFloat>("Bloom Threshold", &s_BloomProperties->BloomThreshold);
-		s_Drawers->BloomKneeDrawer = CreateRef<UI::UIFloat>("Bloom Knee", &s_BloomProperties->BloomKnee);
-		s_Drawers->BloomDirtIntensityDrawer = CreateRef<UI::UIFloat>("Bloom Dirt Intensity", &s_BloomProperties->BloomDirtIntensity);
+	void SceneRenderer::InitializeSkybox()
+	{
+		TextureCubeSpecification spec =
+		{
+			"Sky Box",
+			TextureUtils::WrapMode::ClampToEdge,
+			TextureUtils::FilterMode::Linear,
+			TextureUtils::FilterMode::Linear,
+			TextureUtils::ImageInternalFormat::RGBA32F,
+			TextureUtils::ImageDataLayout::RGBA,
+			TextureUtils::ImageDataType::Float,
+			1024, 1024
+		};
+
+		ShaderLibrary::Load("assets/shaders/Skybox.shader");
+		ShaderLibrary::Load("assets/shaders/Preetham.shader");
+
+		s_SkyboxProperties = CreateRef<SceneRenderer::SkyboxProperties>();
+
+		s_SkyboxShader = ShaderLibrary::Get("Skybox");
+		s_EnvironmentMapShader = ShaderLibrary::Get("Preetham");
+
+		s_EnvironmentCube = Mesh::CreateUnitCube();
+		s_EnvironmentMap = CreateRef<TextureCube>(spec);
+	}
+
+	void SceneRenderer::InitializeGrid()
+	{
+		ShaderLibrary::Load("assets/shaders/EditorGrid.shader");
+
+		s_GridData = CreateRef<GridData>();
+		s_GridSettings = CreateRef<GridSettings>();
+
+		s_GridData->FullScreenQuad = Mesh::CreatePrimitive(Primitive::FullScreenQuad);
+		s_GridData->GridShader = ShaderLibrary::Get("EditorGrid");
 	}
 
 	void SceneRenderer::InitializeShadowPass()
@@ -204,7 +243,45 @@ namespace Ohm
 			Renderer::DrawMesh(s_EditorCamera, meshRenderer.MeshData, meshRenderer.MaterialInstance, transform);
 		}
 
+		DrawSkybox();
+		if(s_GridSettings->DrawGrid)
+			DrawGrid();
+
 		Renderer::EndPass(s_GeometryPass);
+	}
+
+	void SceneRenderer::DrawSkybox()
+	{
+		s_EnvironmentMapShader->Bind();
+		s_EnvironmentMap->BindToImageSlot(0, 0, TextureUtils::TextureAccessLevel::WriteOnly, TextureUtils::TextureShaderDataFormat::RGBA32F);
+		s_EnvironmentMapShader->UploadUniformFloat3("u_TAI", glm::vec3(s_SkyboxProperties->Turbidity, s_SkyboxProperties->Azimuth, s_SkyboxProperties->Inclination));
+		s_EnvironmentMapShader->DispatchCompute(s_EnvironmentMap->GetWidth() / 32, s_EnvironmentMap->GetHeight() / 32, 6);
+		s_EnvironmentMapShader->EnableShaderImageAccessBarrierBit();
+
+		s_SkyboxShader->Bind();
+		s_EnvironmentMap->BindToSamplerSlot(0);
+		s_SkyboxShader->UploadUniformInt("u_Texture", 0);
+		s_SkyboxShader->UploadUniformMat4("u_ViewProjection", glm::inverse(s_EditorCamera.GetViewProjection()));
+		s_SkyboxShader->UploadUniformFloat("u_Intensity", s_SkyboxProperties->Intensity);
+		s_SkyboxShader->UploadUniformFloat("u_TextureLOD", (float)s_SkyboxProperties->LOD);
+
+		Renderer::DrawUnitCube();
+		s_EnvironmentMap->UnbindFromSamplerSlot(0);
+	}
+
+	void SceneRenderer::DrawGrid()
+	{
+		s_GridData->GridShader->Bind();
+		s_GridData->GridShader->UploadUniformFloat("u_InnerGridScale", s_GridSettings->InnerScale);
+		s_GridData->GridShader->UploadUniformFloat("u_OuterGridScale", s_GridSettings->OuterScale);
+		s_GridData->GridShader->UploadUniformFloat3("u_GridColor", s_GridSettings->GridColor);
+		s_GridData->GridShader->UploadUniformMat4("u_ViewMatrix", s_EditorCamera.GetView());
+		s_GridData->GridShader->UploadUniformMat4("u_ProjectionMatrix", s_EditorCamera.GetProjection());
+		s_GridData->GridShader->UploadUniformMat4("u_InverseViewMatrix", glm::inverse(s_EditorCamera.GetView()));
+		s_GridData->GridShader->UploadUniformMat4("u_InverseProjectionMatrix", glm::inverse(s_EditorCamera.GetProjection()));
+
+		Renderer::DrawMesh(s_EditorCamera, s_GridData->FullScreenQuad);
+		s_GridData->GridShader->Unbind();
 	}
 
 	void SceneRenderer::BloomPass()
@@ -345,7 +422,7 @@ namespace Ohm
 		s_SceneCompositePass->GetRenderPassSpecification().Shader->UploadUniformInt("u_SceneTexture", 0);
 		s_SceneCompositePass->GetRenderPassSpecification().Shader->UploadUniformInt("u_BloomTexture", 1);
 		s_SceneCompositePass->GetRenderPassSpecification().Shader->UploadUniformInt("u_BloomDirtTexture", 2);
-		s_SceneCompositePass->GetRenderPassSpecification().Shader->UploadUniformFloat("u_Exposure", s_Drawers->Exposure);
+		s_SceneCompositePass->GetRenderPassSpecification().Shader->UploadUniformFloat("u_Exposure", s_SceneRenderProperties->Exposure);
 		s_SceneCompositePass->GetRenderPassSpecification().Shader->UploadUniformFloat("u_BloomIntensity", s_BloomProperties->BloomIntensity);
 		s_SceneCompositePass->GetRenderPassSpecification().Shader->UploadUniformFloat("u_BloomDirtIntensity", s_BloomProperties->BloomDirtIntensity);
 
@@ -362,26 +439,61 @@ namespace Ohm
 
 	void SceneRenderer::DrawSceneRendererUI(const glm::vec2 viewportSize)
 	{
-		s_Drawers->ExposureDrawer->Draw();
-		s_Drawers->BloomIntensityDrawer->Draw();
-		s_Drawers->BloomThresholdDrawer->Draw();
-		s_Drawers->BloomKneeDrawer->Draw();
-		s_Drawers->BloomDirtIntensityDrawer->Draw();
+		if (ImGui::CollapsingHeader("Scene Render Settings"))
+		{
+			UI::UIFloat::Draw("Exposure", &s_SceneRenderProperties->Exposure);
+		}
 
-		UI::UIBool::Draw("Display Compute Textures", &s_BloomProperties->DisplayBloomDebug);
+		if (ImGui::CollapsingHeader("Skybox Settings"))
+		{
+			UI::UIFloat::Draw("Turbidity", &s_SkyboxProperties->Turbidity);
+			UI::UIFloat::Draw("Azimuth", &s_SkyboxProperties->Azimuth);
+			UI::UIFloat::Draw("Inclination", &s_SkyboxProperties->Inclination);
+		}
 
-		if (!s_BloomProperties->DisplayBloomDebug) return;
-		glm::vec2 windowSize = { Application::GetApplication().GetWindow().GetWidth(), Application::GetApplication().GetWindow().GetHeight() };
-		float aspect = (float)viewportSize.x / (float)viewportSize.y;
-		ImGui::Image((ImTextureID)s_BloomProperties->BloomComputeTextures[0]->GetID(), { 300 * aspect, 300 }, { 0, 1 }, { 1, 0 });
-		ImGui::Image((ImTextureID)s_BloomProperties->BloomComputeTextures[1]->GetID(), { 300 * aspect, 300 }, { 0, 1 }, { 1, 0 });
-		ImGui::Image((ImTextureID)s_BloomProperties->BloomComputeTextures[2]->GetID(), { 300 * aspect, 300 }, { 0, 1 }, { 1, 0 });
+		if (ImGui::CollapsingHeader("Grid Settings"))
+		{
+			UI::UIBool::Draw("Draw Grid", &s_GridSettings->DrawGrid);
+
+			if (s_GridSettings->DrawGrid)
+			{
+				UI::UIFloat::Draw("Inner Scale", &s_GridSettings->InnerScale);
+				UI::UIFloat::Draw("Outer Scale", &s_GridSettings->OuterScale);
+				UI::UIVector3::Draw("Grid Color", &s_GridSettings->GridColor);
+			}
+		}
+
+		if (ImGui::CollapsingHeader("Bloom Settings"))
+		{
+			UI::UIFloat::Draw("Bloom Intensity", &s_BloomProperties->BloomIntensity);
+			UI::UIFloat::Draw("Bloom Threshold", &s_BloomProperties->BloomThreshold);
+			UI::UIFloat::Draw("Bloom Knee", &s_BloomProperties->BloomKnee);
+
+			UI::UIBool::Draw("Bloom Dirt Enabled", &s_BloomProperties->BloomEnabled);
+			if (s_BloomProperties->BloomEnabled)
+				UI::UIFloat::Draw("Bloom Dirt Intensity", &s_BloomProperties->BloomDirtIntensity);
+			else
+				s_BloomProperties->BloomDirtIntensity = 0.0f;
+
+			UI::UIBool::Draw("Display Compute Textures", &s_BloomProperties->DisplayBloomDebug);
+
+
+			if (!s_BloomProperties->DisplayBloomDebug) return;
+			glm::vec2 windowSize = { Application::GetApplication().GetWindow().GetWidth(), Application::GetApplication().GetWindow().GetHeight() };
+			float aspect = (float)viewportSize.x / (float)viewportSize.y;
+			ImGui::Image((ImTextureID)s_BloomProperties->BloomComputeTextures[0]->GetID(), { 300 * aspect, 300 }, { 0, 1 }, { 1, 0 });
+			ImGui::Image((ImTextureID)s_BloomProperties->BloomComputeTextures[1]->GetID(), { 300 * aspect, 300 }, { 0, 1 }, { 1, 0 });
+			ImGui::Image((ImTextureID)s_BloomProperties->BloomComputeTextures[2]->GetID(), { 300 * aspect, 300 }, { 0, 1 }, { 1, 0 });
+		}
 	}
 
 	void SceneRenderer::InitializePipeline()
 	{
 		InitializeShadowPass();
 		InitializeGeometryPass();
+		InitializeSkybox();
+		InitializeGrid();
+
 		InitializeBloomPass();
 		InitializeCompositePass();
 
@@ -393,6 +505,7 @@ namespace Ohm
 		Renderer::BeginScene();
 		ShadowPass();
 		GeometryPass();
+
 		BloomPass();
 		CompositePass();
 		Renderer::EndScene();

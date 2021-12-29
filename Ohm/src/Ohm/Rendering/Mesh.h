@@ -9,7 +9,7 @@ namespace Ohm
 {
 	enum class Primitive
 	{
-		None = 0, Quad, Cube, Sphere, Plane, FullScreenQuad
+		None = 0, Quad, Cube, Sphere, Plane, FullScreenQuad, UnitCube
 	};
 
 	class Mesh
@@ -29,6 +29,7 @@ namespace Ohm
 		void Unbind() const;
 		void Bind() const;
 
+		static Ref<Mesh> CreateUnitCube();
 		static Ref<Mesh> CreatePrimitive(Primitive primitive);
 		static Ref<Mesh> Sphere(float radius);
 		static std::string PrimitiveToString(Primitive primitive);

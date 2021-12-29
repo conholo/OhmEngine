@@ -7,6 +7,8 @@ namespace Ohm
 {
 	namespace TextureUtils
 	{
+
+
 		enum class Usage { None = 0, Texture, Attachment, Storage };
 		enum class WrapMode { None = 0, Repeat, ClampToEdge, MirroredRepeat };
 		enum class FilterMode { None = 0, Linear, LinearMipLinear, LinearMipNearest, Nearest, NearestMipNearest, NearestMipLinear };

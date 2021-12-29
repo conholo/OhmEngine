@@ -7,6 +7,7 @@
 #include "Ohm/Rendering/Vertex.h"
 #include "Ohm/Rendering/RenderCommand.h"
 #include "Ohm/Rendering/Texture2D.h"
+#include "Ohm/Rendering/TextureCube.h"
 #include "Ohm/Rendering/UniformBuffer.h"
 #include "Ohm/Core/Time.h"
 
@@ -23,6 +24,7 @@ namespace Ohm
 		Ref<Texture2D> Texture;
 		Ref<Texture2D> WhiteTexture;
 		Ref<Mesh> FullScreenQuad;
+		Ref<Mesh> UnitCube;
 		RenderFlag Flags;
 
 		struct GlobalData
@@ -65,12 +67,13 @@ namespace Ohm
 			TextureUtils::ImageDataType::UByte,
 			1, 1
 		};
-
-		s_RenderData->FullScreenQuad = Mesh::CreatePrimitive(Primitive::FullScreenQuad);
-
 		s_RenderData->WhiteTexture = TextureLibrary::Load(whiteSpec);
 		uint32_t whiteTextureData = 0xffffffff;
 		s_RenderData->WhiteTexture->SetData(&whiteTextureData, sizeof(uint32_t));
+
+		s_RenderData->FullScreenQuad = Mesh::CreatePrimitive(Primitive::FullScreenQuad);
+		s_RenderData->UnitCube = Mesh::CreateUnitCube();
+
 
 		s_RenderData->CameraBuffer = CreateRef<UniformBuffer>(sizeof(RenderData::CameraData), 0);
 		s_RenderData->GlobalBuffer = CreateRef<UniformBuffer>(sizeof(RenderData::GlobalBuffer), 3);
@@ -87,7 +90,7 @@ namespace Ohm
 	void Renderer::UploadCameraUniformData(const EditorCamera& camera, const TransformComponent& transform)
 	{
 		glm::mat4 normalMatrix = glm::transpose(glm::inverse(transform.Transform()));
-		glm::mat4 viewProjection = camera.GetProjectionView();
+		glm::mat4 viewProjection = camera.GetViewProjection();
 
 		RenderData::CameraData cameraData{ glm::vec4(camera.GetPosition(), 1.0), viewProjection, transform.Transform(), camera.GetProjection(), camera.GetView(), normalMatrix };
 		s_RenderData->CameraBuffer->SetData(&cameraData, sizeof(RenderData::CameraData));
@@ -117,15 +120,23 @@ namespace Ohm
 		mesh->Bind();
 		s_RenderData->VAO->EnableVertexAttributes(mesh->GetVertexBuffer());
 		material->UploadStagedUniforms();
-		
 		UploadCameraUniformData(camera, transform);
-
 		RenderCommand::DrawIndexed(s_RenderData->VAO, mesh->GetIndexBuffer()->GetCount());
-
 		s_RenderData->VAO->Unbind();
 		material->GetShader()->Unbind();
 		mesh->Unbind();
+		s_Stats.TriangleCount += mesh->GetIndices().size() / 3;
+		s_Stats.VertexCount += mesh->GetVertices().size();
+	}
 
+	void Renderer::DrawMesh(const EditorCamera& camera, const Ref<Mesh>& mesh)
+	{
+		s_RenderData->VAO->Bind();
+		mesh->Bind();
+		s_RenderData->VAO->EnableVertexAttributes(mesh->GetVertexBuffer());
+		RenderCommand::DrawIndexed(s_RenderData->VAO, mesh->GetIndexBuffer()->GetCount());
+		s_RenderData->VAO->Unbind();
+		mesh->Unbind();
 		s_Stats.TriangleCount += mesh->GetIndices().size() / 3;
 		s_Stats.VertexCount += mesh->GetVertices().size();
 	}
@@ -140,6 +151,18 @@ namespace Ohm
 
 		s_RenderData->VAO->Unbind();
 		s_RenderData->FullScreenQuad->Unbind();
+	}
+
+	void Renderer::DrawUnitCube()
+	{
+		s_RenderData->VAO->Bind();
+		s_RenderData->UnitCube->Bind();
+		s_RenderData->VAO->EnableVertexAttributes(s_RenderData->UnitCube->GetVertexBuffer());
+		RenderCommand::SetDepthFlag(DepthFlag::LEqual);
+		RenderCommand::DrawIndexed(s_RenderData->VAO, s_RenderData->UnitCube->GetIndexBuffer()->GetCount());
+		RenderCommand::SetDepthFlag(DepthFlag::Less);
+		s_RenderData->VAO->Unbind();
+		s_RenderData->UnitCube->Unbind();
 	}
 
 	void Renderer::EndPass(const Ref<RenderPass>& renderPass)

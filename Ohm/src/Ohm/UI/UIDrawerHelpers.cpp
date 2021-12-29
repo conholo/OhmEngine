@@ -50,6 +50,46 @@ namespace Ohm
 			ImGui::PopID();
 		}
 
+		void DrawVector3FieldTable(const std::string& label, glm::vec3& value, float resetValue)
+		{
+			ImGui::PushID(label.c_str());
+
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+			if (ImGui::BeginTable("##Vec3Table", 3, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInner))
+			{
+				float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
+				ImVec2 buttonSize = { lineHeight + 10.0f, lineHeight };
+
+				ImGui::TableNextRow();
+
+				ImGui::TableSetColumnIndex(0);
+				if (ImGui::Button("X", buttonSize))
+					value.x = resetValue;
+				ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+				ImGui::DragFloat("##X", &value.x, 0.01f, 0.0f, 0.0f, "%.2f");
+				ImGui::PopItemWidth();
+
+				ImGui::TableSetColumnIndex(1);
+				if (ImGui::Button("Y", buttonSize))
+					value.y = resetValue;
+				ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+				ImGui::DragFloat("##Y", &value.y, 0.01f, 0.0f, 0.0f, "%.2f");
+				ImGui::PopItemWidth();
+
+				ImGui::TableSetColumnIndex(2);
+				if (ImGui::Button("Z", buttonSize))
+					value.z = resetValue;
+				ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+				ImGui::DragFloat("##Z", &value.z, 0.01f, 0.0f, 0.0f, "%.2f");
+				ImGui::PopItemWidth();
+
+				ImGui::EndTable();
+			}
+			ImGui::PopStyleVar();
+
+			ImGui::PopID();
+		}
+
 		void DrawVector4Field(const std::string& label, glm::vec4& value, float resetValue)
 		{
 			ImGui::PushID(label.c_str());

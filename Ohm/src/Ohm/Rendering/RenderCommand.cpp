@@ -36,7 +36,6 @@ namespace Ohm
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_DEPTH_TEST);
 
-
 		//glEnable(GL_CULL_FACE);
 		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	}
@@ -86,5 +85,52 @@ namespace Ohm
 	void RenderCommand::DrawIndexed(const Ref<VertexArray>& vertexArray, uint32_t indexCount)
 	{
 		glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr);
+	}
+
+	void RenderCommand::SetDepthFlag(DepthFlag depthFlag)
+	{
+		switch (depthFlag)
+		{
+			case DepthFlag::Never:
+			{
+				glDepthFunc(GL_NEVER);
+				break;
+			}
+			case DepthFlag::Less:
+			{
+				glDepthFunc(GL_LESS);
+				break;
+			}
+			case DepthFlag::Equal:
+			{
+				glDepthFunc(GL_EQUAL);
+				break;
+			}
+			case DepthFlag::LEqual:
+			{
+				glDepthFunc(GL_LEQUAL);
+				break;
+			}
+			case DepthFlag::Greater:
+			{
+				glDepthFunc(GL_GREATER);
+				break;
+			}
+			case DepthFlag::NotEqual:
+			{
+				glDepthFunc(GL_NOTEQUAL);
+				break;
+			}
+			case DepthFlag::GEqual:
+			{
+				glDepthFunc(GL_GEQUAL);
+				break;
+			}
+			case DepthFlag::Always:
+			{
+				glDepthFunc(GL_ALWAYS);
+				break;
+			}
+		}
 	}
 }
