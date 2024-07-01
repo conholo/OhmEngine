@@ -1,90 +1,94 @@
 #pragma once
+#include <string.h>
+#include "Ohm/Core/Assert.h"
+using byte = uint8_t;
 
-#include "Ohm/Core/Log.h"
-#include <algorithm>
-#include <memory>
-
-namespace Ohm
+struct Buffer
 {
-	using byte = uint8_t;
+	void* Data = nullptr;
+	size_t Size = 0;
 
-	struct Buffer
+	Buffer() = default;
+	Buffer(void* data, size_t size)
+		:Data(data), Size(size) { }
+
+	static Buffer Copy(const void* data, uint32_t size)
 	{
-		void* Data;
-		uint32_t Size;
+		Buffer buffer;
+		buffer.Allocate(size);
+		memcpy(buffer.Data, data, size);
+		return buffer;
+	}
 
-		Buffer()
-			:Data(nullptr), Size(0) { }
+	void Allocate(size_t size)
+	{
+		delete[] static_cast<byte*>(Data);
+		Data = nullptr;
 
-		Buffer(void* data, uint32_t size)
-			:Data(data), Size(size) { }
+		if (size == 0)
+			return;
 
-		static Buffer CreateCopy(const void* data, uint32_t size)
-		{
-			Buffer buffer;
-			buffer.Allocate(size);
-			memcpy(buffer.Data, data, size);
-			return buffer;
-		}
+		Data = new byte[size];
+		Size = size;
+	}
 
-		void Allocate(uint32_t size)
-		{
-			delete[] Data;
-			Data = nullptr;
+	void Release()
+	{
+		delete[] static_cast<byte*>(Data);
+		Data = nullptr;
+		Size = 0;
+	}
 
-			if (size == 0)
-				return;
+	void ZeroInitialize() const
+	{
+		if (!Data) return;
+		memset(Data, 0, Size);
+	}
 
-			Data = new byte[size];
-			Size = size;
-		}
+	template<typename T>
+	void Write(void* data, size_t size, size_t offset = 0) const
+	{
+		ASSERT(size + offset <= Size, "Buffer Overflow: Size + Offset must be less than allocated buffer size.");
+		memcpy((byte*)Data + offset, data, size);
+	}
 
-		void Release()
-		{
-			delete[] Data;
-			Data = nullptr;
-			Size = 0;
-		}
+	template<typename T>
+	T* Read(size_t offset = 0)
+	{
+		return (T*)((byte*)Data + offset);
+	}
 
-		void ZeroInitialize()
-		{
-			if (Data)
-				memset(Data, 0, Size);
-		}
+	byte* ReadBytes(uint32_t size, uint32_t offset) const
+	{
+		ASSERT(offset + size <= Size, "Buffer overflow!");
+		const auto buffer = new byte[size];
+		memcpy(buffer, static_cast<byte*>(Data) + offset, size);
+		return buffer;
+	}
 
-		template<typename T>
-		T* Read(uint32_t offset = 0)
-		{
-			return (T*)((byte*)Data + offset);
-		}
+	byte& operator[](int index)
+	{
+		return ((byte*)Data)[index];
+	}
 
-		void Write(void* data, uint32_t size, uint32_t offset = 0)
-		{
-			if (offset + size > Size)
-			{
-				OHM_CORE_CRITICAL("Buffer overflow!  Buffer has {} bytes allocated.  Requesting {} bytes with a {} byte offset.", Size, size, offset);
-				return;
-			}
+	byte operator[](int index) const
+	{
+		return ((byte*)Data)[index];
+	}
 
-			memcpy((byte*)Data + offset, data, size);
-		}
+	operator bool() const
+	{
+		return Data;
+	}
+	
+	template<typename T>
+	T* As()
+	{
+		return (T*)Data;
+	}
 
-		operator bool() const { return Data; }
-
-		byte& operator[](int index)
-		{
-			return ((byte*)Data)[index];
-		}
-
-		byte operator[](int index) const
-		{
-			return ((byte*)Data)[index];
-		}
-
-		template<typename T>
-		T* As()
-		{
-			return (T*)Data;
-		}
-	};
-}
+	void* Get() const
+	{
+		return Data;
+	}
+};

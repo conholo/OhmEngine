@@ -1,54 +1,39 @@
-#pragma once
+﻿#pragma once
 
-#include "Ohm.h"
-#include <set>
+#include "Panels/MaterialInspector.h"
+#include "Ohm/Scene/Entity.h"
 
 namespace Ohm
 {
-	struct MaterialPropertyDrawData
+	namespace UI
 	{
-		ShaderUniformType Type;
-		bool HideInInspector;
-	};
+		class SceneHierarchyPanel
+		{
+		public:
+			SceneHierarchyPanel() = default;
+			SceneHierarchyPanel(const Ref<Scene>& scene);
 
-	class SceneHierarchyPanel
-	{
-	public:
-		SceneHierarchyPanel() = default;
-		SceneHierarchyPanel(const Ref<Scene>& scene);
+			void SetContext(const Ref<Scene>& scene);
+			void Draw();
 
-		void SetContext(const Ref<Scene>& scene);
+			Entity GetSelectedEntity() const { return m_SelectedEntity; }
+			void SetSelectedEntity(const Entity& entity) { m_SelectedEntity = entity; }
 
-		void Draw();
+			MaterialInspector& GetMaterialInspector(Entity E, uint32_t MaterialIndex = 0) ;
+			void RegisterEntityMaterialProperties(Entity Entity);
 
-		Entity GetSelectedEntity() const { return m_SelectedEntity; }
-		void SetSelectedEntity(const Entity& entity) { m_SelectedEntity = entity; }
+		private:
+			void DrawEntityNode(Entity entity);
+			void DrawComponents(Entity entity);
+			void DrawPrimitiveMeshSelection(PrimitiveRendererComponent& PrimitiveRenderer) const;
 
+		private:
+			Entity m_SelectedEntity;
+			Ref<Scene> m_Scene;
+			std::unordered_map<UUID, std::vector<Ref<MaterialInspector>>> m_RegisteredMaterialInspectors;
+			std::string TextureToCubeFilePath;
+			std::string TextureToCubeFileName = "2DTextureToCube.png";
+		};
 
-	private:
-		void RegisterEntityMaterialProperties(Entity entity);
-		void DrawEntityNode(Entity entity);
-		void DrawComponents(Entity entity);
-		void DrawMeshSelection(Entity entity, MeshRendererComponent& meshRenderer);
-
-	private:
-		Entity m_SelectedEntity;
-		Ref<Scene> m_Scene;
-
-
-		// TODO:: All of this stuff needs to move into a class dedicated to the material inspector.
-		std::set<uint32_t> m_RegisteredMaterialPropertyEntites;
-		std::unordered_map<uint32_t, std::unordered_map<std::string, Ref<UI::UIFloat>>>		m_MaterialFloatProperties;
-		std::unordered_map<uint32_t, std::unordered_map<std::string, Ref<UI::UIInt>>>		m_MaterialIntProperties;
-		std::unordered_map<uint32_t, std::unordered_map<std::string, Ref<UI::UIVector2>>>	m_MaterialVec2Properties;
-		std::unordered_map<uint32_t, std::unordered_map<std::string, Ref<UI::UIVector3>>>	m_MaterialVec3Properties;
-		std::unordered_map<uint32_t, std::unordered_map<std::string, Ref<UI::UIVector4>>>	m_MaterialVec4Properties;
-		std::unordered_map<uint32_t, std::unordered_map<std::string, Ref<UI::UIColor>>>		m_MaterialColorProperties;
-		std::unordered_map<uint32_t, std::unordered_map<std::string, Ref<UI::UITexture2D>>>	m_MaterialTextureProperties;
-
-		std::unordered_map<uint32_t, std::unordered_map<std::string, bool>>				m_PrimitiveSelectionOptions;
-		std::unordered_map<uint32_t, std::string>										m_SelectedPrimitive;
-		std::unordered_map<uint32_t, std::unordered_map<std::string, bool>>				m_MaterialSelectionOptions;
-		std::unordered_map<uint32_t, std::string>										m_SelectedMaterial;
-	};
+	}
 }

@@ -9,13 +9,21 @@
 #include <glm/gtx/quaternion.hpp>
 
 #include "Ohm/Core/Memory.h"
+#include "Ohm/Core/UUID.h"
+#include "Ohm/Rendering/EnvironmentMapPipeline.h"
 #include "Ohm/Rendering/Material.h"
 #include "Ohm/Rendering/Mesh.h"
+#include "Ohm/Rendering/TextureLibrary.h"
 
 namespace Ohm
 {
-	// Add Sun - Only one of these...
-	enum class LightType { Sun, Directional, Point, Spot };
+	struct IDComponent
+	{
+		UUID ID;
+
+		IDComponent() = default;
+		IDComponent(const IDComponent&) = default;
+	};
 
 	struct TagComponent
 	{
@@ -23,54 +31,49 @@ namespace Ohm
 
 		TagComponent() = default;
 		TagComponent(const TagComponent&) = default;
-		TagComponent(const std::string & tag)
-			: Tag(tag){ }
+		TagComponent(std::string tag)
+			: Tag(std::move(tag)){ }
 	};
+
 
 	struct TransformComponent
 	{
-		glm::vec3 Translation{ 0.0f };
-		glm::vec3 Rotation{ 0.0f };
-		glm::vec3 Scale{ 1.0f };
-
-
 		TransformComponent() = default;
-		TransformComponent(const TransformComponent&) = default;
-		TransformComponent(const glm::vec3& translation)
-			:Translation(translation) {}
+		TransformComponent(const glm::vec3& Position, const glm::vec3& Degrees, const glm::vec3& Size)
+			:Translation(Position), RotationDegrees(Degrees), Scale(Size) { }
 
-		TransformComponent(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale)
-			:Translation(translation), Rotation(rotation), Scale(scale) { }
 
 		glm::mat4 Transform() const
 		{
-			glm::mat4 translation = glm::translate(glm::mat4(1.0f), Translation);
-			glm::mat4 rotation = glm::toMat4(glm::quat(Rotation));
-			glm::mat4 scale = glm::scale(glm::mat4(1.0f), Scale);
-
-			return translation * rotation * scale;
+			return 
+				translate(glm::mat4(1.0), Translation) * 
+				toMat4(glm::quat(radians(RotationDegrees))) * 
+				scale(glm::mat4(1.0), Scale);
 		}
 
-		glm::quat CalculateOrientation()
+		glm::quat Orientation() const
 		{
-			auto& rotation = Rotation;
-			return glm::quat(rotation);
+			return glm::quat(radians(RotationDegrees));
 		}
 
-		glm::vec3 Up()
+		glm::vec3 Up() const
 		{
-			return glm::rotate(CalculateOrientation(), { 0.0f, 1.0f, 0.0f });
+			return rotate(Orientation(), glm::vec3(0.0f, 1.0f, 0.0f));
 		}
 
-		glm::vec3 Right()
+		glm::vec3 Right() const
 		{
-			return glm::rotate(CalculateOrientation(), { 1.0f, 0.0f, 0.0f });
+			return rotate(Orientation(), glm::vec3(1.0f, 0.0f, 0.0f));
 		}
 
-		glm::vec3 Forward()
+		glm::vec3 Forward() const
 		{
-			return glm::rotate(CalculateOrientation(), { 0.0f, 0.0f, 1.0f });
+			return rotate(Orientation(), glm::vec3(0.0f, 0.0f, -1.0f));
 		}
+
+		glm::vec3 Translation = glm::vec3(0.0f);
+		glm::vec3 RotationDegrees = glm::vec3(0.0f);
+		glm::vec3 Scale = glm::vec3(1.0f);
 	};
 
 	struct MeshRendererComponent
@@ -84,9 +87,32 @@ namespace Ohm
 		}
 
 		MeshRendererComponent() = default;
-		MeshRendererComponent(const MeshRendererComponent&) = default;
 		MeshRendererComponent(const Ref<Material>& material, const Ref<Mesh>& mesh)
 			:MaterialInstance(material), MeshData(mesh) { }
+	};
+
+	struct PrimitiveRendererComponent
+	{
+		Primitive PrimitiveType;
+		Ref<Material> MaterialInstance;
+
+		PrimitiveRendererComponent() = default;
+		PrimitiveRendererComponent(const Primitive Primitive)
+			:PrimitiveType(Primitive){ }
+		PrimitiveRendererComponent(const Primitive Primitive, const Ref<Material>& Material)
+			:PrimitiveType(Primitive), MaterialInstance(Material){ }
+		PrimitiveRendererComponent(const Primitive Primitive, const std::string& ShaderName)
+			:PrimitiveType(Primitive), MaterialInstance(CreateRef<Material>(ShaderName + " Material", ShaderLibrary::Get(ShaderName)))
+		{
+			if(ShaderName == "PBR")
+			{
+				uint32_t whiteTextureId = TextureLibrary::Get2D("White Texture")->GetID();
+				MaterialInstance->Set<TextureUniform>("sampler_AlbedoTexture", {whiteTextureId, 0, 0 });
+				MaterialInstance->Set<TextureUniform>("sampler_NormalTexture", {whiteTextureId, 1, 0 });
+				MaterialInstance->Set<TextureUniform>("sampler_MetalnessTexture", {whiteTextureId, 2, 0 });
+				MaterialInstance->Set<TextureUniform>("sampler_RoughnessTexture", {whiteTextureId, 3, 0 });
+			}
+		}
 	};
 
 	struct CameraComponent
@@ -100,16 +126,40 @@ namespace Ohm
 			:View(view), Projection(projection) { }
 	};
 
-	struct LightComponent
+	struct DirectionalLightComponent
 	{
-		LightType Type;
-		glm::vec4 Color;
+		glm::vec3 Radiance { 1.0f};
 		float Intensity = 1.0f;
-		bool DebugLight = true;
+		glm::vec3 LightDirection {0.0f, -1.0f, 0.0f};
+		float ShadowAmount = 1.0f;
 
-		LightComponent() = default;
-		LightComponent(const LightComponent&) = default;
-		LightComponent(LightType type, const glm::vec4& color = glm::vec4(1.0f), float intensity = 1.0, bool debug = false)
-			:Type(type), Color(color), DebugLight(debug), Intensity(intensity) { }
+		DirectionalLightComponent() = default;
+		DirectionalLightComponent(const DirectionalLightComponent&) = default;
+		DirectionalLightComponent(const glm::vec3& Radiance, float Intensity)
+			:Radiance(Radiance), Intensity(Intensity)
+		{
+		}
+	};
+
+	struct EnvironmentMapParams
+	{
+		float Turbidity {3.0f};
+		float Azimuth;
+		float Inclination;
+	};
+
+	struct EnvironmentLightComponent
+	{
+		float Intensity = 1.0f;
+		glm::vec3 EnvironmentMapSampleLODs { 0.0f };
+		glm::vec3 EnvironmentMapSampleIntensities { 1.0f };
+
+		Ref<EnvironmentMapPipeline> Pipeline{};
+		EnvironmentMapParams EnvironmentMapParams{};
+
+		bool NeedsUpdate = true;
+		EnvironmentLightComponent()
+			:Pipeline(CreateRef<EnvironmentMapPipeline>())
+		{ }
 	};
 }

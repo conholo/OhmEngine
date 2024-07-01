@@ -1,9 +1,9 @@
 #pragma once
 
-#include <string>
 #include <glm/glm.hpp>
 #include "Ohm/Rendering/BufferLayout.h"
 #include "Ohm/Rendering/Material.h"
+#include "Ohm/Rendering/SceneRenderer.h"
 
 namespace Ohm
 {
@@ -11,7 +11,7 @@ namespace Ohm
 	{
 		enum class UIPropertyType { None = 0, Float, Vec2, Vec3, Vec4, Color, Texture, Int, Bool };
 
-		UIPropertyType UIPropertyTypeFromShaderDataType(ShaderDataType shaderDataType, bool isColor = true);
+		UIPropertyType UIPropertyTypeFromShaderDataType(ShaderDataType ShaderAttributeType, bool isColor = true);
 
 		struct UIFloatParameters
 		{
@@ -23,7 +23,7 @@ namespace Ohm
 			float Max = 1.0f;
 			float SpeedStep = 0.01f;
 			float FastStep = 0.0f;
-			char* Format = "%.3f";
+			const char* Format = "%.3f";
 		};
 
 
@@ -35,6 +35,7 @@ namespace Ohm
 				:m_Label(label), m_UUID(s_UIDCounter++)
 			{
 			}
+			virtual ~UIProperty() = default;
 
 			virtual void Draw() = 0;
 
@@ -59,6 +60,8 @@ namespace Ohm
 
 			void Draw() override;
 			static void Draw(const std::string& label, float* value);
+			static bool DrawSlider(const std::string& label, float* value, float min, float max);
+			static bool DrawAngle(const std::string& label, float* radians, float min, float max);
 
 			void SetIsDrag(bool isDrag) { m_FloatParameters.IsDrag = isDrag; }
 			void SetMin(float min) { m_FloatParameters.Min = min; }
@@ -82,6 +85,7 @@ namespace Ohm
 			}
 
 			void Draw() override;
+			static void DrawDragInt(const std::string& label, int* value, float speed, int min, int max);
 
 		private:
 			int m_Step = 1;
@@ -138,7 +142,7 @@ namespace Ohm
 			}
 
 			void Draw() override;
-			static void Draw(const std::string& label, glm::vec3* value);
+			static void Draw(const std::string& label, glm::vec3* value, bool readonly = false);
 
 		private:
 			glm::vec3* m_Value = nullptr;;
@@ -184,7 +188,7 @@ namespace Ohm
 		public:
 			UITexture2D() = default;
 			UITexture2D(const std::string& label, const Ref<Material>& material, TextureUniform* value, const std::string& textureUniformName)
-				:UIProperty(label), m_Material(material), m_TextureUniform(value), m_TextureUniformName(textureUniformName)
+				:UIProperty(label), m_TextureUniformName(textureUniformName), m_TextureUniform(value), m_Material(material)
 			{
 			}
 
@@ -192,8 +196,8 @@ namespace Ohm
 
 		private:
 			std::string m_TextureUniformName;
-			TextureUniform* m_TextureUniform;
-			Ref<Material> m_Material;
+			TextureUniform* m_TextureUniform{};
+			Ref<Material> m_Material{};
 			glm::vec4 m_DefaultColor{ 1.0f };
 		};
 
@@ -207,7 +211,7 @@ namespace Ohm
 			}
 
 			void Draw() override;
-			static void Draw(const std::string& label, bool* value);
+			static bool Draw(const std::string& label, bool* value);
 
 		private:
 			bool* m_Value;

@@ -2,8 +2,10 @@
 #version 450
 
 layout(location = 0) in vec3 a_Position;
-layout(location = 1) in vec2 a_TexCoord;
-layout(location = 2) in vec3 a_Normal;
+layout(location = 1) in vec3 a_Normal;
+layout(location = 2) in vec3 a_Tangent;
+layout(location = 3) in vec3 a_Binormal;
+layout(location = 4) in vec2 a_TexCoord;
 
 out vec2 v_TexCoord;
 
@@ -25,6 +27,7 @@ uniform sampler2D u_BloomDirtTexture;
 uniform float u_BloomDirtIntensity;
 uniform float u_BloomIntensity;
 uniform float u_Exposure;
+uniform int u_BloomEnabled;
 
 in vec2 v_TexCoord;
 
@@ -78,14 +81,18 @@ void main()
 	const float gamma = 2.2;
 	float sampleScale = 1.0;
 
-	ivec2 bloomTexSize = textureSize(u_BloomTexture, 0);
-	vec2 fBloomTexSize = vec2(float(bloomTexSize.x), float(bloomTexSize.y));	
-	vec3 bloom = max(UpsampleTent9(u_BloomTexture, 0, v_TexCoord, 1.0f / fBloomTexSize, sampleScale) * u_BloomIntensity, vec3(0.0));
-	vec3 bloomDirt = texture(u_BloomDirtTexture, v_TexCoord).rgb * u_BloomDirtIntensity;
-
 	vec3 sceneColor = texture(u_SceneTexture, v_TexCoord).rgb;
-	sceneColor += bloom;
-	sceneColor += bloom * bloomDirt;
+	
+	if(u_BloomEnabled == 1)
+	{
+		ivec2 bloomTexSize = textureSize(u_BloomTexture, 0);
+		vec2 fBloomTexSize = vec2(float(bloomTexSize.x), float(bloomTexSize.y));	
+		vec3 bloom = max(UpsampleTent9(u_BloomTexture, 0, v_TexCoord, 1.0f / fBloomTexSize, sampleScale) * u_BloomIntensity, vec3(0.0));
+		vec3 bloomDirt = texture(u_BloomDirtTexture, v_TexCoord).rgb * u_BloomDirtIntensity;
+
+		sceneColor += bloom;
+		sceneColor += bloom * bloomDirt;
+	}
 	sceneColor *= u_Exposure;
 
 	sceneColor = ACESTonemap(sceneColor.rgb);

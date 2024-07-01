@@ -17,7 +17,7 @@ namespace YAML
 		{
 			Node node;
 			node.push_back(texUniform.RendererID);
-			node.push_back(texUniform.HideInInspector);
+			node.push_back(texUniform.HideInUI);
 			node.push_back(texUniform.TextureUnit);
 			node.SetStyle(EmitterStyle::Flow);
 			return node;
@@ -29,7 +29,7 @@ namespace YAML
 				return false;
 
 			texUniform.RendererID = node[0].as<uint32_t>();
-			texUniform.HideInInspector = node[1].as<int32_t>();
+			texUniform.HideInUI = node[1].as<int32_t>();
 			texUniform.TextureUnit = node[2].as<int32_t>();
 			return true;
 		}
@@ -123,7 +123,7 @@ namespace Ohm
 	YAML::Emitter& operator<<(YAML::Emitter& out, const TextureUniform& texUniform)
 	{
 		out << YAML::Flow;
-		out << YAML::BeginSeq << texUniform.RendererID << texUniform.HideInInspector << texUniform.TextureUnit << YAML::EndSeq;
+		out << YAML::BeginSeq << texUniform.RendererID << texUniform.HideInUI << texUniform.TextureUnit << YAML::EndSeq;
 		return out;
 	}
 
@@ -150,9 +150,19 @@ namespace Ohm
 
 	static void SerializeEntity(YAML::Emitter& out, Entity entity)
 	{
-		out << YAML::BeginMap;
-		out << YAML::Key << "Entity" << YAML::Value << "12837192831273" + std::to_string((uint32_t)entity);
+		auto& idComponent = entity.GetComponent<IDComponent>();
 
+		out << YAML::BeginMap;
+		out << YAML::Key << "Entity" << YAML::Value << std::to_string(idComponent.ID);
+
+		if (entity.HasComponent<IDComponent>())
+		{
+			out << YAML::Key << "IDComponent";
+			out << YAML::BeginMap;
+			out << YAML::Key << "ID" << YAML::Value << idComponent.ID;
+			out << YAML::EndMap;
+		}
+		
 		if (entity.HasComponent<TagComponent>())
 		{
 			out << YAML::Key << "TagComponent";
@@ -171,7 +181,7 @@ namespace Ohm
 
 			auto& tc = entity.GetComponent<TransformComponent>();
 			out << YAML::Key << "Translation" << YAML::Value << tc.Translation;
-			out << YAML::Key << "Rotation" << YAML::Value << tc.Rotation;
+			out << YAML::Key << "Rotation" << YAML::Value << tc.RotationDegrees;
 			out << YAML::Key << "Scale" << YAML::Value << tc.Scale;
 
 			out << YAML::EndMap;
@@ -234,14 +244,16 @@ namespace Ohm
 			out << YAML::EndMap;
 		}
 
-		if (entity.HasComponent<LightComponent>())
+		if (entity.HasComponent<DirectionalLightComponent>())
 		{
-			out << YAML::Key << "LightComponent";
+			out << YAML::Key << "DirectionalLightComponent";
 			out << YAML::BeginMap;
 
-			auto& light = entity.GetComponent<LightComponent>();
-			out << YAML::Key << "Color" << YAML::Value << light.Color;
+			auto& light = entity.GetComponent<DirectionalLightComponent>();
+			out << YAML::Key << "Radiance" << YAML::Value << light.Radiance;
 			out << YAML::Key << "Intensity" << YAML::Value << light.Intensity;
+			out << YAML::Key << "LightDirection" << YAML::Value << light.LightDirection;
+			out << YAML::Key << "ShadowAmount" << YAML::Value << light.ShadowAmount;
 
 			out << YAML::EndMap;
 		}
@@ -290,50 +302,43 @@ namespace Ohm
 		std::string sceneName = data["Scene"].as<std::string>();
 		OHM_CORE_TRACE("Deserializing scene '{0}'", sceneName);
 
-		auto entities = data["Entities"];
-		if (entities)
+		if (auto entities = data["Entities"])
 		{
 			for (auto entity : entities)
 			{
 				uint32_t uuid = entity["Entity"].as<uint64_t>();
 
 				std::string tag;
-				auto tagData = entity["TagComponent"];
-				if (tagData)
+				if (auto tagData = entity["TagComponent"])
 					tag = tagData["Tag"].as<std::string>();
 
 				OHM_CORE_TRACE("Deserialized Entity with ID: {0}, Name: {1}", uuid, tag);
 
-				Entity deserializedEntity = m_Scene->Create(tag);
+				Entity deserializedEntity = m_Scene->CreateEntity(tag);
 
-				auto transformData = entity["TransformComponent"];
-				if (transformData)
+				if (auto transformData = entity["TransformComponent"])
 				{
 					auto& tc = deserializedEntity.GetComponent<TransformComponent>();
 					tc.Translation = transformData["Translation"].as<glm::vec3>();
-					tc.Rotation = transformData["Rotation"].as<glm::vec3>();
+					tc.RotationDegrees = transformData["Rotation"].as<glm::vec3>();
 					tc.Scale = transformData["Scale"].as<glm::vec3>();
 				}
 
-				auto meshRendererData = entity["MeshRendererComponent"];
-				if (meshRendererData)
+				if (auto meshRendererData = entity["MeshRendererComponent"])
 				{
 					auto& meshRendererComponent = deserializedEntity.AddComponent<MeshRendererComponent>();
-					
 					uint32_t primitiveType = meshRendererData["PrimitiveType"].as<uint32_t>();
 
-					meshRendererComponent.MeshData = Mesh::CreatePrimitive((Primitive)primitiveType);
+					meshRendererComponent.MeshData = MeshFactory::Create(static_cast<Primitive>(primitiveType));
 
-					auto materialUniformData = meshRendererData["Material Uniforms"];
-					if (materialUniformData)
+					if (auto materialUniformData = meshRendererData["Material Uniforms"])
 					{
 						std::string shaderName = meshRendererData["Shader Name"].as<std::string>();
 						std::string materialName = meshRendererData["Material Name"].as<std::string>();
 						
 						Ref<Material> deserializedMaterial = CreateRef<Material>(materialName, ShaderLibrary::Get(shaderName));
 
-						auto intUniformData = materialUniformData["IntUniforms"];
-						if (intUniformData)
+						if (auto intUniformData = materialUniformData["IntUniforms"])
 						{
 							for (YAML::const_iterator it = intUniformData.begin(); it != intUniformData.end(); ++it)
 							{
@@ -342,8 +347,7 @@ namespace Ohm
 								deserializedMaterial->Set<int>(key, value);
 							}
 						}
-						auto floatUniformData = materialUniformData["FloatUniforms"];
-						if (floatUniformData)
+						if (auto floatUniformData = materialUniformData["FloatUniforms"])
 						{
 							for (YAML::const_iterator it = floatUniformData.begin(); it != floatUniformData.end(); ++it)
 							{
@@ -352,8 +356,7 @@ namespace Ohm
 								deserializedMaterial->Set<float>(key, value);
 							}
 						}
-						auto vec2UniformData = materialUniformData["Vec2Uniforms"];
-						if (vec2UniformData)
+						if (auto vec2UniformData = materialUniformData["Vec2Uniforms"])
 						{
 							for (YAML::const_iterator it = vec2UniformData.begin(); it != vec2UniformData.end(); ++it)
 							{
@@ -362,8 +365,7 @@ namespace Ohm
 								deserializedMaterial->Set<glm::vec2>(key, value);
 							}
 						}
-						auto vec3UniformData = materialUniformData["Vec3Uniforms"];
-						if (vec3UniformData)
+						if (auto vec3UniformData = materialUniformData["Vec3Uniforms"])
 						{
 							for (YAML::const_iterator it = vec3UniformData.begin(); it != vec3UniformData.end(); ++it)
 							{
@@ -372,8 +374,7 @@ namespace Ohm
 								deserializedMaterial->Set<glm::vec3>(key, value);
 							}
 						}
-						auto vec4UniformData = materialUniformData["Vec4Uniforms"];
-						if (vec4UniformData)
+						if (auto vec4UniformData = materialUniformData["Vec4Uniforms"])
 						{
 							for (YAML::const_iterator it = vec4UniformData.begin(); it != vec4UniformData.end(); ++it)
 							{
@@ -382,29 +383,27 @@ namespace Ohm
 								deserializedMaterial->Set<glm::vec4>(key, value);
 							}
 						}
-						auto textureUniformData = materialUniformData["TextureUniforms"];
-						if (textureUniformData)
+						if (auto textureUniformData = materialUniformData["TextureUniforms"])
 						{
 							for (YAML::const_iterator it = textureUniformData.begin(); it != textureUniformData.end(); ++it)
 							{
 								std::string key = it->first.as<std::string>();
 								TextureUniform value = it->second.as<TextureUniform>();
 								deserializedMaterial->Set<TextureUniform>(key, value);
-								deserializedMaterial->UpdateActiveTexture(key, value.RendererID);
 							}
 						}
 
 						meshRendererComponent.MaterialInstance = deserializedMaterial;
 					}
-
 				}
 
-				auto lightData = entity["LightComponent"];
-				if (lightData)
+				if (auto lightData = entity["LightComponent"])
 				{
-					auto& lightComponent = deserializedEntity.AddComponent<LightComponent>();
-					lightComponent.Color = lightData["Color"].as<glm::vec4>();
+					auto& lightComponent = deserializedEntity.AddComponent<DirectionalLightComponent>();
+					lightComponent.Radiance = lightData["Radiance"].as<glm::vec4>();
 					lightComponent.Intensity = lightData["Intensity"].as<float>();
+					lightComponent.LightDirection = lightData["LightDirection"].as<glm::vec4>();
+					lightComponent.ShadowAmount = lightData["ShadowAmount"].as<float>();
 				}
 			}
 		}

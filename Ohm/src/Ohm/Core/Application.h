@@ -29,7 +29,7 @@ namespace Ohm
 
 	private:
 		bool OnWindowClose(WindowClosedEvent& windowCloseEvent);
-		bool OnWindowResize(WindowResizedEvent& windowResizeEvent);
+		bool OnWindowResize(const WindowResizedEvent& windowResizeEvent);
 
 	private:
 		static Application* s_Instance;

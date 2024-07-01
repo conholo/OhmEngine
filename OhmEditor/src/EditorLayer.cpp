@@ -1,13 +1,12 @@
 #include "EditorLayer.h"
+#include "Panels/Dockspace.h"
+#include "Ohm/Rendering/SceneRenderer.h"
 
 #include <imgui/imgui.h>
-
-#include "Panels/Dockspace.h"
-
-#include "Ohm/Rendering/SceneRenderer.h"
 #include <glm/glm.hpp>
-
 #include <cmath>
+
+#include "Ohm/Rendering/TextureLibrary.h"
 
 namespace Ohm
 {
@@ -25,36 +24,38 @@ namespace Ohm
 	void EditorLayer::OnAttach()
 	{
 		Application::GetApplication().GetWindow().ToggleIsMaximized();
+		m_EngineGeometryMaterial = CreateRef<Material>("Base Material", ShaderLibrary::Get("PBR"));
+
 		m_Scene = CreateRef<Scene>("Test Scene");
-		m_SceneHierarchyPanel.SetContext(m_Scene);
+		auto sun = m_Scene->CreateEntity("Sun");
+		sun.AddComponent<PrimitiveRendererComponent>(Primitive::Sphere, "PBR");
+		sun.AddComponent<DirectionalLightComponent>();
+		sun.GetComponent<DirectionalLightComponent>().Intensity = 5.0f;
+		sun.GetComponent<TransformComponent>().Scale = {1.0f, 1.0f, 1.0f};
+
+		auto envLight = m_Scene->CreateEntity("Env");
+		envLight.AddComponent<EnvironmentLightComponent>();
+		envLight.GetComponent<EnvironmentLightComponent>().Pipeline->GetSpecification().PipelineType = EnvironmentPipelineType::FromShader; 
+		envLight.GetComponent<EnvironmentLightComponent>().EnvironmentMapParams.Inclination = glm::radians(50.0f);
+
 		SceneRenderer::LoadScene(m_Scene);
 		SceneRenderer::InitializePipeline();
 
-		m_ViewportPanel.SetFramebuffer(SceneRenderer::GetMainColorBuffer());
-		SceneRenderer::ValidateResize(m_ViewportPanel.GetViewportSize());
-
-		TextureLibrary::Load("assets/textures/lava.jpg");
-		TextureLibrary::Load("assets/textures/uv.png");
-		TextureLibrary::Load("assets/textures/space.jpg");
-		TextureLibrary::Load("assets/textures/map.jpg");
-		TextureLibrary::Load("assets/textures/ground-blue.jpg");
-
-		ShaderLibrary::Load("assets/shaders/PBR.shader");
-		ShaderLibrary::Load("assets/shaders/PhongWS.shader");
-
-		m_EngineGeometryMaterial = CreateRef<Material>("Base Material", ShaderLibrary::Get("PhongWS"));
+		m_SceneHierarchyPanel.SetContext(m_Scene);
+		m_ViewportPanel.SetFramebuffer(SceneRenderer::GetSceneCompositeFBO());
 	}
 
 	void EditorLayer::OnUpdate(float deltaTime)
 	{
 		SceneRenderer::ValidateResize(m_ViewportPanel.GetViewportSize());
-		SceneRenderer::UpdateEditorCamera(deltaTime);
+		SceneRenderer::UpdateCamera(deltaTime);
 		SceneRenderer::SubmitPipeline();
 	}
 
 	void EditorLayer::OnDetach()
 	{
 		OHM_INFO("On Detach");
+		SceneRenderer::UnloadScene();
 	}
 
 	void EditorLayer::OnUIRender()
@@ -84,32 +85,32 @@ namespace Ohm
 						
 						if (ImGui::MenuItem("Cube"))
 						{
-							Entity cube = m_Scene->Create("Cube");
-							cube.AddComponent<MeshRendererComponent>(m_EngineGeometryMaterial->Clone("Cube Base Material"), Mesh::CreatePrimitive(Primitive::Cube));
+							Entity cube = m_Scene->CreateEntity("Cube");
+							cube.AddComponent<MeshRendererComponent>(m_EngineGeometryMaterial->Clone("Cube Base Material"), MeshFactory::Create(Primitive::Cube));
 							m_SceneHierarchyPanel.SetSelectedEntity(cube);
 						}
 						ImGui::Separator();
 
 						if (ImGui::MenuItem("Sphere"))
 						{
-							Entity sphere = m_Scene->Create("Sphere");
-							sphere.AddComponent<MeshRendererComponent>(m_EngineGeometryMaterial->Clone("Sphere Base Material"), Mesh::CreatePrimitive(Primitive::Sphere));
+							Entity sphere = m_Scene->CreateEntity("Sphere");
+							sphere.AddComponent<MeshRendererComponent>(m_EngineGeometryMaterial->Clone("Sphere Base Material"), MeshFactory::Create(Primitive::Sphere));
 							m_SceneHierarchyPanel.SetSelectedEntity(sphere);
 						}
 						ImGui::Separator();
 
 						if (ImGui::MenuItem("Quad"))
 						{
-							Entity quad = m_Scene->Create("Quad");
-							quad.AddComponent<MeshRendererComponent>(m_EngineGeometryMaterial->Clone("Quad Base Material"), Mesh::CreatePrimitive(Primitive::Quad));
+							Entity quad = m_Scene->CreateEntity("Quad");
+							quad.AddComponent<MeshRendererComponent>(m_EngineGeometryMaterial->Clone("Quad Base Material"), MeshFactory::Create(Primitive::Quad));
 							m_SceneHierarchyPanel.SetSelectedEntity(quad);
 						}
 						ImGui::Separator();
 
 						if (ImGui::MenuItem("Plane"))
 						{
-							Entity plane = m_Scene->Create("Plane");
-							plane.AddComponent<MeshRendererComponent>(m_EngineGeometryMaterial->Clone("Plane Base Material"), Mesh::CreatePrimitive(Primitive::Plane));
+							Entity plane = m_Scene->CreateEntity("Plane");
+							plane.AddComponent<MeshRendererComponent>(m_EngineGeometryMaterial->Clone("Plane Base Material"), MeshFactory::Create(Primitive::Plane));
 							m_SceneHierarchyPanel.SetSelectedEntity(plane);
 						}
 
@@ -169,6 +170,7 @@ namespace Ohm
 			ImGui::Begin("Scene Renderer Parameters");
 			SceneRenderer::DrawSceneRendererUI(m_ViewportPanel.GetViewportSize());
 			ImGui::End();
+			SceneRenderer::DrawTextureViewerUI();
 		}
 
 		m_ViewportPanel.Draw();

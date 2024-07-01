@@ -1,178 +1,178 @@
 #include "ohmpch.h"
-#include "Ohm/Rendering/Material.h"
-#include "Ohm/Rendering/Texture2D.h"
+#include "Material.h"
+#include "Ohm/Rendering/RenderCommand.h"
+#include "Ohm/Rendering/TextureLibrary.h"
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
 namespace Ohm
 {
-	Material::Material(const std::string& name, const Ref<Shader>& shader)
-		:m_Name(name), m_Shader(shader)
+	Material::Material(std::string name, const Ref<Shader>& shader)
+		: m_Shader(shader), m_Name(std::move(name))
 	{
-		AllocateStorageBuffer();
-		InitializeStorageBufferWithUniformDefaults();
-
-		SetFlag(RenderFlag::DepthTest);
-		SetFlag(RenderFlag::Blend);
+		AllocateBaseBlockStorageBuffer();
+		InitializeBaseBlockStorageBufferWithUniformDefaults();
 	}
 
 	Ref<Material> Material::Clone(const std::string& cloneName)
 	{
 		Ref<Material> copy = CreateRef<Material>(cloneName, m_Shader);
-
 		return copy;
 	}
 
-	void Material::BindActiveTextures()
+	void Material::BindSamplerTexturesToRenderContext()
 	{
-		auto textureSlots = TextureLibrary::BindAndGetMaterialTextureSlots(m_Textures);
-
-		for (auto [name, slot] : textureSlots)
-			Set<TextureUniform>(name, { m_Textures[name], name == "sampler_ShadowMap" ? 1 : 0, slot });
-	}
-
-	void Material::UpdateActiveTexture(const std::string& uniformName, uint32_t newID)
-	{
-		if (m_Textures.find(uniformName) == m_Textures.end())
+		const std::vector<ShaderUniform> Sampler2DUniforms = m_Shader->GetBaseBlockUniformsOfType(ShaderDataType::Sampler2D);
+		for(const ShaderUniform& Uniform : Sampler2DUniforms)
 		{
-			OHM_ERROR("Cannot update texture with name {}.  This texture could not be found.", uniformName);
-			return;
+			const auto* TexUniform = Get<TextureUniform>(Uniform.GetName());
+			TextureLibrary::BindTextureToSlot(TexUniform->RendererID, TexUniform->TextureUnit);
 		}
 
-		m_Textures[uniformName] = newID;
+		const std::vector<ShaderUniform> SamplerCubeUniforms = m_Shader->GetBaseBlockUniformsOfType(ShaderDataType::SamplerCube);
+		for(const ShaderUniform& Uniform : SamplerCubeUniforms)
+		{
+			const auto* TexUniform = Get<TextureUniform>(Uniform.GetName());
+			TextureLibrary::BindTextureToSlot(TexUniform->RendererID, TexUniform->TextureUnit);
+		}
 	}
 
 	MaterialUniformData Material::GetMaterialUniformData()
 	{
 		MaterialUniformData data;
 
-		for (auto& [name, uniform] : m_Shader->GetUniforms())
+		for (auto& [name, uniform] : m_Shader->GetBaseBlockUniforms())
 		{
-			std::string name = uniform.GetName();
+			std::string uniformName = uniform.GetName();
 
 			switch (uniform.GetType())
 			{
 			case ShaderDataType::Float:
-			{
-				float* value = Get<float>(name);
-				data.FloatUniforms[name] = *value;
-				break;
-			}
+				{
+					float* value = Get<float>(uniformName);
+					data.FloatUniforms[uniformName] = *value;
+					break;
+				}
 			case ShaderDataType::Float2:
-			{
-				glm::vec2* value = Get<glm::vec2>(name);
-				data.Vec2Uniforms[name] = *value;
-				break;
-			}
+				{
+					glm::vec2* value = Get<glm::vec2>(uniformName);
+					data.Vec2Uniforms[uniformName] = *value;
+					break;
+				}
 			case ShaderDataType::Float3:
-			{
-				glm::vec3* value = Get<glm::vec3>(name);
-				data.Vec3Uniforms[name] = *value;
-				break;
-			}
+				{
+					glm::vec3* value = Get<glm::vec3>(uniformName);
+					data.Vec3Uniforms[uniformName] = *value;
+					break;
+				}
 			case ShaderDataType::Float4:
-			{
-				glm::vec4* value = Get<glm::vec4>(name);
-				data.Vec4Uniforms[name] = *value;
-				break;
-			}
+				{
+					glm::vec4* value = Get<glm::vec4>(uniformName);
+					data.Vec4Uniforms[uniformName] = *value;
+					break;
+				}
 			case ShaderDataType::Sampler2D:
-			{
-				TextureUniform* value = Get<TextureUniform>(name);
-				data.TextureUniforms[name] = *value;
-				break;
-			}
+			case ShaderDataType::SamplerCube:
+				{
+					TextureUniform* value = Get<TextureUniform>(uniformName);
+					data.TextureUniforms[uniformName] = *value;
+					break;
+				}
 			case ShaderDataType::Int:
-			{
-				int* value = Get<int>(name);
-				data.IntUniforms[name] = *value;
-				break;
-			}
+				{
+					int* value = Get<int>(uniformName);
+					data.IntUniforms[uniformName] = *value;
+					break;
+				}
 			case ShaderDataType::Mat3:
-			{
-				glm::mat3* value = Get<glm::mat3>(name);
-				break;
-			}
+				{
+					glm::mat3* value = Get<glm::mat3>(uniformName);
+					break;
+				}
 			case ShaderDataType::Mat4:
-			{
-				glm::mat4* value = Get<glm::mat4>(name);
-				break;
-			}
+				{
+					glm::mat4* value = Get<glm::mat4>(uniformName);
+					break;
+				}
 			}
 		}
 
 		return data;
 	}
 
-	void Material::AllocateStorageBuffer()
+	void Material::AllocateBaseBlockStorageBuffer()
 	{
-		const auto& uniforms = m_Shader->GetUniforms();
+		const auto& uniforms = m_Shader->GetBaseBlockUniforms();
 
-		if (uniforms.size() <= 0) return;
+		if (uniforms.empty()) return;
 
 		uint32_t bufferSize = 0;
 
 		for (auto& [name, uniform] : uniforms)
 			bufferSize += uniform.GetSize();
 
-		m_UniformStorageBuffer.Allocate(bufferSize);
-		m_UniformStorageBuffer.ZeroInitialize();
+		m_BaseBlockStorageBuffer.Allocate(bufferSize);
+		m_BaseBlockStorageBuffer.ZeroInitialize();
 	}
 
-	void Material::InitializeStorageBufferWithUniformDefaults()
+	void Material::InitializeBaseBlockStorageBufferWithUniformDefaults() const
 	{
-		const auto& uniforms = m_Shader->GetUniforms();
+		const auto& uniforms = m_Shader->GetBaseBlockUniforms();
 
-		if (uniforms.size() <= 0) return;
+		if (uniforms.empty()) return;
 
 		for (auto& [name, uniform] : uniforms)
 		{
 			switch (uniform.GetType())
 			{
-				case ShaderDataType::Float:
-				case ShaderDataType::Float2:
-				case ShaderDataType::Float3:
-				case ShaderDataType::Float4:
+			case ShaderDataType::Float:
+			case ShaderDataType::Float2:
+			case ShaderDataType::Float3:
+			case ShaderDataType::Float4:
 				{
 					GLfloat* data = (GLfloat*)m_Shader->GetUniformData(uniform.GetType(), uniform.GetLocation());
-
-					m_UniformStorageBuffer.Write(data, uniform.GetSize(), uniform.GetBufferOffset());
+					m_BaseBlockStorageBuffer.Write<float>(data, uniform.GetSize(), uniform.GetBufferOffset());
 					break;
 				}
-				case ShaderDataType::Int:
+			case ShaderDataType::Int:
 				{
 					GLint* data = (GLint*)m_Shader->GetUniformData(uniform.GetType(), uniform.GetLocation());
-
-					m_UniformStorageBuffer.Write(data, uniform.GetSize(), uniform.GetBufferOffset());
+					m_BaseBlockStorageBuffer.Write<int>(data, uniform.GetSize(), uniform.GetBufferOffset());
 					break;
 				}
-				case ShaderDataType::Mat3:
-				case ShaderDataType::Mat4:
+			case ShaderDataType::Mat3:
+			case ShaderDataType::Mat4:
 				{
 					void* data = malloc(ShaderDataTypeSize(uniform.GetType()));
-
-					m_UniformStorageBuffer.Write(data, ShaderDataTypeSize(uniform.GetType()), uniform.GetBufferOffset());
+					m_BaseBlockStorageBuffer.Write<glm::mat4>(data, ShaderDataTypeSize(uniform.GetType()), uniform.GetBufferOffset());
 					break;
 				}
-				case ShaderDataType::Sampler2D:
+			case ShaderDataType::SamplerCube:
 				{
 					TextureUniform* data = (TextureUniform*)m_Shader->GetUniformData(uniform.GetType(), uniform.GetLocation());
-					data->RendererID = TextureLibrary::Get("White Texture")->GetID();
-					m_Textures[name] = data->RendererID;
-
-					m_UniformStorageBuffer.Write(data, uniform.GetSize(), uniform.GetBufferOffset());
+					data->RendererID = TextureLibrary::GetCube("Black TextureCube")->GetID();
+					m_BaseBlockStorageBuffer.Write<TextureUniform>(data, uniform.GetSize(), uniform.GetBufferOffset());
 					break;
 				}
+			case ShaderDataType::Sampler2D:
+				{
+					TextureUniform* data = (TextureUniform*)m_Shader->GetUniformData(uniform.GetType(), uniform.GetLocation());
+					data->RendererID = TextureLibrary::Get2D("White Texture")->GetID();
+					m_BaseBlockStorageBuffer.Write<TextureUniform>(data, uniform.GetSize(), uniform.GetBufferOffset());
+					break;
+				}
+			default:
+			case ShaderDataType::None: break;
 			}
 		}
 	}
 
-	const ShaderUniform* Material::FindShaderUniform(const std::string& name)
+	const ShaderUniform* Material::FindBaseBlockShaderUniform(const std::string& name) const
 	{
-		const auto& uniforms = m_Shader->GetUniforms();
+		const auto& uniforms = m_Shader->GetBaseBlockUniforms();
 
-		if (uniforms.size() <= 0) return nullptr;
+		if (uniforms.empty()) return nullptr;
 
 		if (uniforms.find(name) == uniforms.end())
 			return nullptr;
@@ -182,62 +182,67 @@ namespace Ohm
 
 	void Material::UploadStagedUniforms()
 	{
+		BindSamplerTexturesToRenderContext();
 		m_Shader->Bind();
-
-		for (auto& [name, uniform] : m_Shader->GetUniforms())
+		for (auto& [name, uniform] : m_Shader->GetBaseBlockUniforms())
 		{
-			std::string name = uniform.GetName();
+			std::string uniformName = uniform.GetName();
 
 			switch (uniform.GetType())
 			{
-				case ShaderDataType::Float:
+			case ShaderDataType::Float:
 				{
-					float* value = Get<float>(name);
-					m_Shader->UploadUniformFloat(name, *value);
+					float* value = Get<float>(uniformName);
+					m_Shader->UploadUniformFloat(uniformName, *value);
 					break;
 				}
-				case ShaderDataType::Float2:
+			case ShaderDataType::Float2:
 				{
-					glm::vec2* value = Get<glm::vec2>(name);
-					m_Shader->UploadUniformFloat2(name, *value);
+					glm::vec2* value = Get<glm::vec2>(uniformName);
+					m_Shader->UploadUniformFloat2(uniformName, *value);
 					break;
 				}
-				case ShaderDataType::Float3:
+			case ShaderDataType::Float3:
 				{
-					glm::vec3* value = Get<glm::vec3>(name);
-					m_Shader->UploadUniformFloat3(name, *value);
+					glm::vec3* value = Get<glm::vec3>(uniformName);
+					m_Shader->UploadUniformFloat3(uniformName, *value);
 					break;
 				}
-				case ShaderDataType::Float4:
+			case ShaderDataType::Float4:
 				{
-					glm::vec4* value = Get<glm::vec4>(name);
-					m_Shader->UploadUniformFloat4(name, *value);
+					glm::vec4* value = Get<glm::vec4>(uniformName);
+					m_Shader->UploadUniformFloat4(uniformName, *value);
 					break;
 				}
-				case ShaderDataType::Sampler2D:
+			case ShaderDataType::SamplerCube:
+			case ShaderDataType::Sampler2D:
 				{
-					TextureUniform* value = Get<TextureUniform>(name);
-					m_Shader->UploadUniformInt(name, (*value).TextureUnit);
+					const TextureUniform* value = Get<TextureUniform>(uniformName);
+					m_Shader->UploadUniformInt(uniformName, value->TextureUnit);
 					break;
 				}
-				case ShaderDataType::Int:
+			case ShaderDataType::Int:
 				{
-					int* value = Get<int>(name);
-					m_Shader->UploadUniformInt(name, *value);
+					int* value = Get<int>(uniformName);
+					m_Shader->UploadUniformInt(uniformName, *value);
 					break;
 				}
-				case ShaderDataType::Mat3:
+			case ShaderDataType::Mat3:
 				{
-					glm::mat3* value = Get<glm::mat3>(name);
-					m_Shader->UploadUniformMat3(name, *value);
+					glm::mat3* value = Get<glm::mat3>(uniformName);
+					m_Shader->UploadUniformMat3(uniformName, *value);
 					break;
 				}
-				case ShaderDataType::Mat4:
+			case ShaderDataType::Mat4:
 				{
-					glm::mat4* value = Get<glm::mat4>(name);
-					m_Shader->UploadUniformMat4(name, *value);
+					glm::mat4* value = Get<glm::mat4>(uniformName);
+					m_Shader->UploadUniformMat4(uniformName, *value);
 					break;
 				}
+			case ShaderDataType::Image2D:
+			case ShaderDataType::ImageCube:
+			case ShaderDataType::None:
+				break;
 			}
 		}
 	}

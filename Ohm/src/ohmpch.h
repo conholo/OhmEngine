@@ -15,3 +15,4 @@
 
 #include "Ohm/Core/Memory.h"
 #include "Ohm/Core/Utility.h"
+#include "Ohm/Core/Assert.h"

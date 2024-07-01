@@ -19,6 +19,7 @@ IncludeDirectories["entt"] = "Ohm/vendor/entt/include"
 IncludeDirectories["ImGui"] = "Ohm/vendor/ImGui"
 IncludeDirectories["stb_image"] = "Ohm/vendor/stb_image"
 IncludeDirectories["yaml_cpp"] = "Ohm/vendor/yaml-cpp"
+IncludeDirectories["tinyexr"] = "Ohm/vendor/tinyexr"
 
 
 group "Dependencies"
@@ -26,6 +27,7 @@ group "Dependencies"
 	include "Ohm/vendor/glad"
 	include "Ohm/vendor/ImGui"
 	include "Ohm/vendor/yaml-cpp"
+	include "Ohm/vendor/miniz"
 group ""
 
 project "Ohm"
@@ -65,6 +67,7 @@ project "Ohm"
 		"%{IncludeDirectories.ImGui}",
 		"%{IncludeDirectories.stb_image}",
 		"%{IncludeDirectories.yaml_cpp}/include",
+		"%{IncludeDirectories.tinyexr}",
 	}
 
 	links
@@ -72,7 +75,8 @@ project "Ohm"
 		"GLFW",
 		"glad",
 		"ImGui",
-		"yaml-cpp"
+		"yaml-cpp",
+		"miniz"
 	}
 
 	pchheader "ohmpch.h"
