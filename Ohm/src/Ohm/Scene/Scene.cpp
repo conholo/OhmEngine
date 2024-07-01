@@ -4,26 +4,16 @@
 #include "Ohm/Scene/Entity.h"
 #include "Ohm/Rendering/Renderer.h"
 
-
 namespace Ohm
 {
 	Scene::Scene(const std::string& name)
 		: m_SceneName(name)
 	{
-		m_SceneLightingBuffer = CreateRef<UniformBuffer>(sizeof(Scene::LightingData), 1);
 	}
 
-	Entity Scene::Create(const std::string& name)
+	Entity Scene::CreateEntity(const std::string& name)
 	{
-		entt::entity id = m_Registry.create();
-		Entity entity = { id, this };
-
-		entity.AddComponent<TagComponent>(name.empty() ? "Entity" : name);
-		entity.AddComponent<TransformComponent>();
-
-		m_SceneMap.emplace(id, entity);
-
-		return entity;
+		return CreateEntityWithUUID(UUID(), name);
 	}
 
 	bool Scene::Destroy(Entity entity)
@@ -37,59 +27,100 @@ namespace Ohm
 		return false;
 	}
 
-	Entity& Scene::GetEntityFromSceneMap(entt::entity id)
+	void Scene::UpdateLightingEnvironment(const EditorCamera& camera)
 	{
-		return m_SceneMap[id];
+		Entity EnvironmentLight = GetEnvironmentLight();
+		const EnvironmentLightComponent& EnvLightComponent = EnvironmentLight.GetComponent<EnvironmentLightComponent>();
+
+		if(EnvLightComponent.Pipeline->GetSpecification().PipelineType != EnvironmentPipelineType::FromShader) return;
+
+		const float Azimuth = EnvLightComponent.EnvironmentMapParams.Azimuth;
+		const float Elevation = EnvLightComponent.EnvironmentMapParams.Inclination;
+			
+		Entity DirectionalLightEntity = GetDirectionalLight();
+		DirectionalLightComponent& DirLightComponent = DirectionalLightEntity.GetComponent<DirectionalLightComponent>();
+		const glm::vec3 DirectionToSun = normalize(glm::vec3
+			(
+				sin(Azimuth) * cos(Elevation),
+				sin(Elevation),
+				cos(Elevation) * cos(Azimuth)
+			)
+		);
+		DirLightComponent.LightDirection = -DirectionToSun;
 	}
 
-	Entity& Scene::GetSunLight()
+	Entity Scene::CreateEntityWithUUID(UUID UUID, const std::string& Name)
 	{
-		return m_SceneMap[(entt::entity)m_SunLightHandle];
+		Entity Entity = { m_Registry.create(), this };
+		Entity.AddComponent<IDComponent>(UUID);
+		Entity.AddComponent<TransformComponent>();
+		auto& tag = Entity.AddComponent<TagComponent>();
+		tag.Tag = Name.empty() ? "Entity" : Name;
+		return Entity;
+	}
+	
+	Entity Scene::GetDirectionalLight()
+	{
+		const auto View = m_Registry.view<DirectionalLightComponent>();
+		for (const auto entity : View)
+			return Entity{entity, this};
+		return {};
 	}
 
-	void Scene::SetSceneLightingData(const EditorCamera& camera)
+	Entity Scene::GetEnvironmentLight()
 	{
-		Entity& sunLight = GetEntityFromSceneMap((entt::entity)m_SunLightHandle);
-
-		LightComponent& lightComponent = sunLight.GetComponent<LightComponent>();
-		TransformComponent& lightTransform = sunLight.GetComponent<TransformComponent>();
-
-		m_LightingData.LightColor = lightComponent.Color;
-		m_LightingData.LightIntensity = lightComponent.Intensity;
-		m_LightingData.LightPosition = lightTransform.Translation;
-
-		m_SceneLightingBuffer->SetData(&m_LightingData, sizeof(Scene::LightingData));
+		const auto View = m_Registry.view<EnvironmentLightComponent>();
+		for (const auto entity : View)
+			return Entity{entity, this};
+		return {};
 	}
-
+	
 	template<typename T>
 	void Scene::OnComponentAdded(Entity entity, T& component)
 	{
-		static_assert(false);
+		static_assert(sizeof(T) == 0);
 	}
 
 	template<>
-	void Scene::OnComponentAdded<TagComponent>(Entity entity, TagComponent& tagComponent)
+	void Scene::OnComponentAdded<IDComponent>(Entity entity, IDComponent& component)
 	{
-
 	}
 
 	template<>
-	void Scene::OnComponentAdded<TransformComponent>(Entity entity, TransformComponent& tranformComponent)
+	void Scene::OnComponentAdded<TransformComponent>(Entity entity, TransformComponent& component)
 	{
-
 	}
 
 	template<>
-	void Scene::OnComponentAdded<MeshRendererComponent>(Entity entity, MeshRendererComponent& meshRendererComponent)
+	void Scene::OnComponentAdded<CameraComponent>(Entity entity, CameraComponent& component)
 	{
-
 	}
 
 	template<>
-	void Scene::OnComponentAdded<LightComponent>(Entity entity, LightComponent& lightComponent)
+	void Scene::OnComponentAdded<PrimitiveRendererComponent>(Entity entity, PrimitiveRendererComponent& component)
 	{
-		// TODO:: Assert that there's only one sun.
-		if (lightComponent.Type == LightType::Sun)
-			m_SunLightHandle = (uint32_t)entity;
 	}
+
+	template<>
+	void Scene::OnComponentAdded<MeshRendererComponent>(Entity entity, MeshRendererComponent& component)
+	{
+	}
+
+	template<>
+	void Scene::OnComponentAdded<TagComponent>(Entity entity, TagComponent& component)
+	{
+	}
+
+	template<>
+	void Scene::OnComponentAdded<DirectionalLightComponent>(Entity entity, DirectionalLightComponent& lightComponent)
+	{
+		m_DirectionalLightEntityID = entity;  
+	}
+	
+	template<>
+	void Scene::OnComponentAdded<EnvironmentLightComponent>(Entity entity, EnvironmentLightComponent& component)
+	{
+		m_EnvironmentLightEntityID = entity;  
+	}
+
 }

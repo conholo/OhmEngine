@@ -11,7 +11,15 @@ namespace Ohm
 	{
 		glCreateBuffers(1, &m_ID);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ID);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, count * sizeof(uint32_t), indices, GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * count, indices, GL_STATIC_DRAW);
+	}
+
+	IndexBuffer::IndexBuffer(uint32_t count)
+		:m_Count(count)
+	{
+		glCreateBuffers(1, &m_ID);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ID);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * count, nullptr, GL_DYNAMIC_DRAW);
 	}
 
 	IndexBuffer::~IndexBuffer()

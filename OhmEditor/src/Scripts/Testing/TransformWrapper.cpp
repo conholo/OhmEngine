@@ -16,7 +16,7 @@ namespace Ohm
 		:m_Transform(transform)
 	{
 		m_Transform.Translation = position;
-		m_Transform.Rotation = rotation;
+		m_Transform.RotationDegrees = rotation;
 		m_Transform.Scale = scale;
 	}
 
@@ -62,7 +62,7 @@ namespace Ohm
 
 	glm::quat TransformWrapper::CalculateOrientation()
 	{
-		auto& rotation = m_Transform.Rotation;
+		auto& rotation = m_Transform.RotationDegrees;
 		return glm::quat(rotation);
 	}
 }

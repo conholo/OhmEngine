@@ -1,12 +1,14 @@
 #include "ohmpch.h"
+
 #include "Ohm/UI/PropertyDrawer.h"
 #include "Ohm/Core/Input.h"
 #include "Ohm/Core/Log.h"
-#include "Ohm/Rendering/Texture2D.h"
+#include "Ohm/Rendering//TextureLibrary.h"
 #include "Ohm/UI/UIDrawerHelpers.h"
 
 #include <imgui.h>
-#include <imgui_internal.h>
+
+#include "imgui_internal.h"
 
 namespace Ohm
 {
@@ -14,17 +16,17 @@ namespace Ohm
 	{
 		uint32_t UIProperty::s_UIDCounter = 0;
 
-		UIPropertyType UIPropertyTypeFromShaderDataType(ShaderDataType shaderDataType, bool isColor)
+		UIPropertyType UIPropertyTypeFromShaderDataType(ShaderDataType ShaderDataType, bool isColor)
 		{
-			switch (shaderDataType)
+			switch (ShaderDataType)
 			{
-			case ShaderDataType::Float:			return UIPropertyType::Float;
-			case ShaderDataType::Float2:		return UIPropertyType::Vec2;
-			case ShaderDataType::Float3:		return UIPropertyType::Vec3;
-			case ShaderDataType::Float4:		return isColor ? UIPropertyType::Color : UIPropertyType::Vec4;
-			case ShaderDataType::Int:			return UIPropertyType::Int;
-			case ShaderDataType::Sampler2D:		return UIPropertyType::Texture;
-			default:							return UIPropertyType::None;
+			case ShaderDataType::Float:					return UIPropertyType::Float;
+			case ShaderDataType::Float2:				return UIPropertyType::Vec2;
+			case ShaderDataType::Float3:				return UIPropertyType::Vec3;
+			case ShaderDataType::Float4:				return isColor ? UIPropertyType::Color : UIPropertyType::Vec4;
+			case ShaderDataType::Int:					return UIPropertyType::Int;
+			case ShaderDataType::Sampler2D:				return UIPropertyType::Texture;
+			default:									return UIPropertyType::None;
 			}
 		}
 
@@ -94,6 +96,7 @@ namespace Ohm
 			ImGui::PopID();
 		}
 
+
 		void UIFloat::Draw(const std::string& label, float* value)
 		{
 			ImGui::PushID(label.c_str());
@@ -119,9 +122,70 @@ namespace Ohm
 			ImGui::PopID();
 		}
 
+		bool UIFloat::DrawSlider(const std::string& label, float* value, float min, float max)
+		{
+			bool updated = false;
+			ImGui::PushID(label.c_str());
+
+			std::stringstream ss;
+			ss << "Float Properties" << "##" << label;
+
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+			if (ImGui::BeginTable(label.c_str(), 2, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable))
+			{
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text(label.c_str());
+				ImGui::TableSetColumnIndex(1);
+				ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+				updated |= ImGui::SliderFloat("", value, min, max, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+				ImGui::PopItemWidth();
+				ImGui::EndTable();
+			}
+			ImGui::PopStyleVar();
+
+			ImGui::PopID();
+
+			return updated;
+		}
+
+		bool UIFloat::DrawAngle(const std::string& label, float* radians, float min, float max)
+		{
+			bool updated = false;
+			ImGui::PushID(label.c_str());
+
+			std::stringstream ss;
+			ss << "Float Properties" << "##" << label;
+
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+			if (ImGui::BeginTable(label.c_str(), 2, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable))
+			{
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text(label.c_str());
+				ImGui::TableSetColumnIndex(1);
+				ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+				updated |= ImGui::SliderAngle("", radians, min, max, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+				ImGui::PopItemWidth();
+				ImGui::EndTable();
+			}
+			ImGui::PopStyleVar();
+
+			ImGui::PopID();
+
+			return updated;
+		}
+		
 		void UIInt::Draw()
 		{
 			ImGui::InputInt(m_Label.c_str(), m_Value, m_Step);
+		}
+
+		void UIInt::DrawDragInt(const std::string& label, int* value, float speed, int min, int max)
+		{
+			ImGui::DragInt(label.c_str(), value, speed, min, max);
 		}
 
 		void UIVector2::Draw()
@@ -191,9 +255,12 @@ namespace Ohm
 			ImGui::PopID();
 		}
 
-		void UIVector3::Draw(const std::string& label, glm::vec3* value)
+		void UIVector3::Draw(const std::string& label, glm::vec3* value, bool readonly)
 		{
 			ImGui::PushID(label.c_str());
+
+			if(readonly)
+				ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 
 			std::stringstream ss;
 			ss << "Float Properties" << "##" << label;
@@ -212,6 +279,9 @@ namespace Ohm
 				ImGui::EndTable();
 			}
 			ImGui::PopStyleVar();
+
+			if(readonly)
+				ImGui::PopItemFlag();
 
 			ImGui::PopID();
 		}
@@ -290,11 +360,10 @@ namespace Ohm
 
 		void UITexture2D::Draw()
 		{
-			if (m_TextureUniform->HideInInspector) return;
+			if (m_TextureUniform->HideInUI) return;
 
-			Ref<Texture2D> currentTexture = TextureLibrary::GetTextureAt((*m_TextureUniform).RendererID);
-
-			if (currentTexture == nullptr) return;
+			const Ref<Texture2D> CurrentTexture = TextureLibrary::Get2DFromID(m_TextureUniform->RendererID);
+			if (CurrentTexture == nullptr) return;
 
 			ImGui::PushID(m_Label.c_str());
 
@@ -310,23 +379,20 @@ namespace Ohm
 				ImGui::LabelText(ss.str().c_str(), m_Label.c_str());
 
 				ImGui::TableSetColumnIndex(1);
-				if (ImGui::ImageButton((ImTextureID)currentTexture->GetID(), { 50, 50 }, { 0, 1 }, { 1, 0 }))
-				{
+				if (ImGui::ImageButton((ImTextureID)CurrentTexture->GetID(), { 50, 50 }, { 0, 1 }, { 1, 0 }))
 					ImGui::OpenPopup("Texture Selection");
-				}
 
 				if (ImGui::BeginPopup("Texture Selection"))
 				{
-					if (ImGui::BeginCombo("Texture Library", currentTexture->GetName().c_str()))
+					if (ImGui::BeginCombo("Texture Library", CurrentTexture->GetName().c_str()))
 					{
-						std::unordered_map<std::string, Ref<Texture2D>> availableTextures = TextureLibrary::GetLibrary();
+						std::unordered_map<std::string, Ref<Texture2D>> availableTextures = TextureLibrary::Get2DLibrary();
 
 						for (auto [name, texture] : availableTextures)
 						{
 							if (texture->GetID() == m_TextureUniform->RendererID) continue;
-
 							if (ImGui::Selectable(name.c_str(), true))
-								m_Material->UpdateActiveTexture(m_TextureUniformName, texture->GetID());
+								m_TextureUniform->RendererID = texture->GetID();
 						}
 
 						ImGui::EndCombo();
@@ -347,8 +413,9 @@ namespace Ohm
 			ImGui::Checkbox(m_Label.c_str(), m_Value);
 		}
 
-		void UIBool::Draw(const std::string& label, bool* value)
+		bool UIBool::Draw(const std::string& label, bool* value)
 		{
+			bool Updated = false;
 			ImGui::PushID(label.c_str());
 
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
@@ -359,13 +426,14 @@ namespace Ohm
 				ImGui::AlignTextToFramePadding();
 				ImGui::Text(label.c_str());
 				ImGui::TableSetColumnIndex(1);
-				ImGui::Checkbox("", value);
+				Updated |= ImGui::Checkbox("", value);
 				ImGui::EndTable();
 			}
 			ImGui::PopStyleVar();
 
 			ImGui::PopID();
 
+			return Updated;
 		}
 	}
 }

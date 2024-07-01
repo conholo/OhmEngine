@@ -6,47 +6,43 @@ namespace Ohm
 {
 	struct TextureCubeSpecification
 	{
-		std::string Name;
-		TextureUtils::WrapMode SamplerWrap = TextureUtils::WrapMode::Repeat;
-		TextureUtils::FilterMode MinFilter = TextureUtils::FilterMode::Linear;
+		TextureUtils::WrapMode SamplerWrapS = TextureUtils::WrapMode::ClampToEdge;
+		TextureUtils::WrapMode SamplerWrapT = TextureUtils::WrapMode::ClampToEdge;
+		TextureUtils::WrapMode SamplerWrapR = TextureUtils::WrapMode::ClampToEdge;
+		TextureUtils::FilterMode MinFilter = TextureUtils::FilterMode::LinearMipLinear;
 		TextureUtils::FilterMode MagFilter = TextureUtils::FilterMode::Linear;
-		TextureUtils::ImageInternalFormat InternalFormat = TextureUtils::ImageInternalFormat::RGBA8;
+		TextureUtils::ImageInternalFormat InternalFormat = TextureUtils::ImageInternalFormat::RGBA32F;
 		TextureUtils::ImageDataLayout DataLayout = TextureUtils::ImageDataLayout::RGBA;
-		TextureUtils::ImageDataType DataType = TextureUtils::ImageDataType::UByte;
-		uint32_t Width, Height;
+		TextureUtils::ImageDataType DataType = TextureUtils::ImageDataType::Float;
+		uint32_t Dimension = 512;
+		std::string Name = "TextureCube";
 	};
-
 
 	class TextureCube
 	{
 	public:
-		TextureCube(const TextureCubeSpecification& spec);
 		TextureCube(const TextureCubeSpecification& spec, const std::vector<std::string>& cubeFaceFiles);
+		TextureCube(const TextureCubeSpecification& spec);
 		~TextureCube();
 
-		void BindToSamplerSlot(uint32_t unit);
-		void UnbindFromSamplerSlot(uint32_t unit = 0);
+		void Invalidate(const TextureCubeSpecification& Specification);
+		
+		void BindToSamplerSlot(uint32_t slot = 0) const;
+		static void Unbind();
+		void BindToImageSlot(uint32_t Binding, uint32_t MipLevel, TextureUtils::TextureAccessLevel AccessLevel, TextureUtils::TextureShaderDataFormat ShaderDataFormat) const;
 
-		void Invalidate();
-		void BindToImageSlot(uint32_t unit, uint32_t level, TextureUtils::TextureAccessLevel access, TextureUtils::TextureShaderDataFormat shaderDataFormat, bool layered = false, uint32_t layer = 0);
-		void Resize(uint32_t width, uint32_t height);
-		void SetData(void* data, uint32_t size);
-		void EnableShaderAccessBarrierBit();
+		void SetData(const void* data, size_t size) const;
 
-		uint32_t GetWidth() const { return m_Specification.Width; }
-		uint32_t GetHeight() const { return m_Specification.Height; }
-
-		uint32_t GetMipCount() const { return TextureUtils::CalculateMipLevelCount(m_Specification.Width, m_Specification.Height); }
+		std::pair<uint32_t, uint32_t> GetMipSize(uint32_t Mip) const;
+		uint32_t GetMipLevelCount() const;
+		
 		uint32_t GetID() const { return m_ID; }
+		uint32_t GetDimension() const { return m_Specification.Dimension; }
 		std::string GetName() const { return m_Name; }
-		std::string GetFilePath() const { return m_FilePath; }
-		std::pair<uint32_t, uint32_t> GetMipDimensions(uint32_t mip) const;
 
 	private:
 		TextureCubeSpecification m_Specification;
-		std::string m_FilePath;
-		std::string m_Name;
 		uint32_t m_ID;
-		int32_t m_Unit;
+		std::string m_Name;
 	};
 }

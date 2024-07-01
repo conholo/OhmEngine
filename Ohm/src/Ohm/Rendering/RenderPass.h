@@ -1,23 +1,23 @@
 #pragma once
 
-#include "Ohm/Rendering/Shader.h"
 #include "Ohm/Rendering/Material.h"
 #include "Ohm/Rendering/Framebuffer.h"
 #include <glm/glm.hpp>
 
 namespace Ohm
 {
+	enum class PassType { None = 0, DefaultFBO, CustomFBO };
+
 	struct RenderPassSpecification
 	{
-		Ref<Framebuffer> TargetFramebuffer;
-		Ref<Shader> Shader;
-		Ref<Material> Material;
-		uint32_t Flags;
+		PassType Type = PassType::CustomFBO;
+		Ref<Framebuffer> TargetFramebuffer = nullptr;
+		Ref<Material> PassMaterial = nullptr;
+		uint32_t Flags {};
 
-		bool DepthWrite = true;
-		bool DepthRead = true;
-		bool ColorWrite = true;
-		glm::vec4 ClearColor{ 0.0f };
+		bool ClearDepthFlag = true;
+		bool ClearColorFlag = true;
+		glm::vec4 ClearColor{ 0.0f, 0.0f, 0.0f, 1.0f };
 	};
 
 	class RenderPass

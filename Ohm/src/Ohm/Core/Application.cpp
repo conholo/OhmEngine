@@ -13,10 +13,12 @@ namespace Ohm
 	Application::Application(const std::string& name)
 		:m_Name(name)
 	{
+		ASSERT(!s_Instance, "An instance of Application already exists!");
 		s_Instance = this;
 		m_Window = CreateScope<Window>(name);
 		m_Window->SetEventCallbackFunction(OHM_BIND_FN(Application::OnEvent));
 		RenderCommand::Initialize();
+		RenderCommand::SetViewport(m_Window->GetWidth(), m_Window->GetHeight());
 		Renderer::Initialize();
 
 		m_ImGuiLayer = new ImGuiLayer();
@@ -25,6 +27,7 @@ namespace Ohm
 
 	Application::~Application()
 	{
+		Renderer::Shutdown();
 	}
 
 	void Application::Run()
@@ -82,10 +85,9 @@ namespace Ohm
 		return true;
 	}
 	
-	bool Application::OnWindowResize(WindowResizedEvent& windowResizeEvent)
+	bool Application::OnWindowResize(const WindowResizedEvent& windowResizeEvent)
 	{
 		RenderCommand::SetViewport(windowResizeEvent.GetWidth(), windowResizeEvent.GetHeight());
-
 		return true;
 	}
 }

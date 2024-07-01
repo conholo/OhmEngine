@@ -1,48 +1,113 @@
 #include "ohmpch.h"
 #include "Ohm/Rendering/Shader.h"
-#include "Ohm/Rendering/Material.h"
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
+#include "Ohm/Rendering/Material.h"
 
 namespace Ohm
 {
-	ShaderUniform::ShaderUniform(const std::string& name, GLint location, ShaderDataType type, uint32_t size, uint32_t count, int32_t blockOffset)
-		:m_Name(name), m_Location(location), m_Type(type), m_Count(count), m_Size(size), m_BlockOffset(blockOffset)
+	ShaderUniform::ShaderUniform(std::string name, GLint location, ShaderDataType type, uint32_t size, uint32_t count, int32_t blockOffset)
+		:m_Name(std::move(name)), m_Location(location), m_Type(type), m_Count(count), m_Size(size), m_BlockOffset(blockOffset)
 	{
 
 	}
 
-	ShaderBlock::ShaderBlock(const std::string& name, uint32_t size, uint32_t memberCount, uint32_t binding, uint32_t blockIndex)
-		:m_Name(name), m_BlockSize(size), m_MemberCount(memberCount), m_Binding(binding), m_BlockIndex(blockIndex)
+	ShaderBlock::ShaderBlock(std::string name, uint32_t size, uint32_t memberCount, uint32_t binding, uint32_t blockIndex)
+		:m_Name(std::move(name)), m_BlockSize(size), m_MemberCount(memberCount), m_Binding(binding), m_BlockIndex(blockIndex)
 	{
+		m_UBO = CreateRef<UniformBuffer>(size, binding);
+	}
 
+	void ShaderBlock::UploadUBO(const void* Data) const
+	{
+		m_UBO->SetData(Data, m_BlockSize);
 	}
 
 	static ShaderDataType ShaderDataTypeFromGLenum(GLenum value)
 	{
 		switch (value)
 		{
-			case GL_FLOAT:		return ShaderDataType::Float;
-			case GL_FLOAT_VEC2: return ShaderDataType::Float2;
-			case GL_FLOAT_VEC3: return ShaderDataType::Float3;
-			case GL_FLOAT_VEC4: return ShaderDataType::Float4;
-			case GL_INT:		return ShaderDataType::Int;
-			case GL_FLOAT_MAT3: return ShaderDataType::Mat3;
-			case GL_FLOAT_MAT4: return ShaderDataType::Mat4;
-			case GL_SAMPLER_2D:	return ShaderDataType::Sampler2D;
-			default: 
-			{
-				OHM_CORE_ERROR("Invalid GLenum.  No matching ShaderDataType found for {}.", value);
-				return ShaderDataType::None;
-			}
+		case GL_FLOAT:				return ShaderDataType::Float;
+		case GL_FLOAT_VEC2: 		return ShaderDataType::Float2;
+		case GL_FLOAT_VEC3: 		return ShaderDataType::Float3;
+		case GL_FLOAT_VEC4: 		return ShaderDataType::Float4;
+		case GL_INT:				return ShaderDataType::Int;
+		case GL_FLOAT_MAT3: 		return ShaderDataType::Mat3;
+		case GL_FLOAT_MAT4: 		return ShaderDataType::Mat4;
+		case GL_SAMPLER_2D:			return ShaderDataType::Sampler2D;
+		case GL_SAMPLER_CUBE:		return ShaderDataType::SamplerCube;
+		default:
+			return ShaderDataType::None;
 		}
 	}
+	
+	Shader::Shader(const std::string& filePath)
+	{
+		const size_t shaderLocationOffset = filePath.rfind("\/") + 1;
+		const size_t extensionOffset = filePath.find_first_of(".", shaderLocationOffset);
 
-	void Shader::DumpShaderData()
+		m_Name = filePath.substr(shaderLocationOffset, extensionOffset - shaderLocationOffset);
+
+		std::string source = ReadFile(filePath);
+		AddIncludeFiles(source);
+		const auto shaderSources = PreProcess(source);
+		Compile(shaderSources);
+		Reflect();
+	}
+
+	Shader::~Shader()
+	{
+		glDeleteShader(m_ID);
+	}
+
+	void Shader::Bind() const
+	{
+		glUseProgram(m_ID);
+	}
+
+	void Shader::Unbind() const
+	{
+		glUseProgram(0);
+	}
+
+	std::string Shader::ReadFile(const std::string& filePath)
+	{
+		std::string result;
+		std::ifstream input(filePath, std::ios::binary | std::ios::in);
+		ASSERT(input, "Unable to read shader source file: '{}'", filePath);
+		
+		input.seekg(0, std::ios::end);
+		const size_t size = input.tellg();
+		
+		if (size != -1)
+		{
+			result.resize(size);
+			input.seekg(0, std::ios::beg);
+			input.read(result.data(), size);
+		}
+		
+		return result;
+	}
+
+	GLenum ShaderTypeFromString(const std::string& type)
+	{
+		if (type == "vertex")
+			return GL_VERTEX_SHADER;
+		if (type == "fragment")
+			return GL_FRAGMENT_SHADER;
+		if (type == "compute")
+			return GL_COMPUTE_SHADER;
+		if (type == "geometry")
+			return GL_GEOMETRY_SHADER;
+
+		return GL_FALSE;
+	}
+
+	void Shader::LogShaderData()
 	{
 		if (m_ActiveTotalUniformCount <= 0)
 		{
-			OHM_INFO("{} Shader has no active uniforms.", m_Name);
+			OHM_CORE_INFO("{} Shader has no active uniforms.", m_Name);
 			return;
 		}
 
@@ -79,7 +144,7 @@ namespace Ohm
 			OHM_CORE_INFO("Block Size: {}", block.GetBlockSize());
 			OHM_CORE_INFO("Member Count: {}", block.GetMemberCount());
 
-			for (auto uniform : block.GetUniforms())
+			for (auto [Name, uniform] : block.GetUniforms())
 			{
 				OHM_CORE_INFO("-------------------------------------------------");
 				OHM_CORE_INFO("		Uniform Name: {}", uniform.GetName());
@@ -93,167 +158,115 @@ namespace Ohm
 		}
 	}
 
-	void* Shader::GetUniformData(ShaderDataType type, GLint location)
-	{
-		switch (type)
-		{
-			case Ohm::ShaderDataType::None:
-			{
-				OHM_CORE_ERROR("Unknown shader data type.");
-				return nullptr;
-			}
-			case Ohm::ShaderDataType::Float:
-			case Ohm::ShaderDataType::Float2:
-			case Ohm::ShaderDataType::Float3:
-			case Ohm::ShaderDataType::Float4:
-			{
-				GLfloat* data = (GLfloat*)malloc(ShaderDataTypeSize(type));
-				glGetUniformfv(m_ID, location, data);
-
-				return (void*)data;
-			}
-			case Ohm::ShaderDataType::Sampler2D:
-			{
-				GLint* data = (GLint*)malloc(ShaderDataTypeSize(type));
-				glGetUniformiv(m_ID, location, data);
-				(TextureUniform*)data;
-
-				return (void*)data;
-			}
-			case Ohm::ShaderDataType::Int:
-			{
-				GLint* data = (GLint*)malloc(ShaderDataTypeSize(type));
-				glGetUniformiv(m_ID, location, data);
-
-				return (void*)data;
-			}
-			case Ohm::ShaderDataType::Mat3:
-			case Ohm::ShaderDataType::Mat4:
-			{
-				OHM_CORE_INFO("We're currently unable to retrieve data from uniforms of type Mat3/Mat4.");
-				return nullptr;
-			}
-		}
-
-		return nullptr;
-	}
-
-	void Shader::EnableShaderImageAccessBarrierBit()
-	{
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
-	}
-
-	void Shader::DispatchCompute(uint32_t groupX, uint32_t groupY, uint32_t groupZ)
-	{
-		if (!m_IsCompute)
-		{
-			OHM_ERROR("{} is not of type Compute Shader.  Cannot dispatch.", m_NamedBlockUniformCount);
-			return;
-		}
-
-		glUseProgram(m_ID);
-		glDispatchCompute(groupX, groupY, groupZ);
-	}
-
-	Shader::Shader(const std::string& filePath)
-	{
-		size_t shaderLocationOffset = filePath.rfind("\/") + 1;
-		size_t extensionOffset = filePath.find_first_of(".", shaderLocationOffset);
-
-		m_Name = filePath.substr(shaderLocationOffset, extensionOffset - shaderLocationOffset);
-
-		std::string source = ReadFile(filePath);
-		auto shaderSources = PreProcess(source);
-		Compile(shaderSources);
-		Reflect();
-	}
-
-	Shader::~Shader()
-	{
-		glDeleteShader(m_ID);
-	}
-
-	void Shader::Bind() const
-	{
-		glUseProgram(m_ID);
-	}
-
-	void Shader::Unbind() const
+	void Shader::ClearBinding()
 	{
 		glUseProgram(0);
-	}
-
-	std::string Shader::ReadFile(const std::string& filePath)
-	{
-		std::string result;
-		std::ifstream input(filePath, std::ios::binary | std::ios::in);
-
-		if (input)
-		{
-			input.seekg(0, std::ios::end);
-			size_t size = input.tellg();
-
-			if (size != -1)
-			{
-				result.resize(size);
-				input.seekg(0, std::ios::beg);
-				input.read(&result[0], size);
-			}
-		}
-
-		return result;
-	}
-
-	GLenum ShaderTypeFromString(const std::string& type)
-	{
-		if (type == "vertex")
-			return GL_VERTEX_SHADER;
-		else if (type == "fragment")
-			return GL_FRAGMENT_SHADER;
-		else if (type == "compute")
-			return GL_COMPUTE_SHADER;
-
-		return GL_FALSE;
 	}
 
 	std::unordered_map<GLenum, std::string> Shader::PreProcess(const std::string& source)
 	{
 		const char* typeToken = "#type";
-		size_t typeTokenLength = strlen(typeToken);
+		const size_t typeTokenLength = strlen(typeToken);
 		size_t position = source.find(typeToken, 0);
 
 		std::unordered_map<GLenum, std::string> result;
 
 		while (position != std::string::npos)
 		{
-			size_t endOfLine = source.find_first_of("\r\n", position);
-			size_t beginShaderType = position + typeTokenLength + 1;
+			const size_t endOfLine = source.find_first_of("\r\n", position);
+			const size_t beginShaderType = position + typeTokenLength + 1;
 			std::string type = source.substr(beginShaderType, endOfLine - beginShaderType);
 
-			size_t nextLinePosition = source.find_first_not_of("\r\n", endOfLine);
+			const size_t nextLinePosition = source.find_first_not_of("\r\n", endOfLine);
 			position = source.find(typeToken, nextLinePosition);
-			result[ShaderTypeFromString(type)] = 
-				(position == std::string::npos) 
-				? source.substr(nextLinePosition) 
+			result[ShaderTypeFromString(type)] =
+				(position == std::string::npos)
+				? source.substr(nextLinePosition)
 				: source.substr(nextLinePosition, position - nextLinePosition);
 		}
 
 		return result;
 	}
 
+	void Shader::AddIncludeFiles(std::string& outSource)
+	{
+		const char* typeToken = "//include";
+		const size_t typeTokenLength = strlen(typeToken);
+		size_t position = outSource.find(typeToken, 0);
+		const std::string pathTo = "assets/shaders/"; 
+
+		while (position != std::string::npos)
+		{
+			const size_t endOfLine = outSource.find_first_of("\r\n", position);
+			size_t beginIncludeName = position + typeTokenLength + 1;
+			std::string includeFileName = outSource.substr(beginIncludeName, endOfLine - beginIncludeName);
+
+			includeFileName.erase(remove(includeFileName.begin(),includeFileName.end(), '\"'), includeFileName.end());
+			const std::string newPath = pathTo + includeFileName;
+			
+			size_t nextLinePosition = outSource.find_first_not_of("\r\n", endOfLine);
+			std::string includeContents = ReadFile(newPath);
+			outSource.insert(nextLinePosition, includeContents + "\n");
+			position = outSource.find(typeToken, nextLinePosition);
+		}
+	}
+
+	void* Shader::GetUniformData(ShaderDataType type, GLint location)
+	{
+		switch (type)
+		{
+		case ShaderDataType::None:
+			{
+				return nullptr;
+			}
+		case ShaderDataType::Float:
+		case ShaderDataType::Float2:
+		case ShaderDataType::Float3:
+		case ShaderDataType::Float4:
+			{
+				GLfloat* data = (GLfloat*)malloc(ShaderDataTypeSize(type));
+				glGetUniformfv(m_ID, location, data);
+
+				return data;
+			}
+		case ShaderDataType::SamplerCube:
+		case ShaderDataType::Sampler2D:
+			{
+				GLint* data = (GLint*)malloc(ShaderDataTypeSize(type));
+				glGetUniformiv(m_ID, location, data);
+				(TextureUniform*)data;
+
+				return data;
+			}
+		case ShaderDataType::Int:
+			{
+				GLint* data = (GLint*)malloc(ShaderDataTypeSize(type));
+				glGetUniformiv(m_ID, location, data);
+				return data;
+			}
+		case ShaderDataType::Mat3:
+		case ShaderDataType::Mat4:
+			{
+				OHM_CORE_INFO("Currently unable to retrieve uniform data for uniforms of type Mat3/Mat4");
+				return nullptr;
+			}
+		}
+		
+		return nullptr;
+	}
+
 	void Shader::Compile(const std::unordered_map<GLenum, std::string>& shaderSources)
 	{
-		GLuint program = glCreateProgram();
+		const GLuint program = glCreateProgram();
 		std::vector<GLuint> shaderIDs;
-		int glShaderIDIndex = 0;
 
 		for (auto& kv : shaderSources)
 		{
-			GLenum type = kv.first;
-			m_IsCompute = type == GL_COMPUTE_SHADER;
+			const GLenum shaderType = kv.first;
+			m_IsCompute = shaderType == GL_COMPUTE_SHADER;
 			const std::string& source = kv.second;
 
-			GLuint shader = glCreateShader(type);
+			GLuint shader = glCreateShader(shaderType);
 
 			const GLchar* sourceCStr = source.c_str();
 			glShaderSource(shader, 1, &sourceCStr, 0);
@@ -269,22 +282,22 @@ namespace Ohm
 
 				std::vector<GLchar> infoLog(maxLength);
 				glGetShaderInfoLog(shader, maxLength, &maxLength, &infoLog[0]);
+				std::string shaderLog (infoLog.begin(), infoLog.end());
+				std::string shaderTypeName;
+
+				if (shaderType == GL_FRAGMENT_SHADER)
+					shaderTypeName = "FRAGMENT COMPILATION ERROR";
+				else if (shaderType == GL_VERTEX_SHADER)
+					shaderTypeName = "VERTEX COMPILATION ERROR";
+				else if (shaderType == GL_GEOMETRY_SHADER)
+					shaderTypeName = "GEOMETRY COMPILATION ERROR";
+				else if (shaderType == GL_COMPUTE_SHADER)
+					shaderTypeName = "COMPUTE COMPILATION ERROR";
+
+				OHM_CORE_ERROR(m_Name);
+				OHM_CORE_ERROR("Error Type: {}", shaderTypeName);
+				OHM_CORE_ERROR("Error Log:\n{}", shaderLog);
 				
-				std::stringstream ss;
-
-				std::string type;
-
-				if (shader == GL_FRAGMENT_SHADER)
-					type = "FRAGMENT COMPILATION ERROR";
-				else if (shader == GL_VERTEX_SHADER)
-					type = "VERTEX COMPILATION ERROR: ";
-				else if (shader == GL_COMPUTE_SHADER)
-					type = "COMPUTE COMPILATION ERROR: ";
-
-				ss << m_Name << ":\n" <<  type << infoLog.data();
-
-				OHM_CORE_ERROR(ss.str());
-
 				glDeleteShader(shader);
 
 				break;
@@ -310,10 +323,8 @@ namespace Ohm
 
 			std::stringstream ss;
 
-			std::string messageHeader = m_Name + ": LINKING ERROR: ";
-
+			const std::string messageHeader = m_Name + ": LINKING ERROR: ";
 			ss << messageHeader << infoLog.data();
-
 			OHM_CORE_ERROR(ss.str());
 
 			glDeleteProgram(program);
@@ -331,7 +342,6 @@ namespace Ohm
 		}
 	}
 
-
 	void Shader::Reflect()
 	{
 		GLsizei activeCount = 0;
@@ -341,7 +351,6 @@ namespace Ohm
 
 		if (activeCount == 0)
 		{
-			OHM_CORE_WARN("No active uniforms were found when reflecting {}.", m_Name);
 			return;
 		}
 
@@ -401,7 +410,7 @@ namespace Ohm
 			// If the block index is -1 (base block) or we've already registered the block, move on.
 			if (blockIndices[i] == -1 || std::find(registeredBlockIndices.begin(), registeredBlockIndices.end(), blockIndices[i]) != registeredBlockIndices.end()) continue;
 
-			// Otherwise, query OpenGL for data about the block and construct a new Ohm Block object to store the data.
+			// Otherwise, query OpenGL for data about the block and construct a new Block object to store the data.
 			GLint binding;
 			GLint blockSize;
 			GLint activeCount;
@@ -414,7 +423,6 @@ namespace Ohm
 			glGetActiveUniformBlockiv(m_ID, blockIndices[i], GL_UNIFORM_BLOCK_DATA_SIZE, &blockSize);
 			glGetActiveUniformBlockiv(m_ID, blockIndices[i], GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, &activeCount);
 
-			
 			GLint* activeIndices = (GLint*)malloc(sizeof(GLint) * activeCount);
 			glGetActiveUniformBlockiv(m_ID, blockIndices[i], GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, activeIndices);
 
@@ -425,7 +433,6 @@ namespace Ohm
 			registeredBlockIndices.push_back(blockIndices[i]);
 		}
 
-
 		m_NamedBlockUniformCount = 0;
 		m_DefaultBlockUniformCount = 0;
 
@@ -435,17 +442,15 @@ namespace Ohm
 		for (uint32_t i = 0; i < m_ActiveTotalUniformCount; i++)
 		{
 			const std::string name = activeUniformNames[i];
+			if(name.substr(0, 3) == "gl_")
+				continue;
 			GLenum type = types[i];
 			GLint location = glGetUniformLocation(m_ID, name.c_str());
 			ShaderDataType shaderDataType = ShaderDataTypeFromGLenum(type);
-			const char* shaderTypeToString = ShaderDataTypeToString[shaderDataType];
 			GLint blockOffset = blockOffsets[i];
-
 
 			GLint count = counts[i];
 			uint32_t size = count * ShaderDataTypeSize(shaderDataType);
-
-			GLint blockIndex = blockIndices[i];
 
 			ShaderUniform uniform(name, location, shaderDataType, size, count, blockOffset);
 
@@ -477,63 +482,142 @@ namespace Ohm
 		}
 	}
 
+	GLint Shader::UploadUniformBool(const std::string& name, bool value)
+	{
+		GLint location = glGetUniformLocation(m_ID, name.c_str());
+		glUniform1f(location, value);
+		return location;
+	}
+
+	const std::unordered_map<std::string, ShaderUniform>& Shader::GetAllUniformsFromBlock(const std::string& BlockName)
+	{
+		ASSERT(m_Blocks.find(BlockName) != m_Blocks.end(), "Unable to retrieve uniforms with unknown block name: {}", BlockName);
+		return m_Blocks[BlockName].GetUniforms();
+	}
+
+	std::vector<ShaderUniform> Shader::GetBaseBlockUniformsOfType(ShaderDataType Type)
+	{
+		std::vector<ShaderUniform> Match;
+		for(auto [UniformName, Uniform] : m_BaseBlockUniforms)
+		{
+			if(Uniform.GetType() == Type)
+				Match.push_back(Uniform);
+		}
+
+		return Match;
+	}
+
 	GLint Shader::UploadUniformFloat(const std::string& name, float value)
 	{
-		GLint location = m_BaseBlockUniforms[name].GetLocation();
+		GLint location = glGetUniformLocation(m_ID, name.c_str());
 		glUniform1f(location, value);
 		return location;
 	}
 
 	GLint Shader::UploadUniformFloat2(const std::string& name, const glm::vec2& value)
 	{
-		GLint location = m_BaseBlockUniforms[name].GetLocation();
-
+		GLint location = glGetUniformLocation(m_ID, name.c_str());
 		glUniform2f(location, value.x, value.y);
 		return location;
 	}
 
 	GLint Shader::UploadUniformFloat3(const std::string& name, const glm::vec3& value)
 	{
-		GLint location = m_BaseBlockUniforms[name].GetLocation();
+		GLint location = glGetUniformLocation(m_ID, name.c_str());
 		glUniform3f(location, value.x, value.y, value.z);
+		return location;
+	}
+
+	GLint Shader::UploadUniformFloat3Array(const std::string& name, uint32_t count, glm::vec3* value)
+	{
+		GLint location = glGetUniformLocation(m_ID, name.c_str());
+		glUniform3fv(location, count, glm::value_ptr(value[0]));
+		return location;
+	}
+
+	GLint Shader::UploadUniformFloat2Array(const std::string& name, uint32_t count, glm::vec2* value)
+	{
+		GLint location = glGetUniformLocation(m_ID, name.c_str());
+		glUniform2fv(location, count, glm::value_ptr(value[0]));
 		return location;
 	}
 
 	GLint Shader::UploadUniformFloat4(const std::string& name, const glm::vec4& value)
 	{
-		GLint location = m_BaseBlockUniforms[name].GetLocation();
+		GLint location = glGetUniformLocation(m_ID, name.c_str());
 		glUniform4f(location, value.x, value.y, value.z, value.w);
 		return location;
 	}
 
 	GLint Shader::UploadUniformInt(const std::string& name, int value)
 	{
-		GLint location = m_BaseBlockUniforms[name].GetLocation();
+		GLint location = glGetUniformLocation(m_ID, name.c_str());
 		glUniform1i(location, value);
 		return location;
 	}
 
 	GLint Shader::UploadUniformIntArray(const std::string& name, uint32_t count, int* basePtr)
 	{
-		GLint location = m_BaseBlockUniforms[name].GetLocation();
+		GLint location = glGetUniformLocation(m_ID, name.c_str());
 		glUniform1iv(location, count, basePtr);
 		return location;
 	}
 
 	GLint Shader::UploadUniformMat3(const std::string& name, const glm::mat3& matrix)
 	{
-		GLint location = m_BaseBlockUniforms[name].GetLocation();
+		GLint location = glGetUniformLocation(m_ID, name.c_str());
 		glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
 		return location;
 	}
 
 	GLint Shader::UploadUniformMat4(const std::string& name, const glm::mat4& matrix)
 	{
-		GLint location = m_BaseBlockUniforms[name].GetLocation();
+		GLint location = glGetUniformLocation(m_ID, name.c_str());
 		glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
 		return location;
 	}
+
+	void Shader::EnableAllBarriersBits()
+	{
+		glMemoryBarrier(GL_ALL_BARRIER_BITS);
+	}
+
+	void Shader::EnableShaderImageAccessBarrierBit()
+	{
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+	}
+
+	void Shader::EnableTextureFetchBarrierBit()
+	{
+		glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
+	}
+
+	void Shader::EnableShaderStorageBarrierBit()
+	{
+		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+	}
+
+	void Shader::EnableAtomicCounterBarrierBit()
+	{
+		glMemoryBarrier(GL_ATOMIC_COUNTER_BARRIER_BIT);
+	}
+
+	void Shader::EnableBufferUpdateBarrierBit()
+	{
+		glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
+	}
 	
+	void Shader::DispatchCompute(uint32_t groupX, uint32_t groupY, uint32_t groupZ)
+	{
+		if (!m_IsCompute)
+		{
+			OHM_CORE_WARN("Shader: '{}' is not of type Compute Shader.  Cannot dispatch.", m_Name);
+			return;
+		}
+
+		glUseProgram(m_ID);
+		glDispatchCompute(groupX, groupY, groupZ);
+	}
 
 	std::unordered_map<std::string, Ref<Shader>> ShaderLibrary::s_ShaderLibrary;
 
@@ -542,11 +626,10 @@ namespace Ohm
 		if (s_ShaderLibrary.find(shader->GetName()) == s_ShaderLibrary.end())
 		{
 			s_ShaderLibrary[shader->GetName()] = shader;
-			OHM_CORE_TRACE("Added {} Shader to the Shader Library.", shader->GetName());
 		}
 		else
 		{
-			OHM_CORE_WARN("Shader already contained in Shader Library.  Attempted to add {} Shader to Library.", shader->GetName());
+			OHM_CORE_WARN("Shader already contained in Shader Library.  Attempted to add '{}' Shader to Library.", shader->GetName());
 		}
 	}
 
@@ -558,12 +641,8 @@ namespace Ohm
 
 	const Ref<Shader>& ShaderLibrary::Get(const std::string& name)
 	{
-		if (s_ShaderLibrary.find(name) == s_ShaderLibrary.end())
-		{
-			OHM_CORE_ERROR("No shader with name \"{}\" found in Shader Library.", name);
-			return nullptr;
-		}
-
+		ASSERT(s_ShaderLibrary.find(name) != s_ShaderLibrary.end(), "No shader with name: '{}' found in Shader Library.", name);
 		return s_ShaderLibrary.at(name);
 	}
 }
+

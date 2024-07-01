@@ -9,19 +9,22 @@ namespace Ohm
 {
 	enum class ShaderDataType
 	{
-		None = 0, Float, Float2, Float3, Float4, Int, Mat3, Mat4, Sampler2D
+		None = 0, Float, Float2, Float3, Float4, Int, Mat3, Mat4, Sampler2D, SamplerCube, Image2D, ImageCube
 	};
 
 	static std::unordered_map<ShaderDataType, const char*> ShaderDataTypeToString =
 	{
-		{ShaderDataType::Float,		"float"},
-		{ShaderDataType::Float2,	"vec2"},
-		{ShaderDataType::Float3,	"vec3"},
-		{ShaderDataType::Float4,	"vec4"},
-		{ShaderDataType::Int,		"int"},
-		{ShaderDataType::Mat3,		"mat3"},
-		{ShaderDataType::Mat4,		"mat4"},
-		{ShaderDataType::Sampler2D,	"sampler2D"},
+		{ShaderDataType::Float,		    "float"},
+		{ShaderDataType::Float2,	    	"vec2"},
+		{ShaderDataType::Float3,	    	"vec3"},
+		{ShaderDataType::Float4,	    	"vec4"},
+		{ShaderDataType::Int,		    "int"},
+		{ShaderDataType::Mat3,		    "mat3"},
+		{ShaderDataType::Mat4,		    "mat4"},
+		{ShaderDataType::Sampler2D,		"sampler2D"},
+		{ShaderDataType::SamplerCube,	"samplerCube"},
+		{ShaderDataType::Image2D,		"image2D"},
+		{ShaderDataType::ImageCube,		"imageCube"},
 	};
 
 	static uint32_t ShaderDataTypeSize(ShaderDataType type)
@@ -36,6 +39,9 @@ namespace Ohm
 			case ShaderDataType::Mat3:		return 3 * 3 * 4;
 			case ShaderDataType::Mat4:		return 4 * 4 * 4;
 			// 3 Ints, second int represents bool for hide in inspector, made int to keep better alignment
+			case ShaderDataType::Image2D:
+			case ShaderDataType::ImageCube:
+			case ShaderDataType::SamplerCube:
 			case ShaderDataType::Sampler2D:	return 3 * 4;
 			default:						return 0;
 		}
@@ -51,8 +57,8 @@ namespace Ohm
 
 		BufferElement() = default;
 
-		BufferElement(const std::string& name, ShaderDataType type, bool normalized = false)
-			:Name(name), Type(type), Size(ShaderDataTypeSize(type)), Offset(0), Normalized(normalized) { }
+		BufferElement(std::string name, ShaderDataType type, bool normalized = false)
+			:Name(std::move(name)), Type(type), Size(ShaderDataTypeSize(type)), Offset(0), Normalized(normalized) { }
 
 		uint32_t GetComponentCount() const
 		{

@@ -3,8 +3,8 @@
 #include "Ohm/Scene/Component.h"
 #include "Ohm/Rendering/EditorCamera.h"
 #include "Ohm/Rendering/RenderPass.h"
-#include "Ohm/Rendering/Shader.h"
 #include "Ohm/Rendering/Mesh.h"
+#include "Ohm/Scene/Scene.h"
 
 namespace Ohm
 {
@@ -12,17 +12,25 @@ namespace Ohm
 	{
 	public:
 		static void Initialize();
-		static void BeginScene();
-		static void BeginPass(const Ref<RenderPass>& renderPass);
-		static void DrawMesh(const EditorCamera& camera, const Ref<Mesh>& mesh, const Ref<Material>& material, const TransformComponent& transform);
-		static void DrawMesh(const EditorCamera& camera, const Ref<Mesh>& mesh);
-		static void DrawFullScreenQuad();
-		static void DrawUnitCube();
-		static void EndPass(const Ref<RenderPass>& renderPass);
+
+		static void UploadGlobalData();
+		static void UploadCameraData(const EditorCamera& Camera);
+		static void UploadSceneData(const Ref<Scene>& Scene);
+		static void UploadPerEntityData(const TransformComponent& transform);
+
+		static void BeginScene(const Ref<Scene>& scene, const EditorCamera& camera);
 		static void EndScene();
+
+		static void BeginPass(const Ref<RenderPass>& renderPass);
+		static void EndPass(const Ref<RenderPass>& renderPass);
+
+		static void DrawPrimitive(const PrimitiveRendererComponent& primitive);
+		static void DrawPrimitive(const PrimitiveRendererComponent& primitive, const Ref<Material>& material);
+		static void DrawFullScreenQuad(const Ref<Material>& material);
+		static void DrawSkybox(const Ref<Material>& skyboxMaterial);
+
 		static void Shutdown();
-
-
+		
 		struct Statistics
 		{
 			uint64_t TriangleCount;
@@ -36,9 +44,6 @@ namespace Ohm
 		};
 
 		static Statistics GetStats() { return s_Stats; }
-
-	private:
-		static void UploadCameraUniformData(const EditorCamera& camera, const TransformComponent& transform);
 
 	private:
 		static Statistics s_Stats;

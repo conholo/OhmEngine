@@ -30,14 +30,11 @@ namespace Ohm
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(OpenGLMessageCallback, nullptr);
 
-		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_DEPTH_TEST);
-
-		//glEnable(GL_CULL_FACE);
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	}
 
 	void RenderCommand::SetFlags(uint32_t flags)
@@ -51,6 +48,11 @@ namespace Ohm
 			glEnable(GL_BLEND);
 		else
 			glDisable(GL_BLEND);
+	}
+
+	void RenderCommand::SetDrawMode(DrawMode drawMode)
+	{
+		glPolygonMode(GL_FRONT_AND_BACK, drawMode == DrawMode::Fill ? GL_FILL : GL_LINE);
 	}
 
 	void RenderCommand::Clear(bool colorBufferBit, bool depthBufferBit)
@@ -82,51 +84,57 @@ namespace Ohm
 		glClearColor(r, g, b, a);
 	}
 
+	void RenderCommand::ClearColor(const glm::vec4& color)
+	{
+		glClearColor(color.r, color.g, color.b, color.a);
+	}
+
 	void RenderCommand::DrawIndexed(const Ref<VertexArray>& vertexArray, uint32_t indexCount)
 	{
-		glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr);
+		uint32_t count = indexCount ? indexCount : vertexArray->GetIndexBuffer()->GetIndexCount();
+		glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, nullptr);
 	}
 
 	void RenderCommand::SetDepthFlag(DepthFlag depthFlag)
 	{
 		switch (depthFlag)
 		{
-			case DepthFlag::Never:
+		case DepthFlag::Never:
 			{
 				glDepthFunc(GL_NEVER);
 				break;
 			}
-			case DepthFlag::Less:
+		case DepthFlag::Less:
 			{
 				glDepthFunc(GL_LESS);
 				break;
 			}
-			case DepthFlag::Equal:
+		case DepthFlag::Equal:
 			{
 				glDepthFunc(GL_EQUAL);
 				break;
 			}
-			case DepthFlag::LEqual:
+		case DepthFlag::LEqual:
 			{
 				glDepthFunc(GL_LEQUAL);
 				break;
 			}
-			case DepthFlag::Greater:
+		case DepthFlag::Greater:
 			{
 				glDepthFunc(GL_GREATER);
 				break;
 			}
-			case DepthFlag::NotEqual:
+		case DepthFlag::NotEqual:
 			{
 				glDepthFunc(GL_NOTEQUAL);
 				break;
 			}
-			case DepthFlag::GEqual:
+		case DepthFlag::GEqual:
 			{
 				glDepthFunc(GL_GEQUAL);
 				break;
 			}
-			case DepthFlag::Always:
+		case DepthFlag::Always:
 			{
 				glDepthFunc(GL_ALWAYS);
 				break;

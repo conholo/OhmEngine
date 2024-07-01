@@ -18,6 +18,9 @@ namespace Ohm
 		static Ref<spdlog::logger>& GetEngineLogger() { return s_EngineLogger; }
 		static Ref<spdlog::logger>& GetClientLogger() { return s_ClientLogger; }
 
+		template<typename... Args>
+		static void PrintAssertMessage(std::string_view Prefix, Args&&... args);
+
 		static void AddSink(const spdlog::sink_ptr& sinkPointer);
 
 	private:
@@ -26,6 +29,27 @@ namespace Ohm
 
 		static std::vector<spdlog::sink_ptr> s_Sinks;
 	};
+}
+
+template<typename OStream>
+OStream& operator<<(OStream& os, const glm::vec3& vec)
+{
+	return os << '(' << vec.x << ", " << vec.y << ", " << vec.z << ')';
+}
+
+template<typename OStream>
+OStream& operator<<(OStream& os, const glm::vec4& vec)
+{
+	return os << '(' << vec.x << ", " << vec.y << ", " << vec.z << ", " << vec.w << ')';
+}
+
+namespace Ohm
+{
+	template<typename... Args>
+	void Log::PrintAssertMessage(std::string_view Prefix, Args&&... args)
+	{
+		GetEngineLogger()->error("{0}: {1}", Prefix, fmt::format(std::forward<Args>(args)...));
+	}
 }
 
 

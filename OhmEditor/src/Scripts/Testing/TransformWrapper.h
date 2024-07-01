@@ -17,15 +17,15 @@ namespace Ohm
 
 		void Translate(const glm::vec3& direction, float speed);
 		void SetPosition(const glm::vec3& position) { m_Transform.Translation = position; }
-		void SetRotation(const glm::vec3& rotation) { m_Transform.Rotation = rotation; }
+		void SetRotation(const glm::vec3& rotation) { m_Transform.RotationDegrees = rotation; }
 		void SetScale(const glm::vec3& scale) { m_Transform.Scale = scale; }
 
 		const glm::vec3& GetPosition() const { return m_Transform.Translation; }
-		const glm::vec3& GetRotation() const { return m_Transform.Rotation; }
+		const glm::vec3& GetRotation() const { return m_Transform.RotationDegrees; }
 		const glm::vec3& GetScale() const { return m_Transform.Scale; }
 
 		glm::vec3& GetPosition() { return m_Transform.Translation; }
-		glm::vec3& GetRotation() { return m_Transform.Rotation; }
+		glm::vec3& GetRotation() { return m_Transform.RotationDegrees; }
 		glm::vec3& GetScale() { return m_Transform.Scale; }
 
 		// To world space.

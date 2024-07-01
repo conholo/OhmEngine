@@ -1,9 +1,6 @@
 #pragma once
 
 #include "Ohm.h"
-#include "Ohm/Rendering/EditorCamera.h"
-
-#include "Scripts/Testing/TransformWrapper.h"
 #include "Panels/ConsolePanel.h"
 #include "Panels/Viewport.h"
 #include "Panels/SceneHierarchyPanel.h"
@@ -30,19 +27,11 @@ namespace Ohm
 		Entity m_Cube;
 		Entity m_Plane;
 		Entity m_DirectionalLight;
-		Ref<TransformWrapper> m_CubeWrapper;
-		Ref<TransformWrapper> m_SphereWrapper;
-		Ref<TransformWrapper> m_PlaneWrapper;
-		Ref<TransformWrapper> m_QuadWrapper;
-		Ref<TransformWrapper> m_LightDemoWrapper;
-
 		Ref<Scene> m_Scene;
 
 		ConsolePanel m_ConsolePanel;
-		Viewport m_ViewportPanel;
-		SceneHierarchyPanel m_SceneHierarchyPanel;
-
-		float m_ElapsedTime = 0.0f;
+		UI::Viewport m_ViewportPanel;
+		UI::SceneHierarchyPanel m_SceneHierarchyPanel;
 
 		Ref<Material> m_EngineGeometryMaterial;
 	};
