@@ -200,7 +200,7 @@ namespace Ohm
 
 		const uint32_t FilteredRadianceRendererID = TextureLibrary::GetCube(envLight.Pipeline->GetSpecification().GetFilteredCubeName())->GetID();
 		const uint32_t IrradianceRendererID = TextureLibrary::GetCube(envLight.Pipeline->GetSpecification().GetIrradianceCubeName())->GetID();
-		const uint32_t brdfLutId = TextureLibrary::Get2D("BRDF_LUT.png")->GetID();
+		const uint32_t brdfLutId = TextureLibrary::Get2D("BRDF_LUT")->GetID();
 		
 		const TextureUniform radiance { FilteredRadianceRendererID, 5, 1 };
 		const TextureUniform irradiance { IrradianceRendererID, 6, 1 };

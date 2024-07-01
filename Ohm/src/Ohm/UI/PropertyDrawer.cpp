@@ -390,9 +390,10 @@ namespace Ohm
 
 						for (auto [name, texture] : availableTextures)
 						{
-							if (texture->GetID() == m_TextureUniform->RendererID) continue;
 							if (ImGui::Selectable(name.c_str(), true))
+							{
 								m_TextureUniform->RendererID = texture->GetID();
+							}
 						}
 
 						ImGui::EndCombo();

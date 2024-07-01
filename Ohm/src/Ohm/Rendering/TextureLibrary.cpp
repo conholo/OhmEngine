@@ -99,7 +99,7 @@ namespace Ohm
 		{
 			TextureUtils::WrapMode::Repeat,
 			TextureUtils::WrapMode::Repeat,
-			TextureUtils::FilterMode::LinearMipLinear,
+			TextureUtils::FilterMode::Linear,
 			TextureUtils::FilterMode::Linear,
 			TextureUtils::ImageInternalFormat::FromImage,
 			TextureUtils::ImageDataLayout::FromImage,

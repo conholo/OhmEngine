@@ -59,9 +59,15 @@ namespace Ohm
 	{
 		if(specification.Name == "Texture2D")
 		{
-			size_t pos = m_FilePath.find_last_of("/") + 1;
-			size_t size = m_FilePath.size() - pos;
-			m_Name = m_FilePath.substr(pos, size);
+			size_t pos = m_FilePath.find_last_of("/") + 1; // Find position after the last '/'
+			size_t size = m_FilePath.size() - pos; // Size of the substring after the last '/'
+			m_Name = m_FilePath.substr(pos, size); // Extract the file name with extension
+
+			size_t dot_pos = m_Name.find_last_of('.'); // Find the position of the last dot in the file name
+			if (dot_pos != std::string::npos)
+			{
+				m_Name = m_Name.substr(0, dot_pos); // Extract the substring before the last dot
+			}
 		}
 		else
 		{
