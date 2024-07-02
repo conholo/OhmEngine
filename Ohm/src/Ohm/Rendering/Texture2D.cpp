@@ -227,7 +227,7 @@ namespace Ohm
 
 		if (glShaderDataFormat != internalFormat)
 		{
-			OHM_ERROR("Failure Binding '{}' Texture2D to Image Slot: Shader Data Format and Internal format must match!", m_Specification.Name);
+			OHM_CORE_ERROR("Failure Binding '{}' Texture2D to Image Slot: Shader Data Format and Internal format must match!", m_Specification.Name);
 			return;
 		}
 
@@ -239,7 +239,7 @@ namespace Ohm
 		uint32_t bytesPerPixel = m_Specification.PixelLayoutFormat == TextureUtils::ImageDataLayout::RGBA ? 4 : 3;
 		if (size != bytesPerPixel * m_Specification.Width * m_Specification.Height)
 		{
-			OHM_ERROR("Data size must match entire texture.");
+			OHM_CORE_ERROR("Data size must match entire texture.");
 			return;
 		}
 

@@ -20,6 +20,7 @@ namespace Ohm
 	{
 	public:
 		static void Initialize();
+		static void SetFaceCullMode(FaceCullMode cullMode);
 		static void SetFlags(uint32_t flags);
 		static void Clear(bool colorBufferBit, bool depthBufferBit);
 		static void SetViewport(uint32_t width, uint32_t height);

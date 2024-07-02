@@ -138,6 +138,7 @@ namespace Ohm
 		TextureLibrary::LoadWhiteTexture();
 		TextureLibrary::LoadBlackTexture();
 		TextureLibrary::LoadBlackTextureCube();
+		TextureLibrary::LoadBlackTexture3D();
 
 		TextureLibrary::LoadTexture2D( "assets/textures/BRDF_LUT.png");
 		TextureLibrary::LoadTexture2D("assets/textures/lava.jpg");
@@ -145,6 +146,7 @@ namespace Ohm
 		TextureLibrary::LoadTexture2D("assets/textures/space.jpg");
 		TextureLibrary::LoadTexture2D("assets/textures/map.jpg");
 		TextureLibrary::LoadTexture2D("assets/textures/ground-blue.jpg");
+		TextureLibrary::LoadTexture2D("assets/textures/BlueNoise.png");
 
 		ShaderLibrary::Load("assets/shaders/Phong.shader");
 		ShaderLibrary::Load("assets/shaders/ShadowMap.shader");
@@ -162,6 +164,14 @@ namespace Ohm
 		ShaderLibrary::Load("assets/shaders/VertexDeformation.shader");
 		ShaderLibrary::Load("assets/shaders/SceneComposite.shader");
 		ShaderLibrary::Load("assets/shaders/Bloom.shader");
+
+		ShaderLibrary::Load("assets/shaders/Clouds/3DTextureViewer.shader");
+		ShaderLibrary::Load("assets/shaders/Clouds/Clouds.shader");
+		ShaderLibrary::Load("assets/shaders/Clouds/Curl.shader");
+		ShaderLibrary::Load("assets/shaders/Clouds/NormalizeWorley.shader");
+		ShaderLibrary::Load("assets/shaders/Clouds/Perlin2D.shader");
+		ShaderLibrary::Load("assets/shaders/Clouds/TextureDisplay.shader");
+		ShaderLibrary::Load("assets/shaders/Clouds/WorleyGenerator.shader");
 	}
 
 	void Renderer::BeginScene(const Ref<Scene>& scene, const EditorCamera& camera)
@@ -232,6 +242,21 @@ namespace Ohm
 		s_RenderData->Primitives[Primitive::Skybox]->Unbind();
 		s_Stats.TriangleCount += s_RenderData->Primitives[Primitive::Skybox]->GetIndices().size() / 3;
 		s_Stats.VertexCount += s_RenderData->Primitives[Primitive::Skybox]->GetVertices().size();
+	}
+
+	void Renderer::DrawVolumetricClouds(const Ref<Material>& volumetricMaterial)
+	{
+		RenderCommand::SetFaceCullMode(FaceCullMode::None);
+		
+		s_RenderData->Primitives[Primitive::FullScreenQuad]->Bind();
+		volumetricMaterial->UploadStagedUniforms();
+		RenderCommand::DrawIndexed(s_RenderData->Primitives[Primitive::FullScreenQuad]->GetVAO());
+		s_RenderData->Primitives[Primitive::FullScreenQuad]->Unbind();
+		
+		RenderCommand::SetFaceCullMode(FaceCullMode::Back);
+
+		s_Stats.TriangleCount += s_RenderData->Primitives[Primitive::FullScreenQuad]->GetIndices().size() / 3;
+		s_Stats.VertexCount += s_RenderData->Primitives[Primitive::FullScreenQuad]->GetVertices().size();
 	}
 
 	void Renderer::EndPass(const Ref<RenderPass>& renderPass)

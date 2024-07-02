@@ -22,6 +22,7 @@ namespace Ohm
 	EditorCamera SceneRenderer::s_Camera(45.0f, 1920.0f/1080.0f, 0.1f, 1000.0f);
 
 	Ref<RenderPass> SceneRenderer::s_GeometryPass = nullptr;
+	Ref<RenderPass> SceneRenderer::s_VolumetricCloudPass = nullptr;
 	Ref<RenderPass> SceneRenderer::s_SkyboxGeometryPass = nullptr;
 	Ref<RenderPass> SceneRenderer::s_DebugDepthPass = nullptr;
 	Ref<RenderPass> SceneRenderer::s_EnvironmentPass = nullptr;
@@ -54,7 +55,12 @@ namespace Ohm
 		FramebufferSpecification GeometryFBOSpec =
 		{
 			Application::GetApplication().GetWindow().GetWidth(), Application::GetApplication().GetWindow().GetHeight(),
-			{ FramebufferTextureFormat::Depth, FramebufferTextureFormat::RGBA32F }
+			{
+				FramebufferTextureFormat::Depth,
+				FramebufferTextureFormat::RGBA32F,
+				FramebufferTextureFormat::RGBA32F,
+				FramebufferTextureFormat::RGBA32F
+			}
 		};
 
 		RenderPassSpecification GeometryRenderPassSpec;
@@ -70,6 +76,23 @@ namespace Ohm
 		s_SkyboxGeometryPass = CreateRef<RenderPass>(SkyboxGeometryRenderPassSpec);
 	}
 
+	void SceneRenderer::InitializeVolumetricCloudsPass()
+	{
+		FramebufferSpecification volumetricFboSpec =
+		{
+			Application::GetApplication().GetWindow().GetWidth(), Application::GetApplication().GetWindow().GetHeight(),
+			{ FramebufferTextureFormat::RGBA32F }
+		};
+
+		RenderPassSpecification volumetricRenderSpec;
+		volumetricRenderSpec.Flags |= static_cast<uint32_t>(RenderFlag::DepthTest) | static_cast<uint32_t>(RenderFlag::Blend);
+		volumetricRenderSpec.TargetFramebuffer = CreateRef<Framebuffer>(volumetricFboSpec);
+		volumetricRenderSpec.ClearDepthFlag = false;
+		volumetricRenderSpec.PassMaterial = CreateRef<Material>("Volumetric Cloud Material", ShaderLibrary::Get("Clouds"));
+		s_VolumetricCloudPass = CreateRef<RenderPass>(volumetricRenderSpec);
+		volumetricRenderSpec.PassMaterial->GetShader()->LogShaderData();
+	}
+	
 	void SceneRenderer::InitializeDebugDepthPass()
 	{
 		FramebufferSpecification DebugDepthFBOSpec;
@@ -107,19 +130,19 @@ namespace Ohm
 				const glm::vec3 TAI
 				{
 					EnvironmentLight.EnvironmentMapParams.Turbidity,
-					EnvironmentLight.EnvironmentMapParams.Azimuth,
-					EnvironmentLight.EnvironmentMapParams.Inclination
+					EnvironmentLight.EnvironmentMapParams.AzimuthRads,
+					EnvironmentLight.EnvironmentMapParams.InclinationRads
 				};
 				ShaderLibrary::Get("Preetham")->Bind();
 				ShaderLibrary::Get("Preetham")->UploadUniformFloat3("u_TAI", TAI);
 			};
-			EnvironmentLight.Pipeline->GetSpecification().EnvironmentMapResolution = 1024;
+			EnvironmentLight.Pipeline->GetSpecification().EnvironmentMapResolution = 4096;
 			EnvironmentLight.Pipeline->GetSpecification().EnvironmentMapName = "Preetham Sky Model";
 			EnvironmentLight.Pipeline->BuildFromShader("Preetham");
 		}
 		else if(EnvironmentLight.Pipeline->GetSpecification().PipelineType == EnvironmentPipelineType::FromFile)
 			EnvironmentLight.Pipeline->BuildFromEquirectangularImage(EnvironmentLight.Pipeline->GetSpecification().FromFileFilePath);
-		
+
 		RenderPassSpecification EnvironmentPassSpec;
 		EnvironmentPassSpec.TargetFramebuffer = CreateRef<Framebuffer>(fboSpec);
 		EnvironmentPassSpec.PassMaterial = CreateRef<Material>("Skybox Material", ShaderLibrary::Get("Skybox"));
@@ -132,7 +155,7 @@ namespace Ohm
 	{
 		s_BloomProperties = CreateRef<BloomProperties>();
 		s_BloomProperties->BloomShader = ShaderLibrary::Get("Bloom");
-		Texture2DSpecification FileTextureSpec =
+		Texture2DSpecification fileSpec =
 		{
 			TextureUtils::WrapMode::Repeat,
 			TextureUtils::WrapMode::Repeat,
@@ -143,10 +166,10 @@ namespace Ohm
 			TextureUtils::ImageDataType::UByte,
 		};
 
-		FileTextureSpec.Name = "Bloom Dirt Mask";
+		fileSpec.Name = "Bloom Dirt Mask";
 		const std::string DirtMaskPath = "assets/textures/dirt-mask.png";
 
-		s_BloomProperties->BloomDirtTexture = TextureLibrary::LoadTexture2D(FileTextureSpec, DirtMaskPath);
+		s_BloomProperties->BloomDirtTexture = TextureLibrary::LoadTexture2D(fileSpec, DirtMaskPath);
 
 		const glm::vec2 WindowDimensions = { Application::GetApplication().GetWindow().GetWidth(), Application::GetApplication().GetWindow().GetHeight() };
 		uint32_t HalfWidth = WindowDimensions.x / 2;
@@ -270,8 +293,8 @@ namespace Ohm
 						const glm::vec3 TAI
 						{
 							EnvironmentLight.EnvironmentMapParams.Turbidity,
-							EnvironmentLight.EnvironmentMapParams.Azimuth,
-							EnvironmentLight.EnvironmentMapParams.Inclination
+							EnvironmentLight.EnvironmentMapParams.AzimuthRads,
+							EnvironmentLight.EnvironmentMapParams.InclinationRads
 						};
 						ShaderLibrary::Get("Preetham")->Bind();
 						ShaderLibrary::Get("Preetham")->UploadUniformFloat3("u_TAI", TAI);
@@ -309,14 +332,14 @@ namespace Ohm
 			s_BloomProperties->BloomShader->UploadUniformFloat4("u_Params", bloomConstants.Params);
 			s_BloomProperties->BloomShader->UploadUniformFloat("u_LOD", bloomConstants.LOD);
 			s_BloomProperties->BloomShader->UploadUniformInt("u_Mode", bloomConstants.Mode);
-			s_GeometryPass->GetRenderPassSpecification().TargetFramebuffer->BindColorAttachment(0, 0);
+			s_VolumetricCloudPass->GetRenderPassSpecification().TargetFramebuffer->BindColorAttachment(0, 0);
 			s_BloomProperties->BloomShader->UploadUniformInt("u_Texture", 0);
 			s_BloomProperties->BloomComputeTextures[0]->BindToImageSlot(0, 0, TextureUtils::TextureAccessLevel::WriteOnly, TextureUtils::TextureShaderDataFormat::RGBA32F);
 
 			s_BloomProperties->BloomShader->DispatchCompute(workGroupsX, workGroupsY, 1);
 			s_BloomProperties->BloomShader->EnableShaderImageAccessBarrierBit();
 
-			s_GeometryPass->GetRenderPassSpecification().TargetFramebuffer->UnbindColorAttachment(0, 0);
+			s_VolumetricCloudPass->GetRenderPassSpecification().TargetFramebuffer->UnbindColorAttachment(0, 0);
 		}
 		//------------------ PREFILTER -----------------//
 
@@ -413,10 +436,118 @@ namespace Ohm
 		s_BloomProperties->BloomShader->Unbind();
 	}
 
+	void SceneRenderer::VolumetricCloudsPass()
+	{
+		Renderer::BeginPass(s_VolumetricCloudPass);
+
+		VolumetricCloudComponent& volumetricComponent = s_ActiveScene->GetVolumetricCloud().GetComponent<VolumetricCloudComponent>();
+
+		s_GeometryPass->GetRenderPassSpecification().TargetFramebuffer->BindColorAttachment(0);
+		s_GeometryPass->GetRenderPassSpecification().TargetFramebuffer->BindDepthTexture(1);
+
+		auto sceneTexUniform = TextureUniform { s_GeometryPass->GetRenderPassSpecification().TargetFramebuffer->GetColorAttachmentID(), 0, 1 };
+		auto sceneDepthTexUniform = TextureUniform { s_GeometryPass->GetRenderPassSpecification().TargetFramebuffer->GetDepthAttachmentID(), 1, 1 };
+		auto baseShapeTexUniform = TextureUniform { volumetricComponent.BaseShapeSettings->BaseShapeTexture->GetID(), 2, 1 };
+		auto perlinWeatherTexUniform = TextureUniform { volumetricComponent.PerlinSettings->PerlinTexture->GetID(), 3, 1 };
+		auto baseDetailTexUniform = TextureUniform { volumetricComponent.DetailShapeSettings->DetailShapeTexture->GetID(), 4, 1 };
+		auto curlTextureUniform = TextureUniform { volumetricComponent.CurlSettings->CurlTexture->GetID(), 5, 1 };
+		auto blueNoiseTexUniform = TextureUniform { TextureLibrary::Get2D("BlueNoise")->GetID(), 6, 1 };
+
+		// Textures
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<bool>("u_DrawClouds", volumetricComponent.MainSettings->DrawClouds);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<TextureUniform>("u_SceneTexture", sceneTexUniform);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<TextureUniform>("u_DepthTexture", sceneDepthTexUniform);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<TextureUniform>("u_BaseShapeTexture", baseShapeTexUniform);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<TextureUniform>("u_WeatherMap", perlinWeatherTexUniform);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<TextureUniform>("u_DetailShapeTexture", baseDetailTexUniform);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<TextureUniform>("u_CurlNoise", curlTextureUniform);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<TextureUniform>("u_BlueNoiseTexture", blueNoiseTexUniform);
+
+		// Camera Uniforms
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_NearClip", s_Camera.GetNearClip());
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_FarClip", s_Camera.GetFarClip());
+
+		// Sky / Sun Uniforms
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<glm::vec3>("u_SkyColorA", volumetricComponent.MainSettings->SkyColorA);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<glm::vec3>("u_SkyColorB", volumetricComponent.MainSettings->SkyColorB);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_SunSize", 100.0f);
+
+		// Animation Uniforms
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_TimeScale", volumetricComponent.AnimationSettings->TimeScale);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<glm::vec3>("u_ShapeTextureOffset", volumetricComponent.AnimationSettings->ShapeTextureOffset);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_CloudOffsetScrollSpeed", volumetricComponent.AnimationSettings->CloudScrollOffsetSpeed);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_AnimationSpeed", volumetricComponent.AnimationSettings->AnimationSpeed);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<bool>("u_Animate", volumetricComponent.AnimationSettings->AnimateClouds);
+
+		// Cloud Lighting Uniforms
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_PowderConstant", volumetricComponent.MainSettings->PowderConstant);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_SilverLiningConstant", volumetricComponent.MainSettings->SilverLiningConstant);
+		glm::vec4 phaseParams = glm::vec4(
+			volumetricComponent.MainSettings->ForwardScattering,
+			volumetricComponent.MainSettings->BackScattering,
+			volumetricComponent.MainSettings->BaseBrightness,
+			volumetricComponent.MainSettings->PhaseFactor);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<glm::vec4>("u_PhaseParams", phaseParams);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_PhaseBlend", volumetricComponent.MainSettings->PhaseBlend);
+
+		// Bounds / Container Uniforms
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_CloudScale", volumetricComponent.MainSettings->CloudScale);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<glm::vec3>("u_BoundsMin", volumetricComponent.MainSettings->CloudContainerPosition - volumetricComponent.MainSettings->CloudContainerScale / 2.0f);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<glm::vec3>("u_BoundsMax", volumetricComponent.MainSettings->CloudContainerPosition + volumetricComponent.MainSettings->CloudContainerScale / 2.0f);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_CloudScaleFactor", volumetricComponent.MainSettings->CloudScaleFactor);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_ContainerEdgeFadeDistance", volumetricComponent.MainSettings->ContainerEdgeFadeDistance);
+
+		// Density Uniforms
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_DensityThreshold", volumetricComponent.MainSettings->DensityThreshold);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_DensityMultiplier", volumetricComponent.MainSettings->DensityMultiplier);
+
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<glm::vec4>("u_ShapeNoiseWeights", volumetricComponent.MainSettings->ShapeNoiseWeights);
+
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<glm::vec3>("u_DetailNoiseWeights", volumetricComponent.MainSettings->DetailNoiseWeights);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_DetailNoiseWeight", volumetricComponent.MainSettings->DetailNoiseWeight);
+
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_CurlIntensity", volumetricComponent.MainSettings->CurlIntensity);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_ExtinctionFactor", volumetricComponent.MainSettings->ExtinctionFactor);
+
+		// Marching Uniforms
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<int>("u_DensitySteps", volumetricComponent.MainSettings->DensitySteps);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<int>("u_LightSteps", volumetricComponent.MainSettings->LightSteps);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_RandomOffsetStrength", volumetricComponent.MainSettings->RandomOffsetStrength);
+
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<glm::vec3>("u_CloudTypeWeights", volumetricComponent.MainSettings->CloudTypeWeights);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_CloudTypeWeightStrength", volumetricComponent.MainSettings->CloudTypeWeightStrength);
+
+		int displayIdx =
+			volumetricComponent.DebugSettings->ActiveNoiseType == CloudNoiseType::Perlin || volumetricComponent.DebugSettings->ActiveNoiseType == CloudNoiseType::Curl ?
+				0 : 1;
+		auto display3dIdx =
+			volumetricComponent.DebugSettings->ActiveDebugShapeType == DebugShapeType::BaseShape
+				? baseShapeTexUniform
+				: baseDetailTexUniform;
+		auto display2dIdx = volumetricComponent.DebugSettings->ActiveNoiseType == CloudNoiseType::Perlin
+			? perlinWeatherTexUniform
+			: curlTextureUniform;
+		
+		// Debug
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<glm::vec2>("u_ScreenResolution", s_ViewportSize );
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_PercentOfScreen", volumetricComponent.DebugSettings->MainTextureDebugSettings->PercentScreenTextureDisplay);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<int>("u_DisplayIndex", displayIdx);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<TextureUniform>("u_DisplayTexture3D", display3dIdx);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<TextureUniform>("u_DisplayTexture2D", display2dIdx);
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<bool>("u_ShowAlpha", volumetricComponent.DebugSettings->GetDisplayAlpha());
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<bool>("u_ShowAllChannels", volumetricComponent.DebugSettings->GetShowAllChannels());
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<bool>("u_GreyScale", volumetricComponent.DebugSettings->GetEnableGreyScale());
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<float>("u_DepthSlice", volumetricComponent.DebugSettings->GetDepthSlice());
+		s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial->Set<glm::vec4>("u_ChannelWeights", volumetricComponent.DebugSettings->GetChannelWeights());
+
+		Renderer::DrawVolumetricClouds(s_VolumetricCloudPass->GetRenderPassSpecification().PassMaterial);
+		Renderer::EndPass(s_VolumetricCloudPass);
+	}
+
 	void SceneRenderer::SceneCompositePass()
 	{
 		Renderer::BeginPass(s_SceneCompositePass);
-		const TextureUniform GeometryTexUniform {s_GeometryPass->GetRenderPassSpecification().TargetFramebuffer->GetColorAttachmentID(0), 0, 1};
+		const TextureUniform GeometryTexUniform {s_VolumetricCloudPass->GetRenderPassSpecification().TargetFramebuffer->GetColorAttachmentID(0), 0, 1};
 		const TextureUniform BloomTextureUniform {s_BloomProperties->BloomComputeTextures[2]->GetID(), 1, 1};
 		const TextureUniform BloomDirtTextureUniform {TextureLibrary::Get2D("Bloom Dirt Mask")->GetID(), 2, 1};
 		
@@ -435,6 +566,7 @@ namespace Ohm
 	void SceneRenderer::InitializePipeline()
 	{
 		InitializeGeometryPass();
+		InitializeVolumetricCloudsPass();
 		InitializeDebugDepthPass();
 		InitializeEnvironmentPass();
 		InitializeBloomPass();
@@ -448,6 +580,7 @@ namespace Ohm
 		DebugVisualizeDepthPass();
 		EnvironmentPass();
 		GeometryPass();
+		VolumetricCloudsPass();
 
 		BloomPass();
 		SceneCompositePass();
@@ -473,6 +606,7 @@ namespace Ohm
 		s_EnvironmentPass->GetRenderPassSpecification().TargetFramebuffer->Resize((uint32_t)s_ViewportSize.x, (uint32_t)s_ViewportSize.y);
 		s_SceneCompositePass->GetRenderPassSpecification().TargetFramebuffer->Resize((uint32_t)s_ViewportSize.x, (uint32_t)s_ViewportSize.y);
 		s_DebugDepthPass->GetRenderPassSpecification().TargetFramebuffer->Resize((uint32_t)s_ViewportSize.x, (uint32_t)s_ViewportSize.y);
+		s_VolumetricCloudPass->GetRenderPassSpecification().TargetFramebuffer->Resize((uint32_t)s_ViewportSize.x, (uint32_t)s_ViewportSize.y);
 
 		uint32_t halfWidth = s_ViewportSize.x / 2;
 		uint32_t halfHeight = s_ViewportSize.y / 2;
@@ -482,6 +616,10 @@ namespace Ohm
 		s_BloomProperties->BloomComputeTextures[0]->Resize(halfWidth, halfHeight);
 		s_BloomProperties->BloomComputeTextures[1]->Resize(halfWidth, halfHeight);
 		s_BloomProperties->BloomComputeTextures[2]->Resize(halfWidth, halfHeight);
+
+		Entity EnvironmentLightEntity = s_ActiveScene->GetEnvironmentLight();
+		EnvironmentLightComponent& EnvironmentLight = EnvironmentLightEntity.GetComponent<EnvironmentLightComponent>();
+		EnvironmentLight.NeedsUpdate = true;
 
 		s_Camera.SetViewportSize(s_ViewportSize.x, s_ViewportSize.y);
 	}
@@ -515,6 +653,7 @@ namespace Ohm
 	        "Unfiltered Sky Radiance",
 	        "Irradiance",
 	    	"Scene Geometry",
+	    	"Clouds",
 	        "Depth",
 	    	"Bloom",
 	    };
@@ -534,7 +673,8 @@ namespace Ohm
 	                	case 1: ImageID = s_EnvironmentPass->GetRenderPassSpecification().TargetFramebuffer->GetColorAttachmentID(1);	break; // Unfiltered Sky Radiance
 	                	case 2: ImageID = s_EnvironmentPass->GetRenderPassSpecification().TargetFramebuffer->GetColorAttachmentID(2);	break; // Irradiance 
 	                    case 3: ImageID = s_GeometryPass->GetRenderPassSpecification().TargetFramebuffer->GetColorAttachmentID(0);		break; // PBR Geometry Output
-	                    case 4: ImageID = s_DebugDepthPass->GetRenderPassSpecification().TargetFramebuffer->GetColorAttachmentID(0);	break; // Depth
+	                    case 4: ImageID = s_VolumetricCloudPass->GetRenderPassSpecification().TargetFramebuffer->GetColorAttachmentID(0);		break;
+	                    case 5: ImageID = s_DebugDepthPass->GetRenderPassSpecification().TargetFramebuffer->GetColorAttachmentID(0);	break; // Depth
 	                    case 6: ImageID = s_BloomProperties->BloomComputeTextures[2]->GetID();												break; // Bloom
 	                    default: ;
 	                }
@@ -551,11 +691,12 @@ namespace Ohm
 		                uint32_t AttachmentIndex = 0;
 		                switch(Index)
 	            		{
-	            			case 0: SaveFBO = s_EnvironmentPass->GetRenderPassSpecification().TargetFramebuffer; AttachmentIndex = 0;			break; // Filtered Sky Radiance
-	            			case 1: SaveFBO = s_EnvironmentPass->GetRenderPassSpecification().TargetFramebuffer; AttachmentIndex = 1;			break; // Unfiltered Sky Radiance
-	            			case 2: SaveFBO = s_EnvironmentPass->GetRenderPassSpecification().TargetFramebuffer; AttachmentIndex = 2;			break; // Irradiance 
-	            			case 3: SaveFBO = s_GeometryPass->GetRenderPassSpecification().TargetFramebuffer; AttachmentIndex = 0;				break; // PBR Geometry Output
-	            			case 5: SaveFBO = s_DebugDepthPass->GetRenderPassSpecification().TargetFramebuffer;	AttachmentIndex = 0;			break; // Depth
+	            			case 0: SaveFBO = s_EnvironmentPass->GetRenderPassSpecification().TargetFramebuffer;		AttachmentIndex = 0;			break; // Filtered Sky Radiance
+	            			case 1: SaveFBO = s_EnvironmentPass->GetRenderPassSpecification().TargetFramebuffer;		AttachmentIndex = 1;			break; // Unfiltered Sky Radiance
+	            			case 2: SaveFBO = s_EnvironmentPass->GetRenderPassSpecification().TargetFramebuffer;		AttachmentIndex = 2;			break; // Irradiance 
+	            			case 3: SaveFBO = s_GeometryPass->GetRenderPassSpecification().TargetFramebuffer;			AttachmentIndex = 0;			break; // PBR Geometry Output
+	            			case 4: SaveFBO = s_DebugDepthPass->GetRenderPassSpecification().TargetFramebuffer;			AttachmentIndex = 0;			break; // Depth
+	            			case 5: SaveFBO = s_VolumetricCloudPass->GetRenderPassSpecification().TargetFramebuffer;	AttachmentIndex = 0;			break; // Depth
 	            		}
 
 	            		if(SaveFBO != nullptr)

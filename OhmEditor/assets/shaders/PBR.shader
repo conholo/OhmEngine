@@ -167,12 +167,8 @@ vec3 RotateVectorAboutY(float radians, vec3 vec)
 	return rotationMatrix * vec;
 }
 
-vec3 IBL()
+vec3 IBL(vec3 F0, vec3 Lr)
 {
-	vec3 Lr = 2.0 * PBRParams.NdotV * PBRParams.Normal - PBRParams.View;
-	// Fresnel reflectance, metals use albedo
-	vec3 F0 = mix(FresnelDialectric, PBRParams.Albedo, PBRParams.Metalness);
-    
 	vec3 irradiance = textureLod(sampler_IrradianceCube, PBRParams.Normal, 0.0).rgb;
 	vec3 F = FresnelSchlickRoughness(F0, PBRParams.NdotV, PBRParams.Roughness);
 	vec3 kd = (1.0 - F) * (1.0 - PBRParams.Metalness);
@@ -192,42 +188,17 @@ vec3 IBL()
 	return kd * diffuseIBL + specularIBL;
 }
 
-vec3 CalculateLighting()
+vec3 CalculateLighting(vec3 F0)
 {
-    vec2 texCoord = VertexInput.TexCoord * TextureTiling;
-
-	vec4 albedoTexColor = texture(sampler_AlbedoTexture, texCoord);
-	PBRParams.Albedo = albedoTexColor.rgb * AlbedoColor;
-	float alpha = albedoTexColor.a;
-
-	PBRParams.Metalness = texture(sampler_MetalnessTexture, texCoord).r * Metalness;
-	PBRParams.Roughness = texture(sampler_RoughnessTexture, texCoord).r * Roughness;
-	PBRParams.Roughness = max(PBRParams.Roughness, 0.05); 
-
-	PBRParams.Normal = normalize(VertexInput.Normal);
-	if (UseNormalMap == 1)
-	{
-		PBRParams.Normal = normalize(texture(sampler_NormalTexture, VertexInput.TexCoord).rgb * 2.0f - 1.0f);
-		PBRParams.Normal = normalize(VertexInput.WorldNormals * PBRParams.Normal);
-	}
-	
-	PBRParams.View = normalize(CameraPosition.xyz - VertexInput.WorldPosition);
-	PBRParams.NdotV = max(0.0, dot(PBRParams.Normal, PBRParams.View));
-
-	// Specular reflection vector
-	vec3 Lr = 2.0 * PBRParams.NdotV * PBRParams.Normal - PBRParams.View;
-	// Fresnel reflectance, metals use albedo
-	vec3 F0 = mix(FresnelDialectric, PBRParams.Albedo, PBRParams.Metalness);
-
 	vec3 Li = normalize(-LightDirection);
     vec3 LRadiance = LightRadiance * LightIntensity;
     vec3 Lh = normalize(Li + PBRParams.View);
 
-	float cosLi  = max(0.0, dot(PBRParams.Normal, Li));
-	float cosLh  = max(0.0, dot(PBRParams.Normal, Lh));
-	float cosLhV = max(0.0, dot(Lh, PBRParams.View));
-
-	vec3  F = FresnelSchlick(F0, cosLhV, PBRParams.Roughness);
+	// Calculate angles between surface normal and various light vectors.
+	float cosLi = max(0.0, dot(PBRParams.Normal, Li));
+	float cosLh = max(0.0, dot(PBRParams.Normal, Lh));
+	
+	vec3 F = FresnelSchlickRoughness(F0, max(0.0, dot(Lh, PBRParams.View)), PBRParams.Roughness);
 	float D = NdfGGX(cosLh, PBRParams.Roughness);
 	float G = GaSchlickGGX(cosLi, PBRParams.NdotV, PBRParams.Roughness);
 
@@ -245,8 +216,33 @@ vec3 CalculateLighting()
 
 void main()
 {
-	vec3 i = CalculateLighting();
-    vec3 gi = IBL() * EnvironmentIntensity;
+	vec2 texCoord = VertexInput.TexCoord * TextureTiling;
 
-	o_Color = vec4(i + gi, 1.0);
+	vec4 albedoTexColor = texture(sampler_AlbedoTexture, texCoord);
+	PBRParams.Albedo = albedoTexColor.rgb * AlbedoColor;
+	float alpha = albedoTexColor.a;
+
+	PBRParams.Metalness = texture(sampler_MetalnessTexture, texCoord).r * Metalness;
+	PBRParams.Roughness = texture(sampler_RoughnessTexture, texCoord).r * Roughness;
+	PBRParams.Roughness = max(PBRParams.Roughness, 0.05); 
+
+	PBRParams.Normal = normalize(VertexInput.Normal);
+	if (UseNormalMap == 1)
+	{
+		PBRParams.Normal = normalize(texture(sampler_NormalTexture, texCoord).rgb * 2.0f - 1.0f);
+		PBRParams.Normal = normalize(VertexInput.WorldNormals * PBRParams.Normal);
+	}
+	
+	PBRParams.View = normalize(CameraPosition.xyz - VertexInput.WorldPosition);
+	PBRParams.NdotV = max(0.0, dot(PBRParams.Normal, PBRParams.View));
+
+	// Specular reflection vector
+	vec3 Lr = 2.0 * PBRParams.NdotV * PBRParams.Normal - PBRParams.View;
+	// Fresnel reflectance, metals use albedo
+	vec3 F0 = mix(FresnelDialectric, PBRParams.Albedo, PBRParams.Metalness);
+
+	vec3 di = CalculateLighting(F0);
+    vec3 gi = IBL(F0, Lr) * EnvironmentIntensity;
+
+	o_Color = vec4(di + gi, 1.0);
 }

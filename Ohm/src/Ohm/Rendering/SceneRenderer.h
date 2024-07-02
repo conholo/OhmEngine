@@ -34,6 +34,7 @@ namespace Ohm
 		
 		static void InitializeGeometryPass();
 		static void InitializeDebugDepthPass();
+		static void InitializeVolumetricCloudsPass();
 		static void InitializeEnvironmentPass();
 		static void InitializeBloomPass();
 		static void InitializeSceneCompositePass();
@@ -42,14 +43,15 @@ namespace Ohm
 		static void DebugVisualizeDepthPass();
 		static void EnvironmentPass();
 		static void BloomPass();
+		static void VolumetricCloudsPass();
 		static void SceneCompositePass();
 
 	private:
 		static Ref<Scene> s_ActiveScene;
 		static EditorCamera s_Camera;
 
-		//static Ref<RenderPass> s_ShadowPass;
 		static Ref<RenderPass> s_GeometryPass;
+		static Ref<RenderPass> s_VolumetricCloudPass;
 		static Ref<RenderPass> s_SkyboxGeometryPass;
 		static Ref<RenderPass> s_DebugDepthPass;
 		static Ref<RenderPass> s_EnvironmentPass;

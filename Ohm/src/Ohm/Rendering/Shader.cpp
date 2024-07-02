@@ -27,17 +27,19 @@ namespace Ohm
 	{
 		switch (value)
 		{
-		case GL_FLOAT:				return ShaderDataType::Float;
-		case GL_FLOAT_VEC2: 		return ShaderDataType::Float2;
-		case GL_FLOAT_VEC3: 		return ShaderDataType::Float3;
-		case GL_FLOAT_VEC4: 		return ShaderDataType::Float4;
-		case GL_INT:				return ShaderDataType::Int;
-		case GL_FLOAT_MAT3: 		return ShaderDataType::Mat3;
-		case GL_FLOAT_MAT4: 		return ShaderDataType::Mat4;
-		case GL_SAMPLER_2D:			return ShaderDataType::Sampler2D;
-		case GL_SAMPLER_CUBE:		return ShaderDataType::SamplerCube;
-		default:
-			return ShaderDataType::None;
+			case GL_FLOAT:				return ShaderDataType::Float;
+			case GL_FLOAT_VEC2: 		return ShaderDataType::Float2;
+			case GL_FLOAT_VEC3: 		return ShaderDataType::Float3;
+			case GL_FLOAT_VEC4: 		return ShaderDataType::Float4;
+			case GL_INT:				return ShaderDataType::Int;
+			case GL_BOOL:				return ShaderDataType::Bool;
+			case GL_FLOAT_MAT3: 		return ShaderDataType::Mat3;
+			case GL_FLOAT_MAT4: 		return ShaderDataType::Mat4;
+			case GL_SAMPLER_2D:			return ShaderDataType::Sampler2D;
+			case GL_SAMPLER_3D:			return ShaderDataType::Sampler3D;
+			case GL_SAMPLER_CUBE:		return ShaderDataType::SamplerCube;
+			default:
+				return ShaderDataType::None;
 		}
 	}
 	
@@ -230,6 +232,7 @@ namespace Ohm
 				return data;
 			}
 		case ShaderDataType::SamplerCube:
+		case ShaderDataType::Sampler3D:
 		case ShaderDataType::Sampler2D:
 			{
 				GLint* data = (GLint*)malloc(ShaderDataTypeSize(type));
@@ -239,6 +242,12 @@ namespace Ohm
 				return data;
 			}
 		case ShaderDataType::Int:
+			{
+				GLint* data = (GLint*)malloc(ShaderDataTypeSize(type));
+				glGetUniformiv(m_ID, location, data);
+				return data;
+			}
+		case ShaderDataType::Bool:
 			{
 				GLint* data = (GLint*)malloc(ShaderDataTypeSize(type));
 				glGetUniformiv(m_ID, location, data);

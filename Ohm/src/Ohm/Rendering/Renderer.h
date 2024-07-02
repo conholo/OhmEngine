@@ -28,7 +28,8 @@ namespace Ohm
 		static void DrawPrimitive(const PrimitiveRendererComponent& primitive, const Ref<Material>& material);
 		static void DrawFullScreenQuad(const Ref<Material>& material);
 		static void DrawSkybox(const Ref<Material>& skyboxMaterial);
-
+		static void DrawVolumetricClouds(const Ref<Material>& volumetricMaterial);
+		
 		static void Shutdown();
 		
 		struct Statistics

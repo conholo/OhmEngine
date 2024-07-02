@@ -11,7 +11,7 @@ namespace Ohm
 
 	void Time::Tick()
 	{
-		s_Elapsed = (float)glfwGetTime();
+		s_Elapsed = static_cast<float>(glfwGetTime());
 		s_DeltaTime = s_Elapsed - s_LastFrameTime;
 		s_LastFrameTime = s_Elapsed;
 	}

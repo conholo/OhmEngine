@@ -34,18 +34,19 @@ namespace Ohm
 
 		if(EnvLightComponent.Pipeline->GetSpecification().PipelineType != EnvironmentPipelineType::FromShader) return;
 
-		const float Azimuth = EnvLightComponent.EnvironmentMapParams.Azimuth;
-		const float Elevation = EnvLightComponent.EnvironmentMapParams.Inclination;
-			
+		const float Azimuth = EnvLightComponent.EnvironmentMapParams.AzimuthRads;
+		const float Elevation = EnvLightComponent.EnvironmentMapParams.InclinationRads;
+
 		Entity DirectionalLightEntity = GetDirectionalLight();
 		DirectionalLightComponent& DirLightComponent = DirectionalLightEntity.GetComponent<DirectionalLightComponent>();
 		const glm::vec3 DirectionToSun = normalize(glm::vec3
 			(
-				sin(Azimuth) * cos(Elevation),
+				sin(Elevation) * cos(Azimuth),
 				sin(Elevation),
 				cos(Elevation) * cos(Azimuth)
 			)
 		);
+
 		DirLightComponent.LightDirection = -DirectionToSun;
 	}
 
@@ -74,7 +75,15 @@ namespace Ohm
 			return Entity{entity, this};
 		return {};
 	}
-	
+
+	Entity Scene::GetVolumetricCloud()
+	{
+		const auto View = m_Registry.view<VolumetricCloudComponent>();
+		for (const auto entity : View)
+			return Entity{entity, this};
+		return {};
+	}
+
 	template<typename T>
 	void Scene::OnComponentAdded(Entity entity, T& component)
 	{
@@ -121,6 +130,12 @@ namespace Ohm
 	void Scene::OnComponentAdded<EnvironmentLightComponent>(Entity entity, EnvironmentLightComponent& component)
 	{
 		m_EnvironmentLightEntityID = entity;  
+	}
+
+	template<>
+	void Scene::OnComponentAdded<VolumetricCloudComponent>(Entity entity, VolumetricCloudComponent& volumetricComponent)
+	{
+		m_VolumetricCloudEntityID = entity;  
 	}
 
 }

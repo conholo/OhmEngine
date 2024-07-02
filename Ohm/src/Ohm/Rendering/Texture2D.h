@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Ohm/Rendering/Utility/TextureUtils.h"
+#include <string>
 
 namespace Ohm
 {

@@ -15,19 +15,13 @@ namespace Ohm
 		const void* userParam
 	)
 	{
-		switch (severity)
-		{
-			case GL_DEBUG_SEVERITY_HIGH:         OHM_CORE_CRITICAL(message); return;
-			case GL_DEBUG_SEVERITY_MEDIUM:       OHM_CORE_ERROR(message); return;
-			case GL_DEBUG_SEVERITY_LOW:          OHM_CORE_WARN(message); return;
-			case GL_DEBUG_SEVERITY_NOTIFICATION: OHM_CORE_TRACE(message); return;
-		}
+		std::string typeString = type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "";
+		OHM_CORE_ERROR("OpenGL Error: {} type = {}, severity = {}, message = {}", typeString, type, severity, message);
 	}
 
 	void RenderCommand::Initialize()
 	{
 		glEnable(GL_DEBUG_OUTPUT);
-		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(OpenGLMessageCallback, nullptr);
 
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
@@ -35,6 +29,15 @@ namespace Ohm
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_DEPTH_TEST);
+	}
+
+	void RenderCommand::SetFaceCullMode(FaceCullMode cullMode)
+	{
+		glEnable(GL_CULL_FACE);
+		glCullFace(cullMode == FaceCullMode::Front ? GL_FRONT : GL_BACK);
+
+		if (cullMode == FaceCullMode::None)
+			glDisable(GL_CULL_FACE);
 	}
 
 	void RenderCommand::SetFlags(uint32_t flags)

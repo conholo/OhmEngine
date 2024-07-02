@@ -19,6 +19,7 @@ namespace Ohm
 	{
 		std::unordered_map<std::string, float> FloatUniforms;
 		std::unordered_map<std::string, int> IntUniforms;
+		std::unordered_map<std::string, bool> BoolUniforms;
 		std::unordered_map<std::string, TextureUniform> TextureUniforms;
 		std::unordered_map<std::string, glm::vec2> Vec2Uniforms;
 		std::unordered_map<std::string, glm::vec3> Vec3Uniforms;
@@ -73,7 +74,7 @@ namespace Ohm
 
 	private:
 		void AllocateBaseBlockStorageBuffer();
-		void InitializeBaseBlockStorageBufferWithUniformDefaults() const;
+		void InitializeBaseBlockStorageBufferWithUniformDefaults();
 
 		Ref<Shader> m_Shader;
 		Buffer m_BaseBlockStorageBuffer;

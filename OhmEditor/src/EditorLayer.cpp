@@ -23,7 +23,7 @@ namespace Ohm
 
 	void EditorLayer::OnAttach()
 	{
-		Application::GetApplication().GetWindow().ToggleIsMaximized();
+		//Application::GetApplication().GetWindow().ToggleIsMaximized();
 		m_EngineGeometryMaterial = CreateRef<Material>("Base Material", ShaderLibrary::Get("PBR"));
 
 		m_Scene = CreateRef<Scene>("Test Scene");
@@ -33,10 +33,13 @@ namespace Ohm
 		sun.GetComponent<DirectionalLightComponent>().Intensity = 5.0f;
 		sun.GetComponent<TransformComponent>().Scale = {1.0f, 1.0f, 1.0f};
 
-		auto envLight = m_Scene->CreateEntity("Env");
+		auto envLight = m_Scene->CreateEntity("Environment Light");
 		envLight.AddComponent<EnvironmentLightComponent>();
 		envLight.GetComponent<EnvironmentLightComponent>().Pipeline->GetSpecification().PipelineType = EnvironmentPipelineType::FromShader; 
-		envLight.GetComponent<EnvironmentLightComponent>().EnvironmentMapParams.Inclination = glm::radians(50.0f);
+		envLight.GetComponent<EnvironmentLightComponent>().EnvironmentMapParams.InclinationRads = glm::radians(50.0f);
+
+		auto clouds = m_Scene->CreateEntity("Volumetric Clouds");
+		clouds.AddComponent<VolumetricCloudComponent>();
 
 		SceneRenderer::LoadScene(m_Scene);
 		SceneRenderer::InitializePipeline();

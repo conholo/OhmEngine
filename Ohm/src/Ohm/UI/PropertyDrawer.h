@@ -37,7 +37,7 @@ namespace Ohm
 			}
 			virtual ~UIProperty() = default;
 
-			virtual void Draw() = 0;
+			virtual bool Draw() = 0;
 
 			const std::string& GetLabel() const { return m_Label; }
 
@@ -58,10 +58,10 @@ namespace Ohm
 					m_FloatParameters.Max = *value;
 			}
 
-			void Draw() override;
-			static void Draw(const std::string& label, float* value);
+			bool Draw() override;
+			static bool Draw(const std::string& label, float* value);
 			static bool DrawSlider(const std::string& label, float* value, float min, float max);
-			static bool DrawAngle(const std::string& label, float* radians, float min, float max);
+			static bool DrawAngle(const std::string& label, float* rads, float min, float max);
 
 			void SetIsDrag(bool isDrag) { m_FloatParameters.IsDrag = isDrag; }
 			void SetMin(float min) { m_FloatParameters.Min = min; }
@@ -84,8 +84,8 @@ namespace Ohm
 			{
 			}
 
-			void Draw() override;
-			static void DrawDragInt(const std::string& label, int* value, float speed, int min, int max);
+			bool Draw() override;
+			static bool DrawDragInt(const std::string& label, int* value, float speed, int min, int max);
 
 		private:
 			int m_Step = 1;
@@ -105,7 +105,7 @@ namespace Ohm
 				m_FloatParameters.Max = 0.0f;
 			}
 
-			virtual void Draw() = 0;
+			virtual bool Draw() = 0;
 
 			void SetIsDrag(bool isDrag) { m_FloatParameters.IsDrag = isDrag; }
 			void SetMin(float min) { m_FloatParameters.Min = min; }
@@ -125,10 +125,11 @@ namespace Ohm
 			{
 			}
 
-			void Draw() override;
+			bool Draw() override;
+			static bool Draw(const std::string& label, glm::vec2* value, bool readonly = false);
 
 		private:
-			glm::vec2* m_Value = nullptr;;
+			glm::vec2* m_Value = nullptr;
 			glm::vec2 m_DefaultValue{ 0.0f };
 		};
 
@@ -141,8 +142,8 @@ namespace Ohm
 			{
 			}
 
-			void Draw() override;
-			static void Draw(const std::string& label, glm::vec3* value, bool readonly = false);
+			bool Draw() override;
+			static bool Draw(const std::string& label, glm::vec3* value, bool readonly = false);
 
 		private:
 			glm::vec3* m_Value = nullptr;;
@@ -159,7 +160,7 @@ namespace Ohm
 			{
 			}
 
-			void Draw() override;
+			bool Draw() override;
 
 		private:
 			glm::vec4* m_Value = nullptr;;
@@ -175,7 +176,7 @@ namespace Ohm
 			{
 			}
 
-			void Draw() override;
+			bool Draw() override;
 
 		private:
 			UIVector4 m_ColorVec4Drawer;
@@ -192,7 +193,7 @@ namespace Ohm
 			{
 			}
 
-			void Draw() override;
+			bool Draw() override;
 
 		private:
 			std::string m_TextureUniformName;
@@ -210,7 +211,7 @@ namespace Ohm
 			{
 			}
 
-			void Draw() override;
+			bool Draw() override;
 			static bool Draw(const std::string& label, bool* value);
 
 		private:

@@ -9,7 +9,7 @@ namespace Ohm
 {
 	enum class ShaderDataType
 	{
-		None = 0, Float, Float2, Float3, Float4, Int, Mat3, Mat4, Sampler2D, SamplerCube, Image2D, ImageCube
+		None = 0, Float, Float2, Float3, Float4, Int, Bool, Mat3, Mat4, Sampler2D, Sampler3D, SamplerCube, Image2D, ImageCube
 	};
 
 	static std::unordered_map<ShaderDataType, const char*> ShaderDataTypeToString =
@@ -19,9 +19,11 @@ namespace Ohm
 		{ShaderDataType::Float3,	    	"vec3"},
 		{ShaderDataType::Float4,	    	"vec4"},
 		{ShaderDataType::Int,		    "int"},
+		{ShaderDataType::Bool,		    "bool"},
 		{ShaderDataType::Mat3,		    "mat3"},
 		{ShaderDataType::Mat4,		    "mat4"},
 		{ShaderDataType::Sampler2D,		"sampler2D"},
+		{ShaderDataType::Sampler3D,		"sampler3D"},
 		{ShaderDataType::SamplerCube,	"samplerCube"},
 		{ShaderDataType::Image2D,		"image2D"},
 		{ShaderDataType::ImageCube,		"imageCube"},
@@ -35,13 +37,15 @@ namespace Ohm
 			case ShaderDataType::Float2:	return 2 * 4;
 			case ShaderDataType::Float3:	return 3 * 4;
 			case ShaderDataType::Float4:	return 4 * 4;
+			case ShaderDataType::Bool:
 			case ShaderDataType::Int:		return 1 * 4;
 			case ShaderDataType::Mat3:		return 3 * 3 * 4;
 			case ShaderDataType::Mat4:		return 4 * 4 * 4;
-			// 3 Ints, second int represents bool for hide in inspector, made int to keep better alignment
+			// 3 Ints, third int represents bool for hide in inspector, made int to keep better alignment
 			case ShaderDataType::Image2D:
 			case ShaderDataType::ImageCube:
 			case ShaderDataType::SamplerCube:
+			case ShaderDataType::Sampler3D:
 			case ShaderDataType::Sampler2D:	return 3 * 4;
 			default:						return 0;
 		}
@@ -68,6 +72,7 @@ namespace Ohm
 				case ShaderDataType::Float2:	return 2;
 				case ShaderDataType::Float3:	return 3;
 				case ShaderDataType::Float4:	return 4;
+				case ShaderDataType::Bool:		return 1;
 				case ShaderDataType::Int:		return 1;
 				case ShaderDataType::Mat3:		return 3 * 3;
 				case ShaderDataType::Mat4:		return 4 * 4;

@@ -1,94 +1,77 @@
 #pragma once
-#include <string.h>
-#include "Ohm/Core/Assert.h"
+
+#include <cassert>
+#include <cstring>
 using byte = uint8_t;
 
-struct Buffer
+class Buffer
 {
-	void* Data = nullptr;
-	size_t Size = 0;
+public:
 
-	Buffer() = default;
+	Buffer()
+		:m_Data(nullptr), m_Size(0) { }
 	Buffer(void* data, size_t size)
-		:Data(data), Size(size) { }
+		:m_Data(data), m_Size(size) { }
 
-	static Buffer Copy(const void* data, uint32_t size)
-	{
-		Buffer buffer;
-		buffer.Allocate(size);
-		memcpy(buffer.Data, data, size);
-		return buffer;
-	}
+	Buffer(const Buffer&) = delete;
 
 	void Allocate(size_t size)
 	{
-		delete[] static_cast<byte*>(Data);
-		Data = nullptr;
+		delete[] m_Data;
+		m_Data = nullptr;
 
 		if (size == 0)
 			return;
 
-		Data = new byte[size];
-		Size = size;
+		m_Data = new byte[size];
+		m_Size = size;
 	}
 
 	void Release()
 	{
-		delete[] static_cast<byte*>(Data);
-		Data = nullptr;
-		Size = 0;
+		delete[] m_Data;
+		m_Data = nullptr;
+		m_Size = 0;
 	}
 
-	void ZeroInitialize() const
+	void ZeroInitialize()
 	{
-		if (!Data) return;
-		memset(Data, 0, Size);
+		if (!m_Data) return;
+
+		memset(m_Data, 0, m_Size);
 	}
 
 	template<typename T>
-	void Write(void* data, size_t size, size_t offset = 0) const
+	void Write(void* data, size_t size, size_t offset = 0)
 	{
-		ASSERT(size + offset <= Size, "Buffer Overflow: Size + Offset must be less than allocated buffer size.");
-		memcpy((byte*)Data + offset, data, size);
+		assert(("Buffer Overflow: Size + Offset must be less than allocated buffer size.") &&  size + offset <= m_Size);
+
+		memcpy((byte*)m_Data + offset, data, size);
 	}
 
 	template<typename T>
 	T* Read(size_t offset = 0)
 	{
-		return (T*)((byte*)Data + offset);
-	}
-
-	byte* ReadBytes(uint32_t size, uint32_t offset) const
-	{
-		ASSERT(offset + size <= Size, "Buffer overflow!");
-		const auto buffer = new byte[size];
-		memcpy(buffer, static_cast<byte*>(Data) + offset, size);
-		return buffer;
+		return (T*)((byte*)m_Data + offset);
 	}
 
 	byte& operator[](int index)
 	{
-		return ((byte*)Data)[index];
+		return ((byte*)m_Data)[index];
 	}
 
 	byte operator[](int index) const
 	{
-		return ((byte*)Data)[index];
+		return ((byte*)m_Data)[index];
 	}
 
-	operator bool() const
-	{
-		return Data;
-	}
-	
 	template<typename T>
 	T* As()
 	{
-		return (T*)Data;
+		return (T*)m_Data;
 	}
 
-	void* Get() const
-	{
-		return Data;
-	}
+private:
+	void* m_Data = nullptr;
+	size_t m_Size = 0;
 };

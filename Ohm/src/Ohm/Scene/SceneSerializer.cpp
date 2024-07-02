@@ -215,6 +215,12 @@ namespace Ohm
 						out << YAML::Key << name << YAML::Value << intValue;
 					out << YAML::EndMap;
 
+					out << YAML::Key << "BoolUniforms";
+					out << YAML::BeginMap;
+					for (auto [name, boolValue] : materialData.BoolUniforms)
+						out << YAML::Key << name << YAML::Value << boolValue;
+					out << YAML::EndMap;
+			
 					out << YAML::Key << "Vec2Uniforms";
 					out << YAML::BeginMap;
 					for (auto [name, vec2Value] : materialData.Vec2Uniforms)

@@ -131,7 +131,12 @@ void main()
 	float azimuth = u_TAI.y;
 	float inclination = u_TAI.z;
 
-	vec3 sunDirection = normalize(vec3(sin(inclination) * cos(azimuth), cos(inclination), sin(inclination) * sin(azimuth)));
+	vec3 sunDirection = normalize(vec3(
+	    sin(inclination) * cos(azimuth),	// X component
+	    sin(inclination),                   // Y component
+	    cos(inclination) * cos(azimuth)		// Z component
+	));
+	
 	vec3 viewDirection = textureCoords;
 	vec3 skyLuminance = CalculateSkyLuminanceRGB(sunDirection, viewDirection, turbidity);
 

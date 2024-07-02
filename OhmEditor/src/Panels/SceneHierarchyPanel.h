@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "CloudsUI.h"
 #include "Panels/MaterialInspector.h"
 #include "Ohm/Scene/Entity.h"
 
@@ -19,8 +20,9 @@ namespace Ohm
 			Entity GetSelectedEntity() const { return m_SelectedEntity; }
 			void SetSelectedEntity(const Entity& entity) { m_SelectedEntity = entity; }
 
-			MaterialInspector& GetMaterialInspector(Entity E, uint32_t MaterialIndex = 0) ;
-			void RegisterEntityMaterialProperties(Entity Entity);
+			MaterialInspector& GetMaterialInspector(Entity e, uint32_t materialIndex = 0) ;
+			void TryRegisterEntityMaterialProperties(Entity entity);
+			void TryRegisterEntityVolumetricCloudsUI(Entity entity);
 
 		private:
 			void DrawEntityNode(Entity entity);
@@ -31,6 +33,7 @@ namespace Ohm
 			Entity m_SelectedEntity;
 			Ref<Scene> m_Scene;
 			std::unordered_map<UUID, std::vector<Ref<MaterialInspector>>> m_RegisteredMaterialInspectors;
+			std::unordered_map<UUID, Ref<CloudsUI>> m_RegisteredCloudInspectors;
 			std::string TextureToCubeFilePath;
 			std::string TextureToCubeFileName = "2DTextureToCube.png";
 		};

@@ -14,6 +14,7 @@
 #include "Ohm/Rendering/Material.h"
 #include "Ohm/Rendering/Mesh.h"
 #include "Ohm/Rendering/TextureLibrary.h"
+#include "Ohm/Rendering/Clouds/CloudDataStructures.h"
 
 namespace Ohm
 {
@@ -144,8 +145,8 @@ namespace Ohm
 	struct EnvironmentMapParams
 	{
 		float Turbidity {3.0f};
-		float Azimuth;
-		float Inclination;
+		float AzimuthRads;
+		float InclinationRads;
 	};
 
 	struct EnvironmentLightComponent
@@ -161,5 +162,58 @@ namespace Ohm
 		EnvironmentLightComponent()
 			:Pipeline(CreateRef<EnvironmentMapPipeline>())
 		{ }
+	};
+
+	struct VolumetricCloudComponent
+	{
+		Ref<CloudSettings> MainSettings;
+		Ref<CloudAnimationSettings> AnimationSettings;
+		Ref<BaseShapeWorleySettings> BaseShapeSettings;
+		Ref<DetailShapeWorleySettings> DetailShapeSettings;
+		Ref<WorleyPerlinSettings> PerlinSettings;
+		Ref<CurlNoiseSettings> CurlSettings;
+
+		struct Debug
+		{
+			Ref<TextureDebugDisplaySettings> MainTextureDebugSettings;
+			Ref<DetailTextureDebugDisplaySettings> DetailTextureDisplaySettings;
+			Ref<ShapeTextureDebugDisplaySettings> ShapeTextureDisplaySettings;
+			
+			UITabTypes ActiveTabType = UITabTypes::MainSettings;
+			DebugShapeType ActiveDebugShapeType = DebugShapeType::BaseShape;
+			WorleyChannelMask ActiveShapeMask = WorleyChannelMask::R;
+			WorleyChannelMask ActiveDetailMask = WorleyChannelMask::R;
+			CloudNoiseType ActiveNoiseType = CloudNoiseType::BaseShape;
+
+			bool GetDisplayAlpha() const { return ActiveDebugShapeType == DebugShapeType::None || ActiveDebugShapeType == DebugShapeType::DetailNoise ? false : ShapeTextureDisplaySettings->ShowAlpha; }
+			bool GetShowAllChannels() const { return ActiveDebugShapeType == DebugShapeType::BaseShape ? ShapeTextureDisplaySettings->DrawAllChannels : DetailTextureDisplaySettings->DrawAllChannels; }
+			bool GetEnableGreyScale() const { return ActiveDebugShapeType == DebugShapeType::BaseShape ? ShapeTextureDisplaySettings->EnableGreyScale : DetailTextureDisplaySettings->EnableGreyScale; }
+			float GetDepthSlice() const { return ActiveDebugShapeType == DebugShapeType::BaseShape ? ShapeTextureDisplaySettings->DepthSlice : DetailTextureDisplaySettings->DepthSlice; }
+			glm::vec4 GetChannelWeights() const { return ActiveDebugShapeType == DebugShapeType::BaseShape ? ShapeTextureDisplaySettings->ChannelWeights : glm::vec4(DetailTextureDisplaySettings->ChannelWeights, 1.0f); }
+
+			const Ref<TextureDebugDisplaySettings>& GetTextureDisplaySettings() const { return MainTextureDebugSettings; }
+
+			Debug()
+			{
+				MainTextureDebugSettings = CreateRef<TextureDebugDisplaySettings>();
+				DetailTextureDisplaySettings = CreateRef<DetailTextureDebugDisplaySettings>();
+				ShapeTextureDisplaySettings = CreateRef<ShapeTextureDebugDisplaySettings>();
+			}
+		};
+		Ref<Debug> DebugSettings;
+
+		VolumetricCloudComponent()
+		{
+			MainSettings = CreateRef<CloudSettings>();
+			AnimationSettings = CreateRef<CloudAnimationSettings>();
+
+			PerlinSettings = CreateRef<WorleyPerlinSettings>();
+			CurlSettings = CreateRef<CurlNoiseSettings>();
+			BaseShapeSettings = CreateRef<BaseShapeWorleySettings>();
+			BaseShapeSettings->UpdateAllChannels(PerlinSettings);
+			DetailShapeSettings = CreateRef<DetailShapeWorleySettings>();
+			DetailShapeSettings->UpdateAllChannels();
+			DebugSettings = CreateRef<Debug>();
+		}
 	};
 }

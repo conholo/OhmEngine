@@ -1,4 +1,5 @@
-﻿#include "SceneHierarchyPanel.h"
+﻿#include "ohmpch.h"
+#include "SceneHierarchyPanel.h"
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 #include <entt.hpp>
@@ -21,32 +22,45 @@ namespace Ohm
 			m_SelectedEntity = {};
 		}
 
-		MaterialInspector& SceneHierarchyPanel::GetMaterialInspector(Entity E, uint32_t MaterialIndex)
+		MaterialInspector& SceneHierarchyPanel::GetMaterialInspector(Entity e, uint32_t materialIndex)
 		{
-        	UUID ID = E.GetComponent<IDComponent>().ID;
+        	UUID ID = e.GetComponent<IDComponent>().ID;
         	ASSERT(m_RegisteredMaterialInspectors.find(ID) != m_RegisteredMaterialInspectors.end(), "Invalid UUID when indexing Scene Hierarchy panel for Material Inspector.");
         	const std::vector<Ref<MaterialInspector>> AvailableMaterialInspectors = m_RegisteredMaterialInspectors[ID];
-        	ASSERT(!AvailableMaterialInspectors.empty() && MaterialIndex <= AvailableMaterialInspectors.size() - 1, "Invalid index of material inspector for entity with UUID: {}", ID);
-        	return *AvailableMaterialInspectors[MaterialIndex];
+        	ASSERT(!AvailableMaterialInspectors.empty() && materialIndex <= AvailableMaterialInspectors.size() - 1, "Invalid index of material inspector for entity with UUID: {}", ID);
+        	return *AvailableMaterialInspectors[materialIndex];
 		}
 
-		void SceneHierarchyPanel::RegisterEntityMaterialProperties(Entity Entity)
+		void SceneHierarchyPanel::TryRegisterEntityMaterialProperties(Entity entity)
 		{
-        	if(m_RegisteredMaterialInspectors.find(Entity.GetComponent<IDComponent>().ID) != m_RegisteredMaterialInspectors.end()) return;
+        	if(m_RegisteredMaterialInspectors.find(entity.GetComponent<IDComponent>().ID) != m_RegisteredMaterialInspectors.end()) return;
         	
-			const bool HasMeshRenderer = Entity.HasComponent<MeshRendererComponent>();
-			const bool HasPrimitiveMeshRenderer = Entity.HasComponent<PrimitiveRendererComponent>();
+			const bool HasMeshRenderer = entity.HasComponent<MeshRendererComponent>();
+			const bool HasPrimitiveMeshRenderer = entity.HasComponent<PrimitiveRendererComponent>();
 
 			if (!HasMeshRenderer && !HasPrimitiveMeshRenderer)
 				return;
         	
 			if(HasPrimitiveMeshRenderer)
 			{
-				auto& PrimitiveMeshRenderer = Entity.GetComponent<PrimitiveRendererComponent>();
+				auto& PrimitiveMeshRenderer = entity.GetComponent<PrimitiveRendererComponent>();
 				if(PrimitiveMeshRenderer.PrimitiveType != Primitive::None && PrimitiveMeshRenderer.MaterialInstance != nullptr)
-					m_RegisteredMaterialInspectors[Entity.GetComponent<IDComponent>().ID].push_back(CreateRef<MaterialInspector>(PrimitiveMeshRenderer.MaterialInstance));
+					m_RegisteredMaterialInspectors[entity.GetComponent<IDComponent>().ID].push_back(CreateRef<MaterialInspector>(PrimitiveMeshRenderer.MaterialInstance));
 			}
 		}
+
+    	void SceneHierarchyPanel::TryRegisterEntityVolumetricCloudsUI(Entity entity)
+        {
+        	UUID entityId = entity.GetComponent<IDComponent>().ID;
+        	if(m_RegisteredCloudInspectors.find(entityId) != m_RegisteredCloudInspectors.end()) return;
+        	
+        	const bool hasVolumetricCloudsComponent = entity.HasComponent<VolumetricCloudComponent>();
+
+        	if (!hasVolumetricCloudsComponent)
+        		return;
+
+        	m_RegisteredCloudInspectors[entityId] = CreateRef<CloudsUI>();
+        }
 
 		void SceneHierarchyPanel::Draw()
 		{
@@ -58,7 +72,8 @@ namespace Ohm
 
 					if (!entity) return;
 
-					RegisterEntityMaterialProperties(entity);
+					TryRegisterEntityMaterialProperties(entity);
+					TryRegisterEntityVolumetricCloudsUI(entity);
 					DrawEntityNode(entity);
 				});
 
@@ -180,8 +195,7 @@ namespace Ohm
 			if (entity.HasComponent<TagComponent>())
 			{
 				auto& tag = entity.GetComponent<TagComponent>();
-				char buffer[256];
-				memset(buffer, 0, sizeof(buffer));
+				char buffer[256] = {};
 				std::strncpy(buffer, tag.Tag.c_str(), sizeof(buffer));
 
 				if (ImGui::InputText("##Text", buffer, sizeof(buffer)))
@@ -226,6 +240,22 @@ namespace Ohm
 						m_SelectedEntity.AddComponent<DirectionalLightComponent>();
 					else
 						OHM_WARN("Only one light component is allowed per entity.");
+				}
+
+				if (ImGui::MenuItem("Environment Light"))
+				{
+					if (!m_SelectedEntity.HasComponent<EnvironmentLightComponent>())
+						m_SelectedEntity.AddComponent<EnvironmentLightComponent>();
+					else
+						OHM_WARN("Only one environment light component is allowed per entity.");
+				}
+
+				if (ImGui::MenuItem("Volumetric Clouds"))
+				{
+					if (!m_SelectedEntity.HasComponent<VolumetricCloudComponent>())
+						m_SelectedEntity.AddComponent<VolumetricCloudComponent>();
+					else
+						OHM_WARN("Only one volumetric cloud component is allowed per entity.");
 				}
 
 				ImGui::EndPopup();
@@ -276,7 +306,7 @@ namespace Ohm
 				if (ImGui::TreeNodeEx("Material Properties", TreeNodeFlags))
 				{
 					if(m_RegisteredMaterialInspectors.find(Entity.GetComponent<IDComponent>().ID) == m_RegisteredMaterialInspectors.end())
-						RegisterEntityMaterialProperties(Entity);
+						TryRegisterEntityMaterialProperties(Entity);
 					m_RegisteredMaterialInspectors[Entity.GetComponent<IDComponent>().ID][0]->Draw();
 					ImGui::TreePop();
 				}
@@ -334,12 +364,12 @@ namespace Ohm
 
         		if (ImGui::BeginCombo("Pipeline Selection Type", CurrentPipelineTypeName.c_str()))
         		{
-        			for (const auto [Name, Type] : EnvironmentUtils::GetTypeMap())
+        			for (const auto& [name, envType] : EnvironmentUtils::GetTypeMap())
         			{
-        				const bool Selected = CurrentPipelineTypeName == Name;
-        				if (ImGui::Selectable(Name.c_str(), Selected))
+        				const bool Selected = CurrentPipelineTypeName == name;
+        				if (ImGui::Selectable(name.c_str(), Selected))
         				{
-        					Component.Pipeline->GetSpecification().PipelineType = Type;
+        					Component.Pipeline->GetSpecification().PipelineType = envType;
         					Component.NeedsUpdate = true;
         				}
         			}
@@ -356,16 +386,16 @@ namespace Ohm
         			{
         				char label[150];
 
-        				Component.NeedsUpdate |= UIFloat::DrawSlider("Turbidity", &Component.EnvironmentMapParams.Turbidity, 2.0, 20.0);
+        				Component.NeedsUpdate |= UIFloat::DrawSlider("Turbidity", &Component.EnvironmentMapParams.Turbidity, 0.0, 20.0);
         				ImGui::SameLine();
         				sprintf(label, "Air Turbidity, value in range [%.1f, %.1f]", 2.0, 20.0);
         				HelpMarker(label);
 
-        				Component.NeedsUpdate |= UIFloat::DrawAngle("Azimuth", &Component.EnvironmentMapParams.Azimuth, 0.0f, 360.0f);
+        				Component.NeedsUpdate |= UIFloat::DrawAngle("Azimuth", &Component.EnvironmentMapParams.AzimuthRads, 0.0f, 360.0f);
         				ImGui::SameLine();
         				HelpMarker("Sun azimuth at view point in degrees, value in range [0, 360]");
 
-        				Component.NeedsUpdate |= UIFloat::DrawAngle("Elevation", &Component.EnvironmentMapParams.Inclination, -4.2f, 90.0f);
+        				Component.NeedsUpdate |= UIFloat::DrawAngle("Elevation", &Component.EnvironmentMapParams.InclinationRads, -4.2f, 90.0f);
         				ImGui::SameLine();
         				sprintf(label, "Sun elevation at view point in degrees, value in range [%.1f, %.1f]", -4.2f, 90.0f);
         				HelpMarker(label);
@@ -407,6 +437,18 @@ namespace Ohm
 
         	DrawComponent<EnvironmentLightComponent>("Environment Light", entity, DrawEnvLightFn, CleanUpEnvLightFn);
         	//-------------------------ENVIRONMENT LIGHT-------------------------//
+
+        	//-------------------------VOLUMETRIC CLOUDS-------------------------//
+        	auto drawVolumetricCloudFn = [this](auto& component, Entity entity)
+        	{
+        		auto entityId = entity.GetComponent<IDComponent>().ID;
+        		auto cloudsUI = m_RegisteredCloudInspectors[entityId];
+        		cloudsUI->Draw(&component);
+        	};
+        	auto cleanUpDrawCloudFn = [](auto& component, Entity entity) {};
+
+        	DrawComponent<VolumetricCloudComponent>("Volumetric Cloud", entity, drawVolumetricCloudFn, cleanUpDrawCloudFn);
+        	//-------------------------VOLUMETRIC CLOUDS-------------------------//
 		}
 
 		void SceneHierarchyPanel::DrawPrimitiveMeshSelection(PrimitiveRendererComponent& PrimitiveRenderer) const

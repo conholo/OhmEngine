@@ -134,16 +134,58 @@ namespace Ohm
 		return texture;
 	}
 
+	Ref<Texture3D> TextureLibrary::LoadTexture3D(const Texture3DSpecification& spec)
+    {
+    	if(Has3D(spec.Name))
+    	{
+    		return s_NameToTexture3DLibrary[spec.Name];
+    	}
+    	Ref<Texture3D> texture = CreateRef<Texture3D>(spec);
+    	AddTexture3D(texture);
+    	return texture;
+    }
+
+	void TextureLibrary::AddTexture3D(const Ref<Texture3D>& texture)
+	{
+    	if (Has3D(texture->GetName()))
+    	{
+    		OHM_TRACE("Texture3D with name '{}' already contained in Texture Library.", texture->GetName());
+    		return;
+    	}
+		
+    	s_NameToTexture3DLibrary[texture->GetName()] = texture;
+    	s_IdToNameLibrary[texture->GetID()] = texture->GetName();
+    	OHM_TRACE("Added Texture3D with name: '{}' to the Texture Library.", texture->GetName());
+	}
+
+	bool TextureLibrary::Has3D(const std::string& name)
+	{
+    	return s_NameToTexture3DLibrary.find(name) != s_NameToTexture3DLibrary.end();
+	}
+
 	const Ref<Texture2D>& TextureLibrary::Get2D(const std::string& name)
 	{
 		ASSERT(Has2D(name), "No Texture2D with name '{}' found in Texture Library.", name)
 		return s_NameToTexture2DLibrary.at(name);
 	}
 
-	const Ref<TextureCube>& TextureLibrary::GetCube(const std::string& name)
+	const Ref<Texture3D>& TextureLibrary::Get3D(const std::string& name)
 	{
-		ASSERT(HasCube(name), "No TextureCube with name '{}' found in Texture Library.", name)
+    	ASSERT(Has3D(name), "No Texture3D with name '{}' found in Texture Library.", name)
+		return s_NameToTexture3DLibrary.at(name);
+	}
+	
+	const Ref<TextureCube>& TextureLibrary::GetCube(const std::string& name)
+    {
+    	ASSERT(HasCube(name), "No TextureCube with name '{}' found in Texture Library.", name)
 		return s_NameToTextureCubeLibrary.at(name);
+    }
+
+	void TextureLibrary::BindTexture3DToSlot(const std::string& name, uint32_t slot)
+	{
+    	ASSERT(Has3D(name), "TextureLibrary: Unable to bind Texture3D with name '{}' to slot '{}'.  This texture has not been registered.", name, slot);
+    	const auto& tex3d = s_NameToTexture3DLibrary[name];
+    	glBindTextureUnit(slot, tex3d->GetID());
 	}
 
 	void TextureLibrary::BindTexture2DToSlot(const std::string& TwoDimensionTextureName, uint32_t Slot)
@@ -170,35 +212,6 @@ namespace Ohm
 		ASSERT(s_IdToNameLibrary.find(TextureID) != s_IdToNameLibrary.end(), "TextureLibrary: Unable to find texture with ID '{}'.", TextureID);
 		return s_IdToNameLibrary[TextureID];
 	}
-
-	std::unordered_map<std::string, int32_t> TextureLibrary::BindAndGetMaterialTextureSlots(const std::unordered_map<std::string, uint32_t>& textureIDs)
-    {
-    	std::unordered_map<std::string, int32_t> nameToSlotMap;
-    	uint32_t currentSlot = 1;
-    	for (auto [name, id] : textureIDs)
-    	{
-    		if (s_TextureLibraryIDs.find(id) == s_TextureLibraryIDs.end())
-    		{
-    			// THIS NEEDS TO BE UPDATED TO HANDLE TEXTURES THAT HAVEN'T BEEN REGISTERED!
-    			//OHM_WARN("Texture with name: '{}' and id: '{}' could not be found in the Texture Library.  Could not bind this texture.  Check that it has been added to the Texture Library.", name, id);
-    			//continue;
-    		}
-
-    		if (name == "sampler_ShadowMap")
-    		{
-    			nameToSlotMap[name] = 0;
-    			glBindTextureUnit(0, id);
-    		}
-    		else
-    		{
-    			nameToSlotMap[name] = currentSlot;
-    			glBindTextureUnit(currentSlot++, s_TextureLibraryIDs[id]->GetID());
-    		}
-    	}
-
-    	return nameToSlotMap;
-    }
-	
 	
 	void TextureLibrary::LoadWhiteTexture()
 	{
@@ -264,7 +277,30 @@ namespace Ohm
 		AddTextureCube(BlackTextureCube);
 	}
 
+	void TextureLibrary::LoadBlackTexture3D()
+	{
+    	const Texture3DSpecification black3dSpec =
+		{
+    		TextureUtils::WrapMode::ClampToEdge,
+			TextureUtils::WrapMode::ClampToEdge,
+			TextureUtils::WrapMode::ClampToEdge,
+			TextureUtils::FilterMode::LinearMipLinear,
+			TextureUtils::FilterMode::Linear,
+			TextureUtils::ImageInternalFormat::RGBA8,
+			TextureUtils::ImageDataLayout::RGBA,
+			TextureUtils::ImageDataType::UByte,
+			1, 1, 1,
+			"Black Texture3D"
+		};
+
+    	const Ref<Texture3D> black3dTex = CreateRef<Texture3D>(black3dSpec);
+    	uint32_t blackTextureData = 0xff000000;
+    	black3dTex->SetData(&blackTextureData, sizeof(uint32_t));
+    	AddTexture3D(black3dTex);
+	}
+
 	std::unordered_map<std::string, Ref<Texture2D>> TextureLibrary::s_NameToTexture2DLibrary;
+	std::unordered_map<std::string, Ref<Texture3D>> TextureLibrary::s_NameToTexture3DLibrary;
 	std::unordered_map<std::string, Ref<TextureCube>> TextureLibrary::s_NameToTextureCubeLibrary;
 	std::unordered_map<uint32_t, Ref<Texture2D>> TextureLibrary::s_TextureLibraryIDs;
 	std::unordered_map<uint32_t, std::string> TextureLibrary::s_IdToNameLibrary;

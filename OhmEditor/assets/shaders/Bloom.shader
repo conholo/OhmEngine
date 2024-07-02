@@ -28,37 +28,42 @@ uniform int u_Mode; // See defines below
 
 vec3 DownsampleBox13(sampler2D tex, float lod, vec2 uv, vec2 texelSize)
 {
-    vec3 A = textureLod(tex, uv + texelSize * vec2(-2.0, -2.0), lod).rgb;
-    vec3 B = textureLod(tex, uv + texelSize * vec2(0.0, -2.0), lod).rgb;
-    vec3 C = textureLod(tex, uv + texelSize * vec2(2.0, -2.0), lod).rgb;
-
-    vec3 D = textureLod(tex, uv + texelSize * vec2(-1.0, -1.0), lod).rgb;
-    vec3 E = textureLod(tex, uv + texelSize * vec2(1.0, -1.0), lod).rgb;
-
-    vec3 F = textureLod(tex, uv + texelSize * vec2(-2.0, 0.0), lod).rgb;
-    vec3 G = textureLod(tex, uv, lod).rgb;
-    vec3 H = textureLod(tex, uv + texelSize * vec2(2.0, 0.0), lod).rgb;
-
-    vec3 I = textureLod(tex, uv + texelSize * vec2(-1.0, 1.0), lod).rgb;
-    vec3 J = textureLod(tex, uv + texelSize * vec2(1.0, 1.0), lod).rgb;
-
-    vec3 K = textureLod(tex, uv + texelSize * vec2(-2.0, 2.0), lod).rgb;
-    vec3 L = textureLod(tex, uv + texelSize * vec2(0.0, 2.0), lod).rgb;
-    vec3 M = textureLod(tex, uv + texelSize * vec2(2.0, 2.0), lod).rgb;
-
-    vec2 weight = (1.0 / 4.0) * vec2(0.5, 0.125);
-
     // Center
-    vec3 result = (D + E + I + J) * weight.x;
-    // Top Left
-    result += (A + B + G + F) * weight.y;
-    // Top Right
-    result += (B + C + G + H) * weight.y;
-    // Bottom Left
-    result += (F + G + K + L) * weight.y;
-    // Bottom Right
-    result += (G + H + M + L) * weight.y;
+    vec3 A = textureLod(tex, uv, lod).rgb;
 
+    texelSize *= 0.5f; // Sample from center of texels
+
+    // Inner box
+    vec3 B = textureLod(tex, uv + texelSize * vec2(-1.0f, -1.0f), lod).rgb;
+    vec3 C = textureLod(tex, uv + texelSize * vec2(-1.0f, 1.0f), lod).rgb;
+    vec3 D = textureLod(tex, uv + texelSize * vec2(1.0f, 1.0f), lod).rgb;
+    vec3 E = textureLod(tex, uv + texelSize * vec2(1.0f, -1.0f), lod).rgb;
+
+    // Outer box
+    vec3 F = textureLod(tex, uv + texelSize * vec2(-2.0f, -2.0f), lod).rgb;
+    vec3 G = textureLod(tex, uv + texelSize * vec2(-2.0f, 0.0f), lod).rgb;
+    vec3 H = textureLod(tex, uv + texelSize * vec2(0.0f, 2.0f), lod).rgb;
+    vec3 I = textureLod(tex, uv + texelSize * vec2(2.0f, 2.0f), lod).rgb;
+    vec3 J = textureLod(tex, uv + texelSize * vec2(2.0f, 2.0f), lod).rgb;
+    vec3 K = textureLod(tex, uv + texelSize * vec2(2.0f, 0.0f), lod).rgb;
+    vec3 L = textureLod(tex, uv + texelSize * vec2(-2.0f, -2.0f), lod).rgb;
+    vec3 M = textureLod(tex, uv + texelSize * vec2(0.0f, -2.0f), lod).rgb;
+
+    // Weights
+    vec3 result = vec3(0.0);
+    // Inner box
+    result += (B + C + D + E) * 0.5f;
+    // Bottom-left box
+    result += (F + G + A + M) * 0.125f;
+    // Top-left box
+    result += (G + H + I + A) * 0.125f;
+    // Top-right box
+    result += (A + I + J + K) * 0.125f;
+    // Bottom-right box
+    result += (M + A + K + L) * 0.125f;
+
+    // 4 samples each
+    result *= 0.25f;
 
     return result;
 }
@@ -76,33 +81,33 @@ vec4 QuadraticThreshold(vec4 color, float threshold, vec3 curve)
     return color;
 }
 
-vec4 Prefilter(vec4 color)
+vec4 Prefilter(vec4 color, vec2 uv)
 {
     float clampValue = 20.0f;
-    color = min(vec4(clampValue), color);
+    color = clamp(color, vec4(0.0f), vec4(clampValue));
     color = QuadraticThreshold(color, u_Params.x, u_Params.yzw);
     return color;
 }
 
-vec3 UpsampleTent9(sampler2D tex, float lod, vec2 uv, vec2 texelSize, float sampleScale)
+vec3 UpsampleTent9(sampler2D tex, float lod, vec2 uv, vec2 texelSize, float radius)
 {
-    vec4 offset = texelSize.xyxy * vec4(1.0f, 1.0f, -1.0f, 0.0f) * sampleScale;
+    vec4 offset = texelSize.xyxy * vec4(1.0f, 1.0f, -1.0f, 0.0f) * radius;
 
-    vec3 result = vec3(0.0f);
+    // Center
+    vec3 result = textureLod(tex, uv, lod).rgb * 4.0f;
 
     result += textureLod(tex, uv - offset.xy, lod).rgb;
     result += textureLod(tex, uv - offset.wy, lod).rgb * 2.0;
     result += textureLod(tex, uv - offset.zy, lod).rgb;
 
     result += textureLod(tex, uv + offset.zw, lod).rgb * 2.0;
-    result += textureLod(tex, uv, lod).rgb * 4.0f;
     result += textureLod(tex, uv + offset.xw, lod).rgb * 2.0;
 
     result += textureLod(tex, uv + offset.zy, lod).rgb;
     result += textureLod(tex, uv + offset.wy, lod).rgb * 2.0;
     result += textureLod(tex, uv + offset.xy, lod).rgb;
 
-    return result * (1.0f / 20.0f);
+    return result * (1.0f / 16.0f);
 }
 
 layout(local_size_x = 4, local_size_y = 4) in;
@@ -115,11 +120,11 @@ void main()
     texCoords += (1.0f / imgSize) * 0.5f;
 
     vec2 texSize = vec2(textureSize(u_Texture, int(u_LOD)));
-    vec4 color = vec4(1, 1, 0, 1);
+    vec4 color = vec4(1, 0, 1, 1);
     if (u_Mode == MODE_PREFILTER)
     {
         color.rgb = DownsampleBox13(u_Texture, 0, texCoords, 1.0f / texSize);
-        color = Prefilter(color);
+        color = Prefilter(color, texCoords);
         color.a = 1.0f;
     }
     else if (u_Mode == MODE_UPSAMPLE_FIRST)

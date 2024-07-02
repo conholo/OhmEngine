@@ -23,18 +23,25 @@ namespace Ohm
 
 	void Material::BindSamplerTexturesToRenderContext()
 	{
-		const std::vector<ShaderUniform> Sampler2DUniforms = m_Shader->GetBaseBlockUniformsOfType(ShaderDataType::Sampler2D);
-		for(const ShaderUniform& Uniform : Sampler2DUniforms)
+		const std::vector<ShaderUniform> sampler2dUniforms = m_Shader->GetBaseBlockUniformsOfType(ShaderDataType::Sampler2D);
+		for(const ShaderUniform& Uniform : sampler2dUniforms)
 		{
-			const auto* TexUniform = Get<TextureUniform>(Uniform.GetName());
-			TextureLibrary::BindTextureToSlot(TexUniform->RendererID, TexUniform->TextureUnit);
+			const auto* texUniforms = Get<TextureUniform>(Uniform.GetName());
+			TextureLibrary::BindTextureToSlot(texUniforms->RendererID, texUniforms->TextureUnit);
 		}
 
-		const std::vector<ShaderUniform> SamplerCubeUniforms = m_Shader->GetBaseBlockUniformsOfType(ShaderDataType::SamplerCube);
-		for(const ShaderUniform& Uniform : SamplerCubeUniforms)
+		const std::vector<ShaderUniform> sampler3dUniforms = m_Shader->GetBaseBlockUniformsOfType(ShaderDataType::Sampler3D);
+		for(const ShaderUniform& Uniform : sampler3dUniforms)
 		{
-			const auto* TexUniform = Get<TextureUniform>(Uniform.GetName());
-			TextureLibrary::BindTextureToSlot(TexUniform->RendererID, TexUniform->TextureUnit);
+			const auto* texUniforms = Get<TextureUniform>(Uniform.GetName());
+			TextureLibrary::BindTextureToSlot(texUniforms->RendererID, texUniforms->TextureUnit);
+		}
+		
+		const std::vector<ShaderUniform> samplerCubeUniforms = m_Shader->GetBaseBlockUniformsOfType(ShaderDataType::SamplerCube);
+		for(const ShaderUniform& Uniform : samplerCubeUniforms)
+		{
+			const auto* texUniform = Get<TextureUniform>(Uniform.GetName());
+			TextureLibrary::BindTextureToSlot(texUniform->RendererID, texUniform->TextureUnit);
 		}
 	}
 
@@ -73,6 +80,7 @@ namespace Ohm
 					break;
 				}
 			case ShaderDataType::Sampler2D:
+			case ShaderDataType::Sampler3D:
 			case ShaderDataType::SamplerCube:
 				{
 					TextureUniform* value = Get<TextureUniform>(uniformName);
@@ -83,6 +91,12 @@ namespace Ohm
 				{
 					int* value = Get<int>(uniformName);
 					data.IntUniforms[uniformName] = *value;
+					break;
+				}
+			case ShaderDataType::Bool:
+				{
+					bool* value = Get<bool>(uniformName);
+					data.BoolUniforms[uniformName] = *value;
 					break;
 				}
 			case ShaderDataType::Mat3:
@@ -116,7 +130,7 @@ namespace Ohm
 		m_BaseBlockStorageBuffer.ZeroInitialize();
 	}
 
-	void Material::InitializeBaseBlockStorageBufferWithUniformDefaults() const
+	void Material::InitializeBaseBlockStorageBufferWithUniformDefaults()
 	{
 		const auto& uniforms = m_Shader->GetBaseBlockUniforms();
 
@@ -133,6 +147,12 @@ namespace Ohm
 				{
 					GLfloat* data = (GLfloat*)m_Shader->GetUniformData(uniform.GetType(), uniform.GetLocation());
 					m_BaseBlockStorageBuffer.Write<float>(data, uniform.GetSize(), uniform.GetBufferOffset());
+					break;
+				}
+			case ShaderDataType::Bool:
+				{
+					GLboolean* data = (GLboolean*)m_Shader->GetUniformData(uniform.GetType(), uniform.GetLocation());
+					m_BaseBlockStorageBuffer.Write<bool>(data, uniform.GetSize(), uniform.GetBufferOffset());
 					break;
 				}
 			case ShaderDataType::Int:
@@ -159,6 +179,13 @@ namespace Ohm
 				{
 					TextureUniform* data = (TextureUniform*)m_Shader->GetUniformData(uniform.GetType(), uniform.GetLocation());
 					data->RendererID = TextureLibrary::Get2D("White Texture")->GetID();
+					m_BaseBlockStorageBuffer.Write<TextureUniform>(data, uniform.GetSize(), uniform.GetBufferOffset());
+					break;
+				}
+			case ShaderDataType::Sampler3D:
+				{
+					TextureUniform* data = (TextureUniform*)m_Shader->GetUniformData(uniform.GetType(), uniform.GetLocation());
+					data->RendererID = TextureLibrary::Get3D("Black Texture3D")->GetID();
 					m_BaseBlockStorageBuffer.Write<TextureUniform>(data, uniform.GetSize(), uniform.GetBufferOffset());
 					break;
 				}
@@ -214,6 +241,7 @@ namespace Ohm
 					m_Shader->UploadUniformFloat4(uniformName, *value);
 					break;
 				}
+			case ShaderDataType::Sampler3D:
 			case ShaderDataType::SamplerCube:
 			case ShaderDataType::Sampler2D:
 				{
@@ -225,6 +253,12 @@ namespace Ohm
 				{
 					int* value = Get<int>(uniformName);
 					m_Shader->UploadUniformInt(uniformName, *value);
+					break;
+				}
+			case ShaderDataType::Bool:
+				{
+					bool* value = Get<bool>(uniformName);
+					m_Shader->UploadUniformBool(uniformName, *value);
 					break;
 				}
 			case ShaderDataType::Mat3:

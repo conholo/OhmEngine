@@ -22,6 +22,7 @@ namespace Ohm
 		void UpdateLightingEnvironment(const EditorCamera& camera);
 		Entity GetDirectionalLight();
 		Entity GetEnvironmentLight();
+		Entity GetVolumetricCloud();
 
 		template<typename... Components>
 		auto GetAllEntitiesWith()
@@ -39,6 +40,7 @@ namespace Ohm
 
 		uint32_t m_DirectionalLightEntityID;
 		uint32_t m_EnvironmentLightEntityID;
+		uint32_t m_VolumetricCloudEntityID;
 		std::string m_SceneName;
 
 		friend class Entity;
